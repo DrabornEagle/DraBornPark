@@ -2,15 +2,15 @@
   "expo": {
     "name": "DraBornPark",
     "slug": "drabornpark",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "orientation": "portrait",
     "scheme": "drabornpark",
     "userInterfaceStyle": "dark",
-    "plugins": ["expo-router"],
+    "plugins": ["expo-router", "expo-notifications"],
     "experiments": { "typedRoutes": true, "reactCompiler": true },
     "android": {
       "package": "com.draborneagle.drabornpark",
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "POST_NOTIFICATIONS"]
     },
     "ios": { "bundleIdentifier": "com.draborneagle.drabornpark" },
     "web": { "output": "single" }
