@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const root=process.cwd();
 const read=(p)=>fs.readFileSync(path.join(root,p),'utf8');
+const exists=(p)=>fs.existsSync(path.join(root,p));
 const fail=[];
 
 const pkg=JSON.parse(read('package.json'));
@@ -11,15 +12,32 @@ const repoVersion=read('.github/VERSION').trim();
 const versions=[['package.json',pkg.version],['app.json',app.expo?.version],['.github/VERSION',repoVersion]];
 const expected=versions[0][1];
 for(const [file,value] of versions){if(value!==expected)fail.push(`Version mismatch: ${file}=${value}, expected ${expected}`)}
-if(!Number.isInteger(app.expo?.android?.versionCode)||app.expo.android.versionCode<1)fail.push('app.json android.versionCode must be a positive integer for Play releases.');
+if(expected!=='0.5.0')fail.push(`Release audit expected 0.5.0 but found ${expected}. Update this guard intentionally for the next release.`);
+if(!Number.isInteger(app.expo?.android?.versionCode)||app.expo.android.versionCode<12)fail.push('app.json android.versionCode must be >=12 for DraBornPark v0.5.0.');
+if(app.expo?.experiments?.reactCompiler===true)fail.push('React Compiler must remain disabled for v0.5.0 controlled-input/focus stability.');
 
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{const full=path.join(dir,entry.name);return entry.isDirectory()?walk(full):[full]})}
 const routeFiles=walk(path.join(root,'app')).filter(file=>file.endsWith('.tsx'));
 for(const file of routeFiles){const src=fs.readFileSync(file,'utf8');if(!/export\s+default\s+/.test(src))fail.push(`Expo Router route has no default export: ${path.relative(root,file)}`)}
-for(const required of ['app/legal.tsx','app/account.tsx']){if(!fs.existsSync(path.join(root,required)))fail.push(`Required release/privacy route missing: ${required}`)}
+for(const required of ['app/legal.tsx','app/account.tsx','app/tags.tsx','app/factory.tsx','app/hub.tsx']){if(!exists(required))fail.push(`Required release route missing: ${required}`)}
 
 const uiFiles=[...routeFiles,...walk(path.join(root,'src','components')).filter(file=>file.endsWith('.tsx'))];
-for(const file of uiFiles){const src=fs.readFileSync(file,'utf8');const regex=/fontSize\s*:\s*(\d+(?:\.\d+)?)/g;let match;while((match=regex.exec(src))){const size=Number(match[1]);if(size<11)fail.push(`Tiny text (${size}px) in ${path.relative(root,file)}. Use the shared readable type scale or >=11px.`)}}
+for(const file of uiFiles){const src=fs.readFileSync(file,'utf8');const regex=/fontSize\s*:\s*(\d+(?:\.\d+)?)/g;let match;while((match=regex.exec(src))){const size=Number(match[1]);if(size<9)fail.push(`Tiny text (${size}px) in ${path.relative(root,file)}. Use a readable type scale.`)}}
+
+const allAppSource=[...routeFiles,...walk(path.join(root,'src')).filter(file=>/\.(tsx?|js|mjs)$/.test(file))].map(file=>fs.readFileSync(file,'utf8')).join('\n');
+if(allAppSource.includes('ImagePicker.MediaTypeOptions'))fail.push('Deprecated ImagePicker.MediaTypeOptions remains in source. Use ImagePicker.MediaType values.');
+
+const chrome=read('src/components/AppChrome.tsx');
+if(!chrome.includes('numberOfLines={1}')||!chrome.includes('adjustsFontSizeToFit'))fail.push('ScreenHeader must protect long titles from wrapping.');
+const home=read('app/index.tsx');
+if(!home.includes('title="Merkezim"')||home.includes('title="Gizlilik & Veri" body="İzinler, veriler ve hesap"'))fail.push('Home secondary feature card must be Merkezim.');
+if(!home.includes('loadingStage'))fail.push('Loading indicator must use a centered loadingStage to prevent orbit/core drift.');
+if(home.includes('ImagePicker.MediaTypeOptions'))fail.push('Home avatar picker still uses deprecated ImagePicker.MediaTypeOptions.');
+const auth=read('app/auth.tsx');
+if(auth.includes('ImagePicker.MediaTypeOptions'))fail.push('Auth avatar picker still uses deprecated ImagePicker.MediaTypeOptions.');
+if(!auth.includes('keyboardShouldPersistTaps="always"')||!auth.includes('keyboardDismissMode="none"'))fail.push('Auth form must preserve keyboard focus while typing.');
+const tags=read('app/tags.tsx');
+if(!tags.includes('activateSpectrum')||!tags.includes('activateSweep'))fail.push('Tag activation CTA v0.5.0 animation markers are missing.');
 
 const primitives=read('src/components/Primitives.tsx');
 for(const legacy of ['car-plus','car-alert','shield-search-outline','map-marker-heart-outline']){
@@ -33,5 +51,14 @@ const account=read('app/account.tsx');
 const hasDeleteCopy=account.includes('Hesabımı ve kullanıcı verilerimi kalıcı olarak sil')||account.includes('HESABIMI VE VERİLERİMİ KALICI SİL');
 if(!hasDeleteCopy||!account.includes('deleteDraBornParkAccount')||!account.includes('ACCOUNT_DELETION_URL'))fail.push('Account deletion must be directly available in-app and expose the external deletion resource.');
 
+for(const dirty of ['.github/workflows/v050-finalize.yml','scripts/.v050.part1','scripts/.v050.part2','scripts/.v050.part3','scripts/.v050.part4','scripts/.v050.part5']){
+  if(exists(dirty))fail.push(`Temporary release artifact must be removed: ${dirty}`);
+}
+for(const migration of [
+  'supabase/migrations/20260820211711_drabornpark_v050_profile_username_avatar_admin.sql',
+  'supabase/migrations/20260820211832_drabornpark_v050_admin_session_access.sql',
+  'supabase/migrations/20260820223248_drabornpark_v050_release_hardening.sql',
+]){if(!exists(migration))fail.push(`v0.5.0 Supabase migration missing from repository: ${migration}`)}
+
 if(fail.length){console.error('\nDraBornPark integrity check failed:\n- '+fail.join('\n- '));process.exit(1)}
-console.log(`DraBornPark integrity OK • v${expected} • ${routeFiles.length} routes • readable typography • runtime icon safety • release privacy/account checks verified.`);
+console.log(`DraBornPark integrity OK • v${expected} • ${routeFiles.length} routes • v0.5.0 UI/focus checks • release hygiene • migration mirror • privacy/account checks verified.`);
