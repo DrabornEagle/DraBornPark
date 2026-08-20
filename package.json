@@ -1,13 +1,14 @@
 {
   "name": "drabornpark",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "web": "expo start --web",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "check": "node scripts/check-project.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
