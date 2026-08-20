@@ -30,7 +30,8 @@ if(!primitives.includes('materialGlyphMap[alias]'))fail.push('Material icon alia
 const park=read('app/park.tsx');
 if(!park.includes('Konumunu neden istiyoruz?')||!park.includes('requestForegroundPermissionsAsync'))fail.push('Park location permission must include an in-app prominent disclosure before the Android runtime permission.');
 const account=read('app/account.tsx');
-if(!account.includes('Hesabımı kalıcı olarak sil')||!account.includes('deleteDraBornParkAccount'))fail.push('Account deletion must be directly available in-app.');
+const hasDeleteCopy=account.includes('Hesabımı ve kullanıcı verilerimi kalıcı olarak sil')||account.includes('HESABIMI VE VERİLERİMİ KALICI SİL');
+if(!hasDeleteCopy||!account.includes('deleteDraBornParkAccount')||!account.includes('ACCOUNT_DELETION_URL'))fail.push('Account deletion must be directly available in-app and expose the external deletion resource.');
 
 if(fail.length){console.error('\nDraBornPark integrity check failed:\n- '+fail.join('\n- '));process.exit(1)}
 console.log(`DraBornPark integrity OK • v${expected} • ${routeFiles.length} routes • readable typography • runtime icon safety • release privacy/account checks verified.`);
