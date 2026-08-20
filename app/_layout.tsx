@@ -11,8 +11,8 @@ export default function RootLayout(){
       <Stack screenOptions={{
         headerShown:false,
         contentStyle:{backgroundColor:palette.bg},
-        animation:'slide_from_right',
-        animationDuration:260,
+        animation:'fade_from_bottom',
+        animationDuration:220,
         gestureEnabled:true,
         fullScreenGestureEnabled:true,
       }}/>
