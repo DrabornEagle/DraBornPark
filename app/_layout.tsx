@@ -7,7 +7,7 @@ import { palette } from '@/src/theme';
 export default function RootLayout(){
   return <SafeAreaProvider>
     <DemoProvider>
-      <StatusBar style="light" translucent backgroundColor="transparent"/>
+      <StatusBar style="light" backgroundColor="transparent"/>
       <Stack screenOptions={{
         headerShown:false,
         contentStyle:{backgroundColor:palette.bg},
