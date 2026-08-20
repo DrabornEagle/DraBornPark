@@ -1,3 +1,4 @@
+import { readLocalFileBytes } from '@/src/lib/localFile';
 import { supabase } from '@/src/lib/supabase';
 
 export type LiveDashboard = {
@@ -85,9 +86,7 @@ export async function uploadProfileAvatar(asset: ProfileAvatarAsset) {
   const userId = await currentUserId();
   const mime = (asset.mimeType || 'image/jpeg').toLowerCase();
   const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
-  const response = await fetch(asset.uri);
-  if (!response.ok) throw new Error('Profil resmi okunamadı.');
-  const bytes = await response.arrayBuffer();
+  const bytes = await readLocalFileBytes(asset.uri, 'Profil resmi okunamadı.');
   const path = `${userId}/avatar-${Date.now()}.${ext}`;
   const { error: uploadError } = await supabase.storage.from('drabornpark-avatars').upload(path, bytes, {
     contentType: mime,
