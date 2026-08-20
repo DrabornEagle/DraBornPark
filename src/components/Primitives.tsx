@@ -12,10 +12,17 @@ const ICON_ALIASES: Record<string, IconName> = {
   'map-marker-heart-outline': 'map-marker-star-outline',
 };
 
+// Expo Vector Icons warns before rendering if a dynamic name is unknown. Some older
+// Demo records can still carry legacy names, so register safe aliases globally and
+// also validate every icon rendered through SafeIcon.
+const materialGlyphMap = (MaterialCommunityIcons as any).glyphMap || {};
+for (const [alias, target] of Object.entries(ICON_ALIASES)) {
+  if (!materialGlyphMap[alias] && materialGlyphMap[target]) materialGlyphMap[alias] = materialGlyphMap[target];
+}
+
 export function safeIconName(icon?: string | null): IconName {
   const wanted = ICON_ALIASES[String(icon || '')] || String(icon || 'shape-outline');
-  const glyphMap = (MaterialCommunityIcons as any).glyphMap || {};
-  return (glyphMap[wanted] ? wanted : 'shape-outline') as IconName;
+  return (materialGlyphMap[wanted] ? wanted : 'shape-outline') as IconName;
 }
 
 export function SafeIcon({ name, size = 24, color = palette.text, style }: { name?: string | null; size?: number; color?: string; style?: any }) {
