@@ -13,8 +13,9 @@ const versions=[['package.json',pkg.version],['app.json',app.expo?.version],['.g
 const expected=versions[0][1];
 for(const [file,value] of versions){if(value!==expected)fail.push(`Version mismatch: ${file}=${value}, expected ${expected}`)}
 if(expected!=='0.5.0')fail.push(`Release audit expected 0.5.0 but found ${expected}. Update this guard intentionally for the next release.`);
-if(!Number.isInteger(app.expo?.android?.versionCode)||app.expo.android.versionCode<12)fail.push('app.json android.versionCode must be >=12 for DraBornPark v0.5.0.');
+if(!Number.isInteger(app.expo?.android?.versionCode)||app.expo.android.versionCode<13)fail.push('app.json android.versionCode must be >=13 for the current DraBornPark v0.5.0 developer APK.');
 if(app.expo?.experiments?.reactCompiler===true)fail.push('React Compiler must remain disabled for v0.5.0 controlled-input/focus stability.');
+if(pkg.dependencies?.['expo-file-system']!=='~57.0.1')fail.push('expo-file-system ~57.0.1 is required for reliable Android local image reads.');
 
 function walk(dir){return fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>{const full=path.join(dir,entry.name);return entry.isDirectory()?walk(full):[full]})}
 const routeFiles=walk(path.join(root,'app')).filter(file=>file.endsWith('.tsx'));
@@ -31,7 +32,7 @@ const chrome=read('src/components/AppChrome.tsx');
 if(!chrome.includes('numberOfLines={1}')||!chrome.includes('adjustsFontSizeToFit'))fail.push('ScreenHeader must protect long titles from wrapping.');
 const home=read('app/index.tsx');
 if(!home.includes('title="Merkezim"')||home.includes('title="Gizlilik & Veri" body="İzinler, veriler ve hesap"'))fail.push('Home secondary feature card must be Merkezim.');
-if(!home.includes('loadingStage'))fail.push('Loading indicator must use a centered loadingStage to prevent orbit/core drift.');
+if(!home.includes('loadingStage')||!home.includes('loadingOrbitOuter')||!home.includes('loadingCoreSweep')||!home.includes('loadingSpectrum'))fail.push('Loading experience must keep the fixed centered stage and v0.5.0 colorful motion markers.');
 if(home.includes('ImagePicker.MediaTypeOptions'))fail.push('Home avatar picker still uses deprecated ImagePicker.MediaTypeOptions.');
 const auth=read('app/auth.tsx');
 if(auth.includes('ImagePicker.MediaTypeOptions'))fail.push('Auth avatar picker still uses deprecated ImagePicker.MediaTypeOptions.');
@@ -47,9 +48,23 @@ if(!primitives.includes('materialGlyphMap[alias]'))fail.push('Material icon alia
 
 const park=read('app/park.tsx');
 if(!park.includes('Konumunu neden istiyoruz?')||!park.includes('requestForegroundPermissionsAsync'))fail.push('Park location permission must include an in-app prominent disclosure before the Android runtime permission.');
+if(park.includes('Konum kontrolü tamamen sende'))fail.push('Removed location privacy card text must not return to Park Ettim.');
+if(!park.includes('locationSweep')||!park.includes('saveSweep')||!park.includes('actionSpectrum')||!park.includes('saveSpectrum'))fail.push('Park location/save CTAs must retain the modern animated solid-color treatment.');
+if(!park.includes('resizeMode="cover"')||!park.includes('mediaPhotoFooter'))fail.push('Park photo preview must crop cleanly into its frame and expose a retake affordance.');
+if(!park.includes('keyboardShouldPersistTaps="always"')||!park.includes('keyboardDismissMode="none"'))fail.push('Park form must preserve keyboard focus while editing parking details.');
+
+const localFile=read('src/lib/localFile.ts');
+const drabornpark=read('src/lib/drabornpark.ts');
+const storage=read('src/lib/storage.ts');
+if(!localFile.includes("from 'expo-file-system'")||!localFile.includes('arrayBuffer()'))fail.push('Reliable local file reader is missing Expo FileSystem binary reads.');
+if(!drabornpark.includes('readLocalFileBytes')||!storage.includes('readLocalFileBytes'))fail.push('Avatar and private image uploads must both use the reliable local file reader.');
+
 const account=read('app/account.tsx');
 const hasDeleteCopy=account.includes('Hesabımı ve kullanıcı verilerimi kalıcı olarak sil')||account.includes('HESABIMI VE VERİLERİMİ KALICI SİL');
 if(!hasDeleteCopy||!account.includes('deleteDraBornParkAccount')||!account.includes('ACCOUNT_DELETION_URL'))fail.push('Account deletion must be directly available in-app and expose the external deletion resource.');
+
+const ci=read('.github/workflows/ci.yml');
+if(!ci.includes('assembleDebug')||!ci.includes('actions/upload-artifact@v4')||!ci.includes('developer-apk'))fail.push('CI must build and upload the Developer APK artifact on main/manual runs.');
 
 for(const dirty of ['.github/workflows/v050-finalize.yml','scripts/.v050.part1','scripts/.v050.part2','scripts/.v050.part3','scripts/.v050.part4','scripts/.v050.part5']){
   if(exists(dirty))fail.push(`Temporary release artifact must be removed: ${dirty}`);
@@ -61,4 +76,4 @@ for(const migration of [
 ]){if(!exists(migration))fail.push(`v0.5.0 Supabase migration missing from repository: ${migration}`)}
 
 if(fail.length){console.error('\nDraBornPark integrity check failed:\n- '+fail.join('\n- '));process.exit(1)}
-console.log(`DraBornPark integrity OK • v${expected} • ${routeFiles.length} routes • v0.5.0 UI/focus checks • release hygiene • migration mirror • privacy/account checks verified.`);
+console.log(`DraBornPark integrity OK • v${expected} • Android vc${app.expo.android.versionCode} • ${routeFiles.length} routes • animated park/loading UI • Android-safe image reads • developer APK CI • release hygiene verified.`);
