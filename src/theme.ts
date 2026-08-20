@@ -36,14 +36,14 @@ export const radius = { sm: 16, md: 22, lg: 30, xl: 40, xxl: 52, pill: 999 };
 
 export const type = {
   micro: 12,
-  caption: 14,
-  body: 16,
-  bodyStrong: 17,
-  cardTitle: 19,
-  section: 24,
-  title: 30,
-  display: 38,
-  hero: 44,
+  caption: 13,
+  body: 15,
+  bodyStrong: 16,
+  cardTitle: 18,
+  section: 22,
+  title: 28,
+  display: 35,
+  hero: 40,
 };
 
 export const spacing = { xs: 6, sm: 10, md: 14, lg: 18, xl: 24, xxl: 32, xxxl: 42 };
