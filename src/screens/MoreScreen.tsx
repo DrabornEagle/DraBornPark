@@ -5,18 +5,26 @@ import { DemoPayload } from '@/src/data';
 import { IconBubble, IconName, Pill, SectionHeader } from '@/src/components/Primitives';
 import { palette, radius } from '@/src/theme';
 
-const features: Array<{ icon: IconName; title: string; detail: string; color: string; plus?: boolean }> = [
-  { icon: 'account-group-outline', title: 'Family', detail: 'Aile araç ağı ve park paylaşımı', color: palette.purple, plus: true },
-  { icon: 'account-switch-outline', title: 'Geçici Sürücü', detail: 'Süreli bildirim yönlendirme', color: palette.green, plus: true },
-  { icon: 'car-key', title: 'Vale Modu', detail: 'Valeye özel geçici iletişim', color: palette.orange, plus: true },
-  { icon: 'wrench-outline', title: 'Servis Modu', detail: 'Servis durumu ve mesajları', color: palette.blue, plus: true },
-  { icon: 'account-clock-outline', title: 'Zaman Kuralları', detail: 'Saat bazlı yönlendirme', color: palette.pink, plus: true },
-  { icon: 'alert-decagram-outline', title: 'Acil Zincir', detail: 'Aile ve acil kişilere kademeli ulaş', color: palette.red, plus: true },
-  { icon: 'shield-lock-outline', title: 'Gizlilik', detail: 'Görünen araç alanlarını yönet', color: palette.cyan },
-  { icon: 'nfc', title: 'Etiketlerim', detail: 'NFC + QR + devir yönetimi', color: palette.yellow }
+const features: Array<{ slug: string; icon: IconName; title: string; detail: string; color: string; plus?: boolean }> = [
+  { slug: 'vehicle', icon: 'car-info', title: 'Aracım', detail: 'Araç profili ve görünür alanlar', color: palette.cyan },
+  { slug: 'tags', icon: 'nfc', title: 'Etiketlerim', detail: 'NFC + QR + aktivasyon + devir', color: palette.yellow },
+  { slug: 'family', icon: 'account-group-outline', title: 'Family', detail: 'Aile araç ağı ve park paylaşımı', color: palette.purple, plus: true },
+  { slug: 'guest', icon: 'account-switch-outline', title: 'Geçici Sürücü', detail: 'Süreli bildirim yönlendirme', color: palette.green, plus: true },
+  { slug: 'valet', icon: 'car-key', title: 'Vale Modu', detail: 'Valeye özel geçici iletişim', color: palette.orange, plus: true },
+  { slug: 'service', icon: 'wrench-outline', title: 'Servis Modu', detail: 'Servis durumu ve mesajları', color: palette.blue, plus: true },
+  { slug: 'routing', icon: 'account-clock-outline', title: 'Zaman Kuralları', detail: 'Saat bazlı yönlendirme', color: palette.pink, plus: true },
+  { slug: 'emergency', icon: 'alert-decagram-outline', title: 'Acil Zincir', detail: 'Kademeli acil durum ulaşımı', color: palette.red, plus: true },
+  { slug: 'privacy', icon: 'shield-lock-outline', title: 'Gizlilik', detail: 'Kamusal araç alanlarını yönet', color: palette.cyan },
+  { slug: 'support', icon: 'lifebuoy', title: 'Destek', detail: 'Kurulum ve destek kayıtları', color: palette.green }
 ];
 
-export function MoreScreen({ demo, onOpenPlus, onDemoTag }: { demo: DemoPayload; onOpenPlus: () => void; onDemoTag: () => void }) {
+export function MoreScreen({ demo, onOpenPlus, onDemoTag, onFeature, onFactory }: {
+  demo: DemoPayload;
+  onOpenPlus: () => void;
+  onDemoTag: () => void;
+  onFeature: (slug: string) => void;
+  onFactory: () => void;
+}) {
   return (
     <>
       <View style={styles.account}>
@@ -35,10 +43,10 @@ export function MoreScreen({ demo, onOpenPlus, onDemoTag }: { demo: DemoPayload;
         ))}
       </View>
 
-      <SectionHeader title="DraBornPark Ağı" action="Modüller" />
+      <SectionHeader title="DraBornPark Ağı" action="10 modül" />
       <View style={styles.grid}>
         {features.map((feature) => (
-          <Pressable key={feature.title} onPress={() => feature.plus && onOpenPlus()} style={({ pressed }) => [styles.feature, pressed && { opacity: 0.82 }]}>
+          <Pressable key={feature.slug} onPress={() => onFeature(feature.slug)} style={({ pressed }) => [styles.feature, pressed && { opacity: 0.82 }]}>
             {feature.plus ? <View style={styles.plusBadge}><Text style={styles.plusBadgeText}>PLUS</Text></View> : null}
             <IconBubble icon={feature.icon} color={feature.color} />
             <Text style={styles.featureTitle}>{feature.title}</Text>
@@ -47,10 +55,16 @@ export function MoreScreen({ demo, onOpenPlus, onDemoTag }: { demo: DemoPayload;
         ))}
       </View>
 
-      <SectionHeader title="Etiket Testi" action="NFC + QR" />
+      <SectionHeader title="Etiket Test Merkezi" action="NFC + QR" />
       <Pressable onPress={onDemoTag} style={({ pressed }) => [styles.testTag, pressed && { opacity: 0.82 }]}>
-        <View><Text style={styles.testOverline}>DEMO ETİKET</Text><Text style={styles.testCode}>DP-K7M4X2P9</Text><Text style={styles.testBody}>Dışarıdaki kişinin NFC/QR sonrası gördüğü güvenli iletişim ekranını aç.</Text></View>
+        <View style={{ flex: 1 }}><Text style={styles.testOverline}>DIŞ KULLANICI DEMOSU</Text><Text style={styles.testCode}>DP-K7M4X2P9</Text><Text style={styles.testBody}>NFC/QR okutulduğunda uygulama yüklemeden açılan güvenli araç iletişim ekranını test et.</Text></View>
         <View style={styles.scan}><MaterialCommunityIcons name="qrcode-scan" size={27} color={palette.cyan} /></View>
+      </Pressable>
+
+      <Pressable onPress={onFactory} style={({ pressed }) => [styles.factory, pressed && { opacity: 0.82 }]}>
+        <View style={styles.factoryIcon}><MaterialCommunityIcons name="factory" size={26} color={palette.orange} /></View>
+        <View style={{ flex: 1 }}><Text style={styles.factoryTitle}>DraBornPark Factory Panel</Text><Text style={styles.factoryBody}>Tag ID, NFC URL, aktivasyon PIN, seri numarası ve üretim durumlarını test et.</Text></View>
+        <MaterialCommunityIcons name="chevron-right" size={25} color={palette.muted} />
       </Pressable>
 
       <Pressable onPress={onOpenPlus} style={({ pressed }) => [styles.plusCard, pressed && { opacity: 0.84 }]}>
@@ -59,7 +73,7 @@ export function MoreScreen({ demo, onOpenPlus, onDemoTag }: { demo: DemoPayload;
         <MaterialCommunityIcons name="chevron-right" size={25} color={palette.muted} />
       </Pressable>
 
-      <View style={styles.nativeNotice}><MaterialCommunityIcons name="flask-outline" size={20} color={palette.yellow} /><Text style={styles.nativeText}>Expo Go testinde konum, web NFC/QR akışı ve uygulama UI’si çalışır. Remote push, Google Play Billing, VoIP, BLE background ve native NFC factory writer development build aşamasında etkinleşir.</Text></View>
+      <View style={styles.nativeNotice}><MaterialCommunityIcons name="flask-outline" size={20} color={palette.yellow} /><Text style={styles.nativeText}>Expo Go testinde konum, QR/NFC web akışı ve uygulama UI’si çalışır. Remote push, Google Play Billing, VoIP, BLE background ve native NFC Factory Writer development build katmanında etkinleşir.</Text></View>
     </>
   );
 }
@@ -67,31 +81,10 @@ export function MoreScreen({ demo, onOpenPlus, onDemoTag }: { demo: DemoPayload;
 const styles = StyleSheet.create({
   account: { borderWidth: 1, borderColor: palette.line, backgroundColor: '#101625', borderRadius: radius.xl, padding: 15, flexDirection: 'row', alignItems: 'center', gap: 11 },
   avatar: { width: 51, height: 51, borderRadius: 18, backgroundColor: '#222A3C', borderWidth: 1, borderColor: '#35415D', alignItems: 'center', justifyContent: 'center' },
-  accountName: { color: palette.text, fontSize: 16, fontWeight: '900' },
-  accountSub: { color: palette.muted, fontSize: 9.5, marginTop: 4 },
-  timeline: { backgroundColor: palette.panel, borderWidth: 1, borderColor: palette.line, borderRadius: radius.lg, padding: 15 },
-  timelineRow: { flexDirection: 'row', gap: 11 },
-  rail: { width: 17, alignItems: 'center' },
-  timelineDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 },
-  line: { width: 1, flex: 1, backgroundColor: '#2C3852', marginVertical: 4 },
-  timelineTitle: { color: palette.text, fontWeight: '900', fontSize: 12.5 },
-  timelineDetail: { color: palette.muted, fontSize: 10.3, lineHeight: 14.5, marginTop: 3 },
-  timelineTime: { color: '#66738C', fontSize: 9.2, marginTop: 5 },
-  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  feature: { width: '48.5%', minHeight: 150, borderWidth: 1, borderColor: palette.line, backgroundColor: palette.panel, borderRadius: radius.lg, padding: 14 },
-  plusBadge: { position: 'absolute', right: 10, top: 10, borderRadius: 8, backgroundColor: '#34294A', paddingHorizontal: 6, paddingVertical: 3 },
-  plusBadgeText: { color: palette.purple, fontSize: 7.8, fontWeight: '900' },
-  featureTitle: { color: palette.text, fontSize: 13, fontWeight: '900', marginTop: 12 },
-  featureBody: { color: palette.muted, fontSize: 10, lineHeight: 14.2, marginTop: 4 },
-  testTag: { backgroundColor: '#0F222B', borderWidth: 1, borderColor: '#22505D', borderRadius: radius.lg, padding: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  testOverline: { color: palette.cyan, fontSize: 9, fontWeight: '900', letterSpacing: 1.3 },
-  testCode: { color: palette.text, fontSize: 19, fontWeight: '900', marginTop: 4 },
-  testBody: { color: palette.muted, fontSize: 10.2, maxWidth: 260, lineHeight: 14, marginTop: 4 },
-  scan: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#12323C', alignItems: 'center', justifyContent: 'center' },
-  plusCard: { marginTop: 14, borderRadius: radius.lg, borderWidth: 1, borderColor: '#4D3A67', backgroundColor: '#221B34', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 11 },
-  plusIcon: { width: 46, height: 46, borderRadius: 16, backgroundColor: '#382F20', alignItems: 'center', justifyContent: 'center' },
-  plusTitle: { color: palette.text, fontSize: 14, fontWeight: '900' },
-  plusBody: { color: '#BDB1D4', fontSize: 9.8, lineHeight: 14, marginTop: 3 },
-  nativeNotice: { marginTop: 14, borderRadius: radius.md, backgroundColor: '#211F14', borderWidth: 1, borderColor: '#49432A', padding: 13, flexDirection: 'row', gap: 10 },
-  nativeText: { color: '#CFC59A', flex: 1, fontSize: 9.8, lineHeight: 14 }
+  accountName: { color: palette.text, fontSize: 16, fontWeight: '900' }, accountSub: { color: palette.muted, fontSize: 9.5, marginTop: 4 },
+  timeline: { backgroundColor: palette.panel, borderWidth: 1, borderColor: palette.line, borderRadius: radius.lg, padding: 15 }, timelineRow: { flexDirection: 'row', gap: 11 }, rail: { width: 17, alignItems: 'center' }, timelineDot: { width: 10, height: 10, borderRadius: 5, marginTop: 4 }, line: { width: 1, flex: 1, backgroundColor: '#2C3852', marginVertical: 4 }, timelineTitle: { color: palette.text, fontWeight: '900', fontSize: 12.5 }, timelineDetail: { color: palette.muted, fontSize: 10.3, lineHeight: 14.5, marginTop: 3 }, timelineTime: { color: '#66738C', fontSize: 9.2, marginTop: 5 },
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 }, feature: { width: '48.5%', minHeight: 150, borderWidth: 1, borderColor: palette.line, backgroundColor: palette.panel, borderRadius: radius.lg, padding: 14 }, plusBadge: { position: 'absolute', right: 10, top: 10, borderRadius: 8, backgroundColor: '#34294A', paddingHorizontal: 6, paddingVertical: 3 }, plusBadgeText: { color: palette.purple, fontSize: 7.8, fontWeight: '900' }, featureTitle: { color: palette.text, fontSize: 13, fontWeight: '900', marginTop: 12 }, featureBody: { color: palette.muted, fontSize: 10, lineHeight: 14.2, marginTop: 4 },
+  testTag: { backgroundColor: '#0F222B', borderWidth: 1, borderColor: '#22505D', borderRadius: radius.lg, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 10 }, testOverline: { color: palette.cyan, fontSize: 9, fontWeight: '900', letterSpacing: 1.3 }, testCode: { color: palette.text, fontSize: 19, fontWeight: '900', marginTop: 4 }, testBody: { color: palette.muted, fontSize: 10.2, lineHeight: 14, marginTop: 4 }, scan: { width: 48, height: 48, borderRadius: 16, backgroundColor: '#12323C', alignItems: 'center', justifyContent: 'center' },
+  factory: { marginTop: 10, borderRadius: radius.lg, borderWidth: 1, borderColor: '#4E3928', backgroundColor: '#211812', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 11 }, factoryIcon: { width: 46, height: 46, borderRadius: 16, backgroundColor: '#382416', alignItems: 'center', justifyContent: 'center' }, factoryTitle: { color: palette.text, fontSize: 13.5, fontWeight: '900' }, factoryBody: { color: '#BEA893', fontSize: 9.8, lineHeight: 14, marginTop: 3 },
+  plusCard: { marginTop: 14, borderRadius: radius.lg, borderWidth: 1, borderColor: '#4D3A67', backgroundColor: '#221B34', padding: 14, flexDirection: 'row', alignItems: 'center', gap: 11 }, plusIcon: { width: 46, height: 46, borderRadius: 16, backgroundColor: '#382F20', alignItems: 'center', justifyContent: 'center' }, plusTitle: { color: palette.text, fontSize: 14, fontWeight: '900' }, plusBody: { color: '#BDB1D4', fontSize: 9.8, lineHeight: 14, marginTop: 3 }, nativeNotice: { marginTop: 14, borderRadius: radius.md, backgroundColor: '#211F14', borderWidth: 1, borderColor: '#49432A', padding: 13, flexDirection: 'row', gap: 10 }, nativeText: { color: '#CFC59A', flex: 1, fontSize: 9.8, lineHeight: 14 }
 });
