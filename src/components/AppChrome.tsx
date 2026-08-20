@@ -66,7 +66,7 @@ export function SectionHeading({ title, subtitle, badge, color=palette.cyan }: {
 }
 
 const s=StyleSheet.create({
-  base:{...StyleSheet.absoluteFillObject,backgroundColor:palette.bg},
+  base:{...StyleSheet.absoluteFill,backgroundColor:palette.bg},
   prismA:{position:'absolute',width:390,height:390,borderRadius:195,right:-185,top:-135},
   prismB:{position:'absolute',width:345,height:345,borderRadius:173,left:-210,bottom:45},
   prismC:{position:'absolute',width:210,height:210,borderRadius:105,right:-90,bottom:180,backgroundColor:`${palette.orange}10`},
@@ -85,7 +85,7 @@ const s=StyleSheet.create({
   dock:{minHeight:86,borderRadius:30,borderWidth:1,borderColor:palette.line,backgroundColor:'#0B2233F2',paddingHorizontal:8,paddingVertical:8,flexDirection:'row',alignItems:'center',justifyContent:'space-between',...shadows.soft},
   dockItem:{flex:1,minHeight:68,alignItems:'center',justifyContent:'center',gap:5,borderRadius:22},dockItemActive:{backgroundColor:'#FFFFFF08'},
   dockIcon:{width:43,height:39,borderRadius:15,borderWidth:1,borderColor:'transparent',alignItems:'center',justifyContent:'center'},
-  dockLabel:{fontSize:type.micro,color:palette.muted2,fontWeight:'850'},
+  dockLabel:{fontSize:type.micro,color:palette.muted2,fontWeight:'900'},
   accentCard:{minHeight:96,borderWidth:1,borderRadius:radius.md,padding:15,flexDirection:'row',alignItems:'center',gap:14,overflow:'hidden'},
   accentIcon:{width:54,height:54,borderRadius:18,borderWidth:1,alignItems:'center',justifyContent:'center'},
   accentTitle:{fontSize:type.cardTitle,fontWeight:'900',color:palette.text},accentSub:{fontSize:type.caption,lineHeight:18,color:palette.muted,marginTop:4},
