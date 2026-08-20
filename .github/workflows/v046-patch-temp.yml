@@ -1,0 +1,81 @@
+name: v046-temp-patch
+on:
+  push:
+    branches: [feature/drabornpark-v0.4.6-premium-home-nav]
+permissions:
+  contents: write
+jobs:
+  patch:
+    if: github.event.head_commit.message != 'v046 automated patch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/drabornpark-v0.4.6-premium-home-nav
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply focused patch
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const p='app/index.tsx';
+          let s=fs.readFileSync(p,'utf8');
+          const greeting=`function Greeting({name,subtitle,onAccount,demo=false}:{name:string;subtitle:string;onAccount:()=>void;demo?:boolean}){
+            const accent=demo?palette.yellow:palette.pink;
+            const secondary=demo?palette.purple:palette.blue;
+            return <View style={[s.greeting,{borderColor:\`${'${accent}'}88\`,backgroundColor:demo?'#171829':'#191129'}]}>
+              <View style={s.greetingPremiumBand}><View style={[s.greetingBandPart,{backgroundColor:accent}]}/><View style={[s.greetingBandPart,{backgroundColor:secondary}]}/><View style={[s.greetingBandPart,{backgroundColor:palette.cyan}]}/></View>
+              <View style={s.greetingTopRow}>
+                <View style={[s.greetingAvatar,{borderColor:\`${'${accent}'}90\`,backgroundColor:\`${'${accent}'}28\`}]}><SafeIcon name={demo?'flask-outline':'account-circle-outline'} size={38} color={accent}/><View style={[s.avatarDot,{backgroundColor:demo?palette.yellow:palette.green}]}/></View>
+                <View style={{flex:1}}><Text style={[s.greetingEyebrow,{color:accent}]}>{demo?'DEMO KOKPİTİ':'KİŞİSEL KOKPİT'}</Text><Text style={s.greetingName}>Merhaba, {name}</Text><Text style={s.greetingSub}>{subtitle}</Text></View>
+                <Pressable onPress={onAccount} style={({pressed})=>[s.accountButton,{borderColor:\`${'${accent}'}72\`,backgroundColor:\`${'${secondary}'}24\`},pressed&&s.pressed]}><SafeIcon name={demo?'close':'account-cog-outline'} size={25} color={accent}/></Pressable>
+              </View>
+              <View style={s.greetingDivider}/>
+              <View style={s.greetingFooter}><StatusPill icon={demo?'flask-outline':'shield-check-outline'} text={demo?'DEMO MODU':'GÜVENLİ OTURUM'} color={demo?palette.yellow:palette.green}/><StatusPill icon="car-connected" text="ARAÇ AĞI" color={palette.cyan}/><StatusPill icon="lock-check-outline" text="ÖZEL" color={palette.purple}/></View>
+            </View>
+          }`;
+          s=s.replace(/function Greeting\([\s\S]*?\n\nfunction VehicleCore/, greeting+'\n\nfunction VehicleCore');
+          const vehicle=`function VehicleCore({vehicle,tag,plus}:{vehicle:any;tag?:string;plus:boolean}){
+            if(!vehicle)return <Pressable onPress={()=>router.push('/vehicle')} style={s.emptyVehicle}><View style={s.emptyIcon}><SafeIcon name="car-multiple" size={38} color={palette.cyan}/></View><Text style={s.emptyTitle}>İlk aracını ekle</Text><Text style={s.emptyBody}>Araç profilini oluştur, ardından NFC + QR etiketini bağla.</Text><View style={s.emptyCta}><Text style={s.emptyCtaText}>ARAÇ EKLE</Text><SafeIcon name="arrow-right" size={19} color={palette.ink}/></View></Pressable>;
+            const accent=vehicle.vehicle_type==='motorcycle'?palette.purple:palette.cyan;
+            const tagColor=tag?palette.green:palette.orange;
+            return <View style={[s.vehicleCore,{borderColor:\`${'${accent}'}88\`}]}>
+              <View style={s.vehiclePremiumBand}><View style={[s.vehicleBandMain,{backgroundColor:accent}]}/><View style={[s.vehicleBandPart,{backgroundColor:palette.blue}]}/><View style={[s.vehicleBandPart,{backgroundColor:palette.green}]}/></View>
+              <View style={s.vehicleHeaderLine}><View style={s.vehicleLiveBadge}><View style={s.vehicleLiveDot}/><Text style={s.vehicleLiveText}>CANLI ARAÇ</Text></View><Pill label={plus?'PLUS':'TEMEL'} color={plus?palette.yellow:palette.blue} icon={plus?'crown-outline':'shield-outline'}/></View>
+              <View style={s.coreTop}>
+                <View style={[s.coreIconFrame,{borderColor:\`${'${accent}'}86\`,backgroundColor:\`${'${accent}'}18\`}]}><View style={[s.coreIcon,{backgroundColor:\`${'${accent}'}31\`}]}><SafeIcon name={vehicle.vehicle_type==='motorcycle'?'motorbike':'car-connected'} size={41} color={accent}/></View><View style={s.onlineDot}/></View>
+                <View style={{flex:1}}><Text style={[s.coreEyebrow,{color:accent}]}>AKTİF ARAÇ</Text><Text style={s.coreName}>{vehicle.vehicle_name}</Text><View style={s.plateRow}><SafeIcon name="card-text-outline" size={16} color={accent}/><Text style={[s.corePlate,{color:accent}]}>{vehicle.plate||'Plaka gizli'}</Text></View><Text style={s.coreMeta}>{[vehicle.brand,vehicle.model,vehicle.color].filter(Boolean).join(' • ')}</Text></View>
+              </View>
+              <View style={s.coreStatusGrid}>
+                <View style={[s.vehicleStatus,{borderColor:\`${'${tagColor}'}68\`,backgroundColor:\`${'${tagColor}'}16\`}]}><View style={[s.vehicleStatusIcon,{backgroundColor:\`${'${tagColor}'}2B\`}]}><SafeIcon name={tag?'nfc-variant':'qrcode-scan'} size={25} color={tagColor}/></View><View style={{flex:1}}><Text style={s.vehicleStatusLabel}>ETİKET DURUMU</Text><Text numberOfLines={1} style={[s.vehicleStatusValue,{color:tagColor}]}>{tag?'NFC + QR AKTİF':'ETİKET BEKLİYOR'}</Text></View></View>
+                <View style={[s.vehicleStatus,{borderColor:\`${'${palette.green}'}68\`,backgroundColor:\`${'${palette.green}'}16\`}]}><View style={[s.vehicleStatusIcon,{backgroundColor:\`${'${palette.green}'}2B\`}]}><SafeIcon name="shield-lock-outline" size={25} color={palette.green}/></View><View style={{flex:1}}><Text style={s.vehicleStatusLabel}>GİZLİLİK</Text><Text style={[s.vehicleStatusValue,{color:palette.green}]}>KORUMALI</Text></View></View>
+              </View>
+            </View>
+          }`;
+          s=s.replace(/function VehicleCore\([\s\S]*?\nfunction HeroAction/, vehicle+'\nfunction HeroAction');
+          const styles=`  greeting:{borderRadius:32,borderWidth:1,padding:15,overflow:'hidden',marginBottom:13},greetingPremiumBand:{height:6,flexDirection:'row',gap:4,marginBottom:14},greetingBandPart:{flex:1,borderRadius:99},greetingTopRow:{flexDirection:'row',alignItems:'center',gap:12},greetingAvatar:{width:68,height:68,borderRadius:23,borderWidth:1,alignItems:'center',justifyContent:'center'},avatarDot:{position:'absolute',width:11,height:11,borderRadius:6,right:7,bottom:7,borderWidth:2,borderColor:'#191129'},greetingEyebrow:{fontSize:11,fontWeight:'900',letterSpacing:1.55},greetingName:{color:palette.text,fontSize:27,fontWeight:'900',letterSpacing:-.7,marginTop:2},greetingSub:{color:'#C6C2DB',fontSize:type.caption,lineHeight:19,marginTop:5},greetingDivider:{height:1,backgroundColor:'#FFFFFF16',marginTop:14},greetingFooter:{flexDirection:'row',gap:7,flexWrap:'wrap',marginTop:12},accountButton:{width:45,height:45,borderRadius:15,borderWidth:1,alignItems:'center',justifyContent:'center'},
+          vehicleCore:{borderRadius:32,borderWidth:1,backgroundColor:'#062630',padding:15,overflow:'hidden'},vehiclePremiumBand:{height:6,flexDirection:'row',gap:4,marginBottom:12},vehicleBandMain:{flex:2,borderRadius:99},vehicleBandPart:{flex:1,borderRadius:99},vehicleHeaderLine:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',marginBottom:12},vehicleLiveBadge:{flexDirection:'row',alignItems:'center',gap:6,borderWidth:1,borderColor:\`${'${palette.green}'}55\`,backgroundColor:\`${'${palette.green}'}12\`,borderRadius:999,paddingHorizontal:9,paddingVertical:6},vehicleLiveDot:{width:7,height:7,borderRadius:4,backgroundColor:palette.green},vehicleLiveText:{fontSize:11,fontWeight:'900',letterSpacing:.65,color:palette.green},coreTop:{flexDirection:'row',alignItems:'center',gap:12},coreIconFrame:{width:80,height:80,borderRadius:27,borderWidth:1,alignItems:'center',justifyContent:'center'},coreIcon:{width:64,height:64,borderRadius:22,alignItems:'center',justifyContent:'center'},onlineDot:{position:'absolute',width:11,height:11,borderRadius:6,right:6,bottom:6,backgroundColor:palette.green,borderWidth:2,borderColor:'#062630'},coreEyebrow:{fontSize:type.micro,fontWeight:'900',letterSpacing:1},coreName:{color:palette.text,fontSize:25,fontWeight:'900',letterSpacing:-.55,marginTop:1},plateRow:{flexDirection:'row',alignItems:'center',gap:5,marginTop:3},corePlate:{fontSize:type.bodyStrong,fontWeight:'900'},coreMeta:{color:'#A9C6CF',fontSize:type.caption,marginTop:4},coreStatusGrid:{flexDirection:'row',gap:8,marginTop:15},vehicleStatus:{flex:1,minHeight:72,borderRadius:19,borderWidth:1,padding:10,flexDirection:'row',alignItems:'center',gap:8},vehicleStatusIcon:{width:41,height:41,borderRadius:13,alignItems:'center',justifyContent:'center'},vehicleStatusLabel:{color:'#8AAAB4',fontSize:11,fontWeight:'900',letterSpacing:.5},vehicleStatusValue:{color:palette.text,fontSize:12,fontWeight:'900',marginTop:2},`;
+          s=s.replace(/  greeting:\{[\s\S]*?\n  emptyVehicle:/, styles+'\n  emptyVehicle:');
+          fs.writeFileSync(p,s);
+
+          const chrome='src/components/AppChrome.tsx';
+          let c=fs.readFileSync(chrome,'utf8');
+          c=c.replace("import { useSafeAreaInsets } from 'react-native-safe-area-context';\n",'');
+          c=c.replace('  const insets=useSafeAreaInsets();\n','');
+          c=c.replace("return <View style={[s.dockWrap,{paddingBottom:Math.max(insets.bottom,14)}]}>","return <View style={s.dockWrap}>");
+          c=c.replace("dockWrap:{paddingTop:18}","dockWrap:{paddingTop:12,paddingBottom:0}");
+          fs.writeFileSync(chrome,c);
+
+          const pkg=JSON.parse(fs.readFileSync('package.json','utf8')); pkg.version='0.4.6'; fs.writeFileSync('package.json',JSON.stringify(pkg,null,2)+'\n');
+          const app=JSON.parse(fs.readFileSync('app.json','utf8')); app.expo.version='0.4.6'; app.expo.backgroundColor='#050816'; app.expo.android.versionCode=10; app.expo.android.backgroundColor='#050816';
+          const plugins=app.expo.plugins||[]; const nav=['expo-navigation-bar',{enforceContrast:false,style:'dark',hidden:false}]; const i=plugins.findIndex(x=>Array.isArray(x)?x[0]==='expo-navigation-bar':x==='expo-navigation-bar'); if(i>=0) plugins[i]=nav; else plugins.push(nav); app.expo.plugins=plugins; fs.writeFileSync('app.json',JSON.stringify(app,null,2)+'\n');
+          fs.writeFileSync('.github/VERSION','0.4.6\n');
+          NODE
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git add app/index.tsx src/components/AppChrome.tsx app.json package.json .github/VERSION
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'v046 automated patch'
+          git push origin HEAD:feature/drabornpark-v0.4.6-premium-home-nav
