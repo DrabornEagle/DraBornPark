@@ -21,6 +21,7 @@ const replacements = [
   ['Premium', 'Gelişmiş'],
   ['Care', 'Destek'],
   ['Dashboard', 'Gösterge Paneli'],
+  ['v0.4.0', 'v0.4.1'],
 ];
 const DISPLAY_KEYS = new Set(['title','subtitle','detail','body','label','caption','eyebrow','placeholder','description','text','message']);
 
