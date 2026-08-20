@@ -1,160 +1,41 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { IconBubble, IconName, Pill } from '@/src/components/Primitives';
+import { addFamilyMember, addGuestDriver, createSupportRequest, disableTag, loadLiveDashboard, startTagTransfer, updatePrivacySettings } from '@/src/lib/drabornpark';
 import { palette, radius } from '@/src/theme';
 
-type ModuleConfig = {
-  title: string;
-  overline: string;
-  icon: IconName;
-  color: string;
-  description: string;
-  plus?: boolean;
-  actions: Array<{ icon: IconName; title: string; body: string }>;
+const meta:Record<string,{title:string;over:string;icon:any;color:string;body:string}>={
+ tags:{title:'Etiketlerim',over:'NFC + QR',icon:'nfc',color:palette.cyan,body:'Etiket aktivasyonu, devir, sıfırlama ve güvenlik durumlarını yönet.'},
+ family:{title:'DraBornPark Family',over:'AİLE ARAÇ AĞI',icon:'account-group-outline',color:palette.purple,body:'Aile üyelerini davet et; park ve araç bildirimlerini izin bazlı paylaş.'},
+ guest:{title:'Geçici Sürücü',over:'SÜRELİ YÖNLENDİRME',icon:'account-switch-outline',color:palette.green,body:'Aracı başka birine verdiğinde bildirim yönlendirmesi için süreli sürücü oluştur.'},
+ privacy:{title:'Güvenlik ve Gizlilik',over:'PRIVACY FIRST',icon:'shield-lock-outline',color:palette.green,body:'Telefon, e-posta, tam ad ve park geçmişi varsayılan olarak kamusal değildir.'},
+ support:{title:'DraBornPark Destek',over:'CARE',icon:'lifebuoy',color:palette.blue,body:'Etiket, aktivasyon, park veya bildirim sorunları için destek kaydı oluştur.'},
+ plus:{title:'DraBornPark+',over:'PREMIUM',icon:'crown-outline',color:palette.yellow,body:'Park geçmişi, Family, AI park okuma, otomatik park, canlı chat ve gelişmiş modüller.'},
+ valet:{title:'Vale Modu',over:'GEÇİCİ TESLİM',icon:'car-key',color:palette.orange,body:'Vale süresince bildirim yönlendirmesini geçici olarak değiştir.'},
+ service:{title:'Servis Modu',over:'SERVİS İLETİŞİMİ',icon:'car-wrench',color:palette.blue,body:'Araç servisteyken hazır, ek işlem ve teslim durumlarını yönet.'},
+ routing:{title:'Zaman Kuralları',over:'AKILLI YÖNLENDİRME',icon:'clock-outline',color:palette.pink,body:'Bildirimlerin gün ve saate göre kime gideceğini tanımla.'},
+ emergency:{title:'Acil Durum Zinciri',over:'YÜKSEK ÖNCELİK',icon:'alert-octagon-outline',color:palette.red,body:'Yanıt yoksa aile ve acil durum kişilerine kademeli bildirim yönlendir.'}
 };
 
-const modules: Record<string, ModuleConfig> = {
-  family: {
-    title: 'DraBornPark Family', overline: 'AİLE ARAÇ AĞI', icon: 'account-group-outline', color: palette.purple, plus: true,
-    description: 'Birden fazla aracı tek aile ağı altında yönet; izin verdiğin üyeler son park konumunu ve araç bildirimlerini görebilsin.',
-    actions: [
-      { icon: 'car-multiple', title: '5 araca kadar', body: 'Benim aracım, eşimin aracı, aile aracı ve motosiklet aynı hesap ailesinde.' },
-      { icon: 'map-marker-account-outline', title: 'Park paylaşımı', body: 'Aile konumu varsayılan olarak kapalıdır; sadece araç sahibi izin verdiğinde görünür.' },
-      { icon: 'bell-ring-outline', title: 'Bildirim paylaşımı', body: 'Araç bildirimlerini seçtiğin aile üyelerine yönlendir.' }
-    ]
-  },
-  guest: {
-    title: 'Geçici Sürücü', overline: 'SÜRELİ YÖNLENDİRME', icon: 'account-switch-outline', color: palette.green, plus: true,
-    description: 'Aracı başka birine verdiğinde bildirimleri geçici sürücüye yönlendir; süre bitince kontrol otomatik sana dönsün.',
-    actions: [
-      { icon: 'timer-sand', title: '1 / 3 / 6 saat', body: 'Hazır sürelerden birini seç veya özel bitiş zamanı tanımla.' },
-      { icon: 'bell-forward-outline', title: 'Bildirim yönlendirme', body: 'Far, hareket ettirme, hasar ve acil durum bildirimlerini geçici sürücüye ilet.' },
-      { icon: 'shield-account-outline', title: 'Süreli erişim', body: 'Geçici sürücü aracın geçmiş parklarını veya özel hesap bilgilerini göremez.' }
-    ]
-  },
-  valet: {
-    title: 'Vale Modu', overline: 'GEÇİCİ ARAÇ TESLİMİ', icon: 'car-key', color: palette.orange, plus: true,
-    description: 'Aracı valeye bıraktığın süre boyunca araç iletişimini güvenli bir geçici oturuma bağla.',
-    actions: [
-      { icon: 'timer-outline', title: 'Otomatik kapanış', body: 'Vale modu belirlediğin sürede kendiliğinden kapanır.' },
-      { icon: 'message-lock-outline', title: 'Numara gizli', body: 'Vale veya dış kullanıcı kişisel telefon numaranı görmez.' },
-      { icon: 'car-clock', title: 'Teslim zamanı', body: 'Aracın valeye verildiği ve geri alındığı zaman Timeline’a eklenir.' }
-    ]
-  },
-  service: {
-    title: 'Servis Modu', overline: 'SERVİS İLETİŞİMİ', icon: 'wrench-outline', color: palette.blue, plus: true,
-    description: 'Araç servisteyken “Araç hazır”, “Ek işlem gerekiyor” ve “Teslim alabilirsiniz” gibi güvenli durumları tek yerde takip et.',
-    actions: [
-      { icon: 'car-wrench', title: 'Serviste', body: 'Araç için servis modu başlatıldığında normal bildirim akışı servis durumuyla etiketlenir.' },
-      { icon: 'clipboard-text-clock-outline', title: 'Durum geçmişi', body: 'Servis olayları aracın Timeline kaydına eklenir.' },
-      { icon: 'message-badge-outline', title: 'Hazır mesajlar', body: 'Servis tarafı standart durum mesajları iletebilir.' }
-    ]
-  },
-  routing: {
-    title: 'Zaman Kuralları', overline: 'AKILLI YÖNLENDİRME', icon: 'account-clock-outline', color: palette.pink, plus: true,
-    description: 'Bildirimlerin gün ve saate göre sana, eşine veya geçici sürücüye gitmesini planla.',
-    actions: [
-      { icon: 'calendar-week', title: 'Hafta içi / hafta sonu', body: 'Gün bazlı kurallar tanımla.' },
-      { icon: 'clock-outline', title: 'Saat aralığı', body: 'Örneğin 08:00–18:00 sen, 18:00 sonrası eşin.' },
-      { icon: 'source-branch', title: 'Öncelik sırası', body: 'Birden fazla kural çakıştığında en özel zaman kuralı uygulanır.' }
-    ]
-  },
-  emergency: {
-    title: 'Acil Durum Zinciri', overline: 'KADEMELİ ULAŞIM', icon: 'alert-decagram-outline', color: palette.red, plus: true,
-    description: 'Yüksek öncelikli bildirimde araç sahibine ulaşılamazsa aile ve acil durum kişilerine sırayla bildirim gönder.',
-    actions: [
-      { icon: 'numeric-1-circle-outline', title: 'Önce araç sahibi', body: 'İlk yüksek öncelikli bildirim her zaman araç sahibine gider.' },
-      { icon: 'numeric-2-circle-outline', title: 'Aile üyesi', body: 'Yanıt yoksa izin verilmiş aile üyesine geçilir.' },
-      { icon: 'numeric-3-circle-outline', title: 'Acil kişi', body: 'Son adımda tanımlı ikinci acil kişiye bildirim yönlendirilir.' }
-    ]
-  },
-  privacy: {
-    title: 'Güvenlik ve Gizlilik', overline: 'PRIVACY FIRST', icon: 'shield-lock-outline', color: palette.cyan,
-    description: 'DraBornPark’ın varsayılanı minimum veri paylaşımıdır. Telefon, e-posta, tam ad ve park geçmişi kamusal değildir.',
-    actions: [
-      { icon: 'phone-lock', title: 'Telefon görünmez', body: 'QR/NFC üzerinden araç sahibinin telefon numarası asla yayınlanmaz.' },
-      { icon: 'email-lock-outline', title: 'E-posta görünmez', body: 'Dış kullanıcı e-posta veya hesap kimliğini göremez.' },
-      { icon: 'map-marker-off-outline', title: 'Park geçmişi özel', body: 'Park kayıtları yalnızca hesap sahibine ve açıkça izin verilen aile üyelerine görünür.' }
-    ]
-  },
-  tags: {
-    title: 'Etiketlerim', overline: 'NFC + QR', icon: 'nfc', color: palette.yellow,
-    description: 'DraBornPark etiketi araçla değil benzersiz Tag ID ile yaşar; aracını değiştirsen bile NFC içindeki URL değişmez.',
-    actions: [
-      { icon: 'check-decagram-outline', title: 'DP-K7M4X2P9', body: 'Demo etiket • Aktif • NFC ve QR aynı güvenli bağlantıyı açar.' },
-      { icon: 'swap-horizontal', title: 'Etiketi Devret', body: 'Araç satıldığında güvenli devir kodu ile yeni kullanıcıya aktar.' },
-      { icon: 'restart-alert', title: 'Sıfırla / Devre dışı', body: 'Eski araç bağını kaldır, yeni araca bağla veya kayıp etiketi devre dışı bırak.' }
-    ]
-  },
-  vehicle: {
-    title: 'Aracım', overline: 'ARAÇ PROFİLİ', icon: 'car-info', color: palette.cyan,
-    description: 'Araç adı, plaka, marka, model, model yılı, renk, tip ve profil görselini tek karttan yönet.',
-    actions: [
-      { icon: 'eye-settings-outline', title: 'Görünür alanlar', body: 'Plaka, marka/model ve renk alanlarını QR/NFC ekranında ayrı ayrı gizleyebilirsin.' },
-      { icon: 'motorbike', title: 'DraBornPark Moto', body: 'Aynı altyapıda motosiklet seçerek motor odaklı bildirimleri kullan.' },
-      { icon: 'timeline-clock-outline', title: 'Araç Timeline', body: 'Park, bildirim, hasar, servis ve etiket olayları tek geçmişte birleşir.' }
-    ]
-  },
-  support: {
-    title: 'Destek', overline: 'DRABORNPARK CARE', icon: 'lifebuoy', color: palette.green,
-    description: 'Etiket, aktivasyon, bildirim veya park özellikleriyle ilgili destek kaydı oluştur.',
-    actions: [
-      { icon: 'ticket-confirmation-outline', title: 'Destek kaydı', body: 'Konu ve açıklama ile güvenli bir destek talebi oluştur.' },
-      { icon: 'book-open-page-variant-outline', title: 'Kurulum rehberi', body: 'Cam temizliği, etiket uygulama, QR ve NFC test adımlarını görüntüle.' },
-      { icon: 'shield-alert-outline', title: 'Kötüye kullanım', body: 'Spam, tehdit veya uygunsuz içerik bildirimlerini raporla.' }
-    ]
-  }
-};
-
-export default function FeatureModuleScreen() {
-  const params = useLocalSearchParams<{ slug?: string }>();
-  const slug = String(params.slug ?? 'privacy');
-  const config = modules[slug] ?? modules.privacy;
-  const [enabled, setEnabled] = useState(slug === 'privacy' || slug === 'tags');
-  const [name, setName] = useState('');
-  const [detail, setDetail] = useState('');
-  const accent = config.color;
-  const buttonLabel = useMemo(() => slug === 'tags' ? 'ETİKET AKTİVASYONUNU AÇ' : slug === 'support' ? 'DEMO DESTEK KAYDI OLUŞTUR' : enabled ? 'MODÜLÜ GÜNCELLE' : 'DEMO MODÜLÜNÜ ETKİNLEŞTİR', [enabled, slug]);
-
-  function performAction() {
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    if (slug === 'tags') {
-      router.push('/activate/K7M4X2P9');
-      return;
-    }
-    if (slug === 'support') {
-      Alert.alert('Destek demosu oluşturuldu', 'Gerçek hesap akışında bu kayıt drabornpark_support_requests tablosuna kullanıcı RLS politikasıyla yazılır.');
-      setName(''); setDetail('');
-      return;
-    }
-    setEnabled(true);
-    Alert.alert(`${config.title} hazır`, 'Bu ekran Expo Go demo durumunu gösteriyor. Auth ile giriş yapılan sürümde ayar Supabase kullanıcı kaydına yazılacak.');
-  }
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.header}><Pressable onPress={() => router.back()} style={styles.back}><MaterialCommunityIcons name="chevron-left" size={25} color={palette.text} /></Pressable><View style={{ flex: 1 }}><Text style={styles.headerTitle}>{config.title}</Text><Text style={styles.headerSub}>{config.overline}</Text></View>{config.plus ? <Pill label="PLUS" color={palette.yellow} icon="crown" /> : null}</View>
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={[styles.hero, { borderColor: `${accent}55`, backgroundColor: `${accent}10` }]}><IconBubble icon={config.icon} color={accent} size={64} /><Text style={[styles.overline, { color: accent }]}>{config.overline}</Text><Text style={styles.title}>{config.title}</Text><Text style={styles.description}>{config.description}</Text></View>
-
-        {config.actions.map((item, index) => <View key={item.title} style={styles.action}><View style={[styles.actionNumber, { borderColor: `${accent}55`, backgroundColor: `${accent}12` }]}><MaterialCommunityIcons name={item.icon} size={23} color={accent} /></View><View style={{ flex: 1 }}><Text style={styles.actionTitle}>{item.title}</Text><Text style={styles.actionBody}>{item.body}</Text></View>{index === 0 && (slug === 'family' || slug === 'guest' || slug === 'valet' || slug === 'service' || slug === 'routing' || slug === 'emergency') ? <Switch value={enabled} onValueChange={(value) => { setEnabled(value); Haptics.selectionAsync(); }} trackColor={{ true: `${accent}88` }} thumbColor={enabled ? accent : '#8893A6'} /> : null}</View>)}
-
-        {slug === 'support' ? <View style={styles.form}><Text style={styles.formTitle}>Yeni destek kaydı</Text><TextInput value={name} onChangeText={setName} placeholder="Konu" placeholderTextColor="#647189" style={styles.input} /><TextInput value={detail} onChangeText={setDetail} placeholder="Sorunu kısaca anlatın" placeholderTextColor="#647189" style={[styles.input, styles.textArea]} multiline /></View> : null}
-
-        {slug === 'privacy' ? <View style={styles.form}><Text style={styles.formTitle}>Varsayılan gizlilik</Text>{['Telefon numaram görünmesin', 'E-posta adresim görünmesin', 'Tam adım görünmesin', 'Park geçmişim kamusal olmasın', 'Family konumu varsayılan kapalı'].map((label) => <View key={label} style={styles.setting}><Text style={styles.settingText}>{label}</Text><MaterialCommunityIcons name="check-circle" size={19} color={palette.green} /></View>)}</View> : null}
-
-        <Pressable onPress={performAction} style={({ pressed }) => [styles.cta, { backgroundColor: accent }, pressed && { opacity: 0.72 }]}><MaterialCommunityIcons name={slug === 'tags' ? 'nfc-variant' : 'check-decagram-outline'} size={19} color={palette.bg} /><Text style={styles.ctaText}>{buttonLabel}</Text></Pressable>
-
-        {config.plus ? <View style={styles.plusNote}><MaterialCommunityIcons name="crown-outline" size={20} color={palette.yellow} /><Text style={styles.plusNoteText}>Bu modül DraBornPark+ kapsamındadır. Abonelik sona erdiğinde NFC, QR, hazır bildirim, telefon gizleme, Park Ettim, Son Park ve Aracıma Git gibi Basic işlevler çalışmaya devam eder.</Text></View> : null}
-      </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: palette.bg }, header: { minHeight: 68, paddingHorizontal: 13, flexDirection: 'row', gap: 10, alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#182135' }, back: { width: 43, height: 43, borderRadius: 15, backgroundColor: palette.panel, borderWidth: 1, borderColor: palette.line, alignItems: 'center', justifyContent: 'center' }, headerTitle: { color: palette.text, fontSize: 16, fontWeight: '900' }, headerSub: { color: palette.muted, fontSize: 8.5, fontWeight: '800', letterSpacing: 1, marginTop: 2 }, scroll: { padding: 14, paddingBottom: 42 }, hero: { borderRadius: radius.xl, borderWidth: 1, padding: 18 }, overline: { fontSize: 9, fontWeight: '900', letterSpacing: 1.5, marginTop: 16 }, title: { color: palette.text, fontSize: 25, fontWeight: '900', marginTop: 4 }, description: { color: palette.muted, fontSize: 11.2, lineHeight: 16.5, marginTop: 7 }, action: { minHeight: 84, marginTop: 9, backgroundColor: palette.panel, borderWidth: 1, borderColor: palette.line, borderRadius: radius.lg, padding: 13, flexDirection: 'row', gap: 11, alignItems: 'center' }, actionNumber: { width: 47, height: 47, borderRadius: 16, borderWidth: 1, alignItems: 'center', justifyContent: 'center' }, actionTitle: { color: palette.text, fontSize: 12.5, fontWeight: '900' }, actionBody: { color: palette.muted, fontSize: 10.2, lineHeight: 14.3, marginTop: 3 }, form: { marginTop: 12, backgroundColor: '#101625', borderWidth: 1, borderColor: palette.line, borderRadius: radius.lg, padding: 14 }, formTitle: { color: palette.text, fontSize: 13.5, fontWeight: '900', marginBottom: 10 }, input: { minHeight: 48, backgroundColor: '#090E18', borderWidth: 1, borderColor: palette.line, borderRadius: 14, color: palette.text, paddingHorizontal: 12, marginTop: 8 }, textArea: { minHeight: 90, paddingTop: 12, textAlignVertical: 'top' }, setting: { minHeight: 45, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#1E2739' }, settingText: { color: '#D7DEEB', fontSize: 10.8, fontWeight: '700' }, cta: { minHeight: 52, marginTop: 14, borderRadius: 16, flexDirection: 'row', gap: 7, alignItems: 'center', justifyContent: 'center' }, ctaText: { color: palette.bg, fontWeight: '900', fontSize: 10.2 }, plusNote: { marginTop: 12, borderRadius: radius.md, borderWidth: 1, borderColor: '#4A4028', backgroundColor: '#211D13', padding: 13, flexDirection: 'row', gap: 9 }, plusNoteText: { flex: 1, color: '#C9BE91', fontSize: 9.5, lineHeight: 13.5 }
-});
+export default function FeatureScreen(){const {slug}=useLocalSearchParams<{slug?:string}>();const key=String(slug||'privacy');const config=meta[key]||meta.privacy;const [data,setData]=useState<any>(null);const [busy,setBusy]=useState(false);const [email,setEmail]=useState('');const [name,setName]=useState('');const [subject,setSubject]=useState('');const [body,setBody]=useState('');const [canPark,setCanPark]=useState(false);const [canNotify,setCanNotify]=useState(true);const [privacy,setPrivacy]=useState({showPlate:true,showBrandModel:true,showColor:true});const [duration,setDuration]=useState(3);
+ async function refresh(){try{const d=await loadLiveDashboard();setData(d);const p=d.profile?.privacy_settings||{};setPrivacy({showPlate:p.showPlate!==false,showBrandModel:p.showBrandModel!==false,showColor:p.showColor!==false});}catch{router.replace('/auth')}} useEffect(()=>{refresh()},[]);
+ async function run(action:()=>Promise<any>,success:string){setBusy(true);try{await action();Alert.alert('Tamamlandı',success);await refresh();}catch(e:any){Alert.alert('İşlem başarısız',e?.message||'Beklenmeyen hata.');}finally{setBusy(false)}}
+ if(!data)return <SafeAreaView style={s.safe}><View style={s.loader}><ActivityIndicator color={config.color}/></View></SafeAreaView>;
+ return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled"><Header title={config.title}/><View style={[s.hero,{borderColor:`${config.color}55`,backgroundColor:`${config.color}10`}]}><View style={[s.icon,{backgroundColor:`${config.color}18`}]}><MaterialCommunityIcons name={config.icon} size={31} color={config.color}/></View><Text style={[s.over,{color:config.color}]}>{config.over}</Text><Text style={s.title}>{config.title}</Text><Text style={s.desc}>{config.body}</Text></View>
+ {key==='tags'?<Tags data={data} busy={busy} run={run}/>:null}
+ {key==='family'?<View style={s.form}><Text style={s.formTitle}>Aile üyesi davet et</Text><Field label="E-POSTA" value={email} set={setEmail} placeholder="aile@mail.com"/><Field label="GÖRÜNEN AD" value={name} set={setName} placeholder="Eşim"/><Toggle label="Son park konumunu görebilsin" value={canPark} set={setCanPark}/><Toggle label="Araç bildirimlerini alabilsin" value={canNotify} set={setCanNotify}/><Button color={config.color} busy={busy} label="DAVET OLUŞTUR" onPress={()=>run(()=>addFamilyMember({email,displayName:name,canViewPark:canPark,canReceiveNotifications:canNotify}),'Aile daveti oluşturuldu.')}/>{data.family.map((x:any)=><Mini key={x.id} title={x.display_name||x.invite_email} detail={`${x.status} • Park ${x.can_view_park?'açık':'kapalı'} • Bildirim ${x.can_receive_notifications?'açık':'kapalı'}`}/>)}</View>:null}
+ {key==='guest'?<View style={s.form}><Text style={s.formTitle}>Geçici sürücü oluştur</Text><Field label="SÜRÜCÜ ETİKETİ" value={name} set={setName} placeholder="Eşim / Arkadaşım"/><Text style={s.label}>SÜRE</Text><View style={s.chips}>{[1,3,6,12].map(h=><Pressable key={h} onPress={()=>setDuration(h)} style={[s.chip,duration===h&&s.chipActive]}><Text style={[s.chipText,duration===h&&{color:palette.green}]}>{h} saat</Text></Pressable>)}</View><Button color={config.color} busy={busy} label="GEÇİCİ SÜRÜCÜYÜ BAŞLAT" onPress={()=>{const v=data.vehicles[0];if(!v){Alert.alert('Araç gerekli','Önce araç ekle.');return;}run(()=>addGuestDriver({vehicleId:v.id,label:name,endsAt:new Date(Date.now()+duration*3600000).toISOString()}),'Bildirim yönlendirme süresi oluşturuldu.')}}/>{data.guestDrivers.map((x:any)=><Mini key={x.id} title={x.guest_label} detail={`${x.status} • ${new Date(x.ends_at).toLocaleString('tr-TR')} tarihinde biter`}/>)}</View>:null}
+ {key==='privacy'?<View style={s.form}><Text style={s.formTitle}>Kamusal araç alanları</Text><Toggle label="Plaka QR/NFC ekranında görünsün" value={privacy.showPlate} set={v=>setPrivacy(p=>({...p,showPlate:v}))}/><Toggle label="Marka / model görünsün" value={privacy.showBrandModel} set={v=>setPrivacy(p=>({...p,showBrandModel:v}))}/><Toggle label="Renk görünsün" value={privacy.showColor} set={v=>setPrivacy(p=>({...p,showColor:v}))}/><View style={s.locked}><MaterialCommunityIcons name="lock" size={17} color={palette.green}/><Text style={s.lockText}>Telefon, e-posta, tam ad ve park geçmişi her zaman gizlidir.</Text></View><Button color={config.color} busy={busy} label="GİZLİLİĞİ KAYDET" onPress={()=>run(()=>updatePrivacySettings(privacy),'Gizlilik tercihlerin güncellendi.')}/></View>:null}
+ {key==='support'?<View style={s.form}><Text style={s.formTitle}>Yeni destek kaydı</Text><Field label="KONU" value={subject} set={setSubject} placeholder="Etiket aktivasyonu"/><Text style={s.label}>AÇIKLAMA</Text><TextInput value={body} onChangeText={setBody} multiline placeholder="Sorunu kısaca anlat..." placeholderTextColor="#5D687B" style={[s.input,{height:110,textAlignVertical:'top',paddingTop:12}]}/><Button color={config.color} busy={busy} label="DESTEK KAYDI OLUŞTUR" onPress={()=>run(()=>createSupportRequest(subject,body),'Destek talebin oluşturuldu.')}/></View>:null}
+ {key==='plus'?<View style={s.form}><Text style={s.formTitle}>Plus durumun</Text><View style={s.plusRow}><MaterialCommunityIcons name="crown" size={30} color={palette.yellow}/><View style={{flex:1}}><Text style={s.plusTitle}>{data.profile?.subscription_status||'BASIC'}</Text><Text style={s.plusText}>{data.profile?.plus_trial_until?`Deneme bitişi: ${new Date(data.profile.plus_trial_until).toLocaleDateString('tr-TR')}`:'Basic etiket işlevleri her zaman açık.'}</Text></View></View>{['Park geçmişi','AI park tabelası okuma','Otomatik park algılama','Anonim canlı sohbet','Family ve çoklu araç','Acil durum zinciri','Vale / Servis modu','Aylık kullanım özeti'].map(x=><Mini key={x} title={x} detail="DraBornPark+"/>)}<View style={s.native}><Text style={s.nativeText}>Google Play Billing gerçek satın alma testi Expo Go içinde çalışmaz; development build katmanında açılacaktır. Abonelik backend tablosu hazırdır.</Text></View></View>:null}
+ {!['tags','family','guest','privacy','support','plus'].includes(key)?<View style={s.form}><Text style={s.formTitle}>Modül altyapısı hazır</Text><Mini title="Gizlilik korumalı" detail="Telefon ve e-posta paylaşılmaz."/><Mini title="Timeline entegrasyonu" detail="Durum değişimleri araç geçmişine yazılacak."/><Mini title="Plus kontrollü" detail="Basic özellikler abonelikten bağımsız kalır."/><View style={s.native}><Text style={s.nativeText}>Bu modülün native arka plan/VoIP/BLE gerektiren kısmı Expo Go sınırları nedeniyle development build aşamasında etkinleşir.</Text></View></View>:null}
+ </ScrollView></SafeAreaView>}
+function Tags({data,busy,run}:{data:any;busy:boolean;run:(a:()=>Promise<any>,s:string)=>void}){return <View style={s.form}><View style={s.rowTitle}><Text style={s.formTitle}>Etiketlerin</Text><Pressable onPress={()=>router.push('/activate/new')} style={s.add}><MaterialCommunityIcons name="plus" size={17} color={palette.bg}/><Text style={s.addText}>AKTİVE ET</Text></Pressable></View>{data.tags.length===0?<Text style={s.empty}>Henüz hesabına bağlı etiket yok.</Text>:data.tags.map((t:any)=><View key={t.id} style={s.tag}><View style={s.tagHead}><MaterialCommunityIcons name="nfc" size={24} color={palette.cyan}/><View style={{flex:1}}><Text style={s.tagCode}>{t.tag_code}</Text><Text style={s.tagMeta}>{t.serial_number} • {t.status}</Text></View></View><View style={s.tagActions}><Pressable disabled={busy} onPress={()=>run(async()=>{const x:any=await startTagTransfer(t.id);Alert.alert('Devir kodu',`${x.transferCode}\n\n24 saat geçerli. Yeni kullanıcı bu kodla etiketi devralabilir.`);return x;},'Devir başlatıldı.')} style={s.small}><Text style={s.smallText}>DEVRET</Text></Pressable><Pressable disabled={busy} onPress={()=>Alert.alert('Etiketi devre dışı bırak','Kayıp veya kullanılmayan etiket QR/NFC erişimini kapatır.',[{text:'Vazgeç',style:'cancel'},{text:'DEVRE DIŞI',style:'destructive',onPress:()=>run(()=>disableTag(t.id),'Etiket devre dışı bırakıldı.')}])} style={[s.small,{borderColor:'#5B2B32'}]}><Text style={[s.smallText,{color:palette.red}]}>DEVRE DIŞI</Text></Pressable></View></View>)}</View>}
+function Header({title}:{title:string}){return <View style={s.header}><Pressable onPress={()=>router.back()} style={s.back}><MaterialCommunityIcons name="chevron-left" size={27} color={palette.text}/></Pressable><Text style={s.headerTitle}>{title}</Text><View style={{width:42}}/></View>}
+function Field({label,value,set,placeholder}:{label:string;value:string;set:(v:string)=>void;placeholder:string}){return <View><Text style={s.label}>{label}</Text><TextInput value={value} onChangeText={set} placeholder={placeholder} placeholderTextColor="#5D687B" autoCapitalize="none" style={s.input}/></View>}
+function Toggle({label,value,set}:{label:string;value:boolean;set:(v:boolean)=>void}){return <View style={s.toggle}><Text style={s.toggleText}>{label}</Text><Switch value={value} onValueChange={set} trackColor={{true:'#2C6954'}} thumbColor={value?palette.green:'#7D8798'}/></View>}
+function Button({color,busy,label,onPress}:{color:string;busy:boolean;label:string;onPress:()=>void}){return <Pressable disabled={busy} onPress={onPress} style={[s.cta,{backgroundColor:color},busy&&{opacity:.6}]}>{busy?<ActivityIndicator color={palette.bg}/>:<Text style={s.ctaText}>{label}</Text>}</Pressable>}
+function Mini({title,detail}:{title:string;detail:string}){return <View style={s.mini}><MaterialCommunityIcons name="check-circle-outline" size={18} color={palette.green}/><View style={{flex:1}}><Text style={s.miniTitle}>{title}</Text><Text style={s.miniDetail}>{detail}</Text></View></View>}
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},scroll:{padding:19,paddingBottom:55},loader:{flex:1,alignItems:'center',justifyContent:'center'},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},back:{width:42,height:42,borderRadius:14,borderWidth:1,borderColor:palette.line,alignItems:'center',justifyContent:'center'},headerTitle:{color:palette.text,fontSize:14,fontWeight:'900'},hero:{marginTop:20,borderRadius:radius.xl,borderWidth:1,padding:20},icon:{width:60,height:60,borderRadius:20,alignItems:'center',justifyContent:'center'},over:{fontSize:8.5,fontWeight:'900',letterSpacing:1.5,marginTop:15},title:{color:palette.text,fontSize:27,fontWeight:'900',letterSpacing:-.9,marginTop:5},desc:{color:palette.muted,fontSize:11,lineHeight:16,marginTop:7},form:{marginTop:13,borderRadius:radius.lg,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:15},formTitle:{color:palette.text,fontSize:15,fontWeight:'900'},label:{color:'#7D899F',fontSize:8.5,fontWeight:'900',letterSpacing:1.1,marginTop:13,marginBottom:6},input:{height:49,borderRadius:14,borderWidth:1,borderColor:'#283249',backgroundColor:'#090E18',color:palette.text,paddingHorizontal:13,fontSize:12},toggle:{minHeight:50,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderBottomWidth:1,borderBottomColor:'#182032'},toggleText:{color:'#C7CDDB',fontSize:10.5,flex:1},cta:{height:53,borderRadius:16,alignItems:'center',justifyContent:'center',marginTop:17},ctaText:{color:palette.bg,fontSize:10,fontWeight:'900'},chips:{flexDirection:'row',gap:7},chip:{paddingHorizontal:11,paddingVertical:9,borderRadius:12,borderWidth:1,borderColor:palette.line},chipActive:{borderColor:'#28533F',backgroundColor:'#0E211A'},chipText:{color:palette.muted,fontSize:9,fontWeight:'900'},locked:{marginTop:13,borderRadius:14,borderWidth:1,borderColor:'#244638',backgroundColor:'#0D1D17',padding:11,flexDirection:'row',gap:8,alignItems:'center'},lockText:{color:'#8DBAA5',fontSize:9.5,flex:1},mini:{marginTop:8,borderRadius:14,borderWidth:1,borderColor:'#1C2639',backgroundColor:'#0A101B',padding:11,flexDirection:'row',alignItems:'center',gap:9},miniTitle:{color:palette.text,fontSize:10.5,fontWeight:'900'},miniDetail:{color:palette.muted,fontSize:8.8,marginTop:2},plusRow:{flexDirection:'row',alignItems:'center',gap:11,marginTop:12},plusTitle:{color:palette.yellow,fontSize:16,fontWeight:'900'},plusText:{color:palette.muted,fontSize:9.5,marginTop:3},native:{marginTop:12,borderRadius:14,borderWidth:1,borderColor:'#4B4322',backgroundColor:'#201D11',padding:11},nativeText:{color:'#C6BE91',fontSize:9.5,lineHeight:14},rowTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},add:{borderRadius:11,backgroundColor:palette.cyan,paddingHorizontal:9,paddingVertical:7,flexDirection:'row',gap:4,alignItems:'center'},addText:{color:palette.bg,fontSize:7.5,fontWeight:'900'},empty:{color:palette.muted,fontSize:10.5,marginTop:12},tag:{marginTop:10,borderRadius:16,borderWidth:1,borderColor:'#254150',backgroundColor:'#0A171E',padding:12},tagHead:{flexDirection:'row',alignItems:'center',gap:10},tagCode:{color:palette.text,fontSize:13,fontWeight:'900'},tagMeta:{color:palette.muted,fontSize:8.5,marginTop:2},tagActions:{flexDirection:'row',gap:7,marginTop:10},small:{borderRadius:11,borderWidth:1,borderColor:'#255161',paddingHorizontal:10,paddingVertical:8},smallText:{color:palette.cyan,fontSize:8,fontWeight:'900'}});
