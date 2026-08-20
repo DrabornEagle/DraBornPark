@@ -1,15 +1,20 @@
 name: DraBornPark CI
 
 on:
+  workflow_dispatch:
   push:
     branches: [main, feature/**]
   pull_request:
     branches: [main]
 
+concurrency:
+  group: drabornpark-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   expo-check:
     runs-on: ubuntu-latest
-    timeout-minutes: 18
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,11 +23,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Project integrity
+      - name: Project integrity and release hygiene
         run: npm run check
 
       - name: Expo dependency compatibility
@@ -33,3 +39,6 @@ jobs:
 
       - name: Expo web export
         run: npx expo export --platform web
+
+      - name: Verify tracked source stayed clean
+        run: git diff --exit-code -- . ':!package-lock.json'
