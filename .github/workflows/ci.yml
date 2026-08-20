@@ -23,7 +23,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: npm
 
       - name: Install dependencies
         run: npm install --no-audit --no-fund
@@ -41,4 +40,4 @@ jobs:
         run: npx expo export --platform web
 
       - name: Verify tracked source stayed clean
-        run: git diff --exit-code -- . ':!package-lock.json'
+        run: git diff --exit-code -- .
