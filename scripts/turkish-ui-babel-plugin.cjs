@@ -22,6 +22,7 @@ const replacements = [
   ['Care', 'Destek'],
   ['Dashboard', 'Gösterge Paneli'],
 ];
+const DISPLAY_KEYS = new Set(['title','subtitle','detail','body','label','caption','eyebrow','placeholder','description','text','message']);
 
 function translate(value) {
   if (typeof value !== 'string') return value;
@@ -29,12 +30,27 @@ function translate(value) {
   for (const [from, to] of replacements) next = next.split(from).join(to);
   return next;
 }
+function isDisplayString(path){
+  if(path.findParent(p=>p.isJSXExpressionContainer?.()||p.isJSXAttribute?.())) return true;
+  const parent=path.parentPath;
+  if(parent?.isObjectProperty?.()){
+    const key=parent.node.key;
+    const name=key?.name||key?.value;
+    return DISPLAY_KEYS.has(String(name));
+  }
+  if(parent?.isCallExpression?.()){
+    const callee=parent.node.callee;
+    return callee?.type==='MemberExpression'&&callee.property?.name==='alert';
+  }
+  return false;
+}
 
 module.exports = function drabornparkTurkishUi() {
   return {
     name: 'drabornpark-turkish-ui',
     visitor: {
       StringLiteral(path) {
+        if(!isDisplayString(path)) return;
         const next = translate(path.node.value);
         if (next !== path.node.value) path.node.value = next;
       },
@@ -43,6 +59,7 @@ module.exports = function drabornparkTurkishUi() {
         if (next !== path.node.value) path.node.value = next;
       },
       TemplateElement(path) {
+        if(!path.findParent(p=>p.isJSXExpressionContainer?.())) return;
         const raw = translate(path.node.value.raw);
         const cooked = translate(path.node.value.cooked);
         if (raw !== path.node.value.raw || cooked !== path.node.value.cooked) {
