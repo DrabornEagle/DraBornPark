@@ -1,41 +1,101 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { addFamilyMember, addGuestDriver, createSupportRequest, disableTag, loadLiveDashboard, startTagTransfer, updatePrivacySettings } from '@/src/lib/drabornpark';
+import { createSupportRequest, hasPlusEntitlement, loadLiveDashboard, updatePrivacySettings } from '@/src/lib/drabornpark';
 import { palette, radius } from '@/src/theme';
 
-const meta:Record<string,{title:string;over:string;icon:any;color:string;body:string}>={
- tags:{title:'Etiketlerim',over:'NFC + QR',icon:'nfc',color:palette.cyan,body:'Etiket aktivasyonu, devir, sıfırlama ve güvenlik durumlarını yönet.'},
- family:{title:'DraBornPark Family',over:'AİLE ARAÇ AĞI',icon:'account-group-outline',color:palette.purple,body:'Aile üyelerini davet et; park ve araç bildirimlerini izin bazlı paylaş.'},
- guest:{title:'Geçici Sürücü',over:'SÜRELİ YÖNLENDİRME',icon:'account-switch-outline',color:palette.green,body:'Aracı başka birine verdiğinde bildirim yönlendirmesi için süreli sürücü oluştur.'},
- privacy:{title:'Güvenlik ve Gizlilik',over:'PRIVACY FIRST',icon:'shield-lock-outline',color:palette.green,body:'Telefon, e-posta, tam ad ve park geçmişi varsayılan olarak kamusal değildir.'},
- support:{title:'DraBornPark Destek',over:'CARE',icon:'lifebuoy',color:palette.blue,body:'Etiket, aktivasyon, park veya bildirim sorunları için destek kaydı oluştur.'},
- plus:{title:'DraBornPark+',over:'PREMIUM',icon:'crown-outline',color:palette.yellow,body:'Park geçmişi, Family, AI park okuma, otomatik park, canlı chat ve gelişmiş modüller.'},
- valet:{title:'Vale Modu',over:'GEÇİCİ TESLİM',icon:'car-key',color:palette.orange,body:'Vale süresince bildirim yönlendirmesini geçici olarak değiştir.'},
- service:{title:'Servis Modu',over:'SERVİS İLETİŞİMİ',icon:'car-wrench',color:palette.blue,body:'Araç servisteyken hazır, ek işlem ve teslim durumlarını yönet.'},
- routing:{title:'Zaman Kuralları',over:'AKILLI YÖNLENDİRME',icon:'clock-outline',color:palette.pink,body:'Bildirimlerin gün ve saate göre kime gideceğini tanımla.'},
- emergency:{title:'Acil Durum Zinciri',over:'YÜKSEK ÖNCELİK',icon:'alert-octagon-outline',color:palette.red,body:'Yanıt yoksa aile ve acil durum kişilerine kademeli bildirim yönlendir.'}
+const redirects: Record<string, string> = {
+  tags: '/tags',
+  family: '/family',
+  guest: '/guest',
+  valet: '/modes',
+  service: '/modes',
+  routing: '/routing',
+  emergency: '/emergency',
+  timeline: '/timeline',
 };
 
-export default function FeatureScreen(){const {slug}=useLocalSearchParams<{slug?:string}>();const key=String(slug||'privacy');const config=meta[key]||meta.privacy;const [data,setData]=useState<any>(null);const [busy,setBusy]=useState(false);const [email,setEmail]=useState('');const [name,setName]=useState('');const [subject,setSubject]=useState('');const [body,setBody]=useState('');const [canPark,setCanPark]=useState(false);const [canNotify,setCanNotify]=useState(true);const [privacy,setPrivacy]=useState({showPlate:true,showBrandModel:true,showColor:true});const [duration,setDuration]=useState(3);
- async function refresh(){try{const d=await loadLiveDashboard();setData(d);const p=d.profile?.privacy_settings||{};setPrivacy({showPlate:p.showPlate!==false,showBrandModel:p.showBrandModel!==false,showColor:p.showColor!==false});}catch{router.replace('/auth')}} useEffect(()=>{refresh()},[]);
- async function run(action:()=>Promise<any>,success:string){setBusy(true);try{await action();Alert.alert('Tamamlandı',success);await refresh();}catch(e:any){Alert.alert('İşlem başarısız',e?.message||'Beklenmeyen hata.');}finally{setBusy(false)}}
- if(!data)return <SafeAreaView style={s.safe}><View style={s.loader}><ActivityIndicator color={config.color}/></View></SafeAreaView>;
- return <SafeAreaView style={s.safe}><ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled"><Header title={config.title}/><View style={[s.hero,{borderColor:`${config.color}55`,backgroundColor:`${config.color}10`}]}><View style={[s.icon,{backgroundColor:`${config.color}18`}]}><MaterialCommunityIcons name={config.icon} size={31} color={config.color}/></View><Text style={[s.over,{color:config.color}]}>{config.over}</Text><Text style={s.title}>{config.title}</Text><Text style={s.desc}>{config.body}</Text></View>
- {key==='tags'?<Tags data={data} busy={busy} run={run}/>:null}
- {key==='family'?<View style={s.form}><Text style={s.formTitle}>Aile üyesi davet et</Text><Field label="E-POSTA" value={email} set={setEmail} placeholder="aile@mail.com"/><Field label="GÖRÜNEN AD" value={name} set={setName} placeholder="Eşim"/><Toggle label="Son park konumunu görebilsin" value={canPark} set={setCanPark}/><Toggle label="Araç bildirimlerini alabilsin" value={canNotify} set={setCanNotify}/><Button color={config.color} busy={busy} label="DAVET OLUŞTUR" onPress={()=>run(()=>addFamilyMember({email,displayName:name,canViewPark:canPark,canReceiveNotifications:canNotify}),'Aile daveti oluşturuldu.')}/>{data.family.map((x:any)=><Mini key={x.id} title={x.display_name||x.invite_email} detail={`${x.status} • Park ${x.can_view_park?'açık':'kapalı'} • Bildirim ${x.can_receive_notifications?'açık':'kapalı'}`}/>)}</View>:null}
- {key==='guest'?<View style={s.form}><Text style={s.formTitle}>Geçici sürücü oluştur</Text><Field label="SÜRÜCÜ ETİKETİ" value={name} set={setName} placeholder="Eşim / Arkadaşım"/><Text style={s.label}>SÜRE</Text><View style={s.chips}>{[1,3,6,12].map(h=><Pressable key={h} onPress={()=>setDuration(h)} style={[s.chip,duration===h&&s.chipActive]}><Text style={[s.chipText,duration===h&&{color:palette.green}]}>{h} saat</Text></Pressable>)}</View><Button color={config.color} busy={busy} label="GEÇİCİ SÜRÜCÜYÜ BAŞLAT" onPress={()=>{const v=data.vehicles[0];if(!v){Alert.alert('Araç gerekli','Önce araç ekle.');return;}run(()=>addGuestDriver({vehicleId:v.id,label:name,endsAt:new Date(Date.now()+duration*3600000).toISOString()}),'Bildirim yönlendirme süresi oluşturuldu.')}}/>{data.guestDrivers.map((x:any)=><Mini key={x.id} title={x.guest_label} detail={`${x.status} • ${new Date(x.ends_at).toLocaleString('tr-TR')} tarihinde biter`}/>)}</View>:null}
- {key==='privacy'?<View style={s.form}><Text style={s.formTitle}>Kamusal araç alanları</Text><Toggle label="Plaka QR/NFC ekranında görünsün" value={privacy.showPlate} set={v=>setPrivacy(p=>({...p,showPlate:v}))}/><Toggle label="Marka / model görünsün" value={privacy.showBrandModel} set={v=>setPrivacy(p=>({...p,showBrandModel:v}))}/><Toggle label="Renk görünsün" value={privacy.showColor} set={v=>setPrivacy(p=>({...p,showColor:v}))}/><View style={s.locked}><MaterialCommunityIcons name="lock" size={17} color={palette.green}/><Text style={s.lockText}>Telefon, e-posta, tam ad ve park geçmişi her zaman gizlidir.</Text></View><Button color={config.color} busy={busy} label="GİZLİLİĞİ KAYDET" onPress={()=>run(()=>updatePrivacySettings(privacy),'Gizlilik tercihlerin güncellendi.')}/></View>:null}
- {key==='support'?<View style={s.form}><Text style={s.formTitle}>Yeni destek kaydı</Text><Field label="KONU" value={subject} set={setSubject} placeholder="Etiket aktivasyonu"/><Text style={s.label}>AÇIKLAMA</Text><TextInput value={body} onChangeText={setBody} multiline placeholder="Sorunu kısaca anlat..." placeholderTextColor="#5D687B" style={[s.input,{height:110,textAlignVertical:'top',paddingTop:12}]}/><Button color={config.color} busy={busy} label="DESTEK KAYDI OLUŞTUR" onPress={()=>run(()=>createSupportRequest(subject,body),'Destek talebin oluşturuldu.')}/></View>:null}
- {key==='plus'?<View style={s.form}><Text style={s.formTitle}>Plus durumun</Text><View style={s.plusRow}><MaterialCommunityIcons name="crown" size={30} color={palette.yellow}/><View style={{flex:1}}><Text style={s.plusTitle}>{data.profile?.subscription_status||'BASIC'}</Text><Text style={s.plusText}>{data.profile?.plus_trial_until?`Deneme bitişi: ${new Date(data.profile.plus_trial_until).toLocaleDateString('tr-TR')}`:'Basic etiket işlevleri her zaman açık.'}</Text></View></View>{['Park geçmişi','AI park tabelası okuma','Otomatik park algılama','Anonim canlı sohbet','Family ve çoklu araç','Acil durum zinciri','Vale / Servis modu','Aylık kullanım özeti'].map(x=><Mini key={x} title={x} detail="DraBornPark+"/>)}<View style={s.native}><Text style={s.nativeText}>Google Play Billing gerçek satın alma testi Expo Go içinde çalışmaz; development build katmanında açılacaktır. Abonelik backend tablosu hazırdır.</Text></View></View>:null}
- {!['tags','family','guest','privacy','support','plus'].includes(key)?<View style={s.form}><Text style={s.formTitle}>Modül altyapısı hazır</Text><Mini title="Gizlilik korumalı" detail="Telefon ve e-posta paylaşılmaz."/><Mini title="Timeline entegrasyonu" detail="Durum değişimleri araç geçmişine yazılacak."/><Mini title="Plus kontrollü" detail="Basic özellikler abonelikten bağımsız kalır."/><View style={s.native}><Text style={s.nativeText}>Bu modülün native arka plan/VoIP/BLE gerektiren kısmı Expo Go sınırları nedeniyle development build aşamasında etkinleşir.</Text></View></View>:null}
- </ScrollView></SafeAreaView>}
-function Tags({data,busy,run}:{data:any;busy:boolean;run:(a:()=>Promise<any>,s:string)=>void}){return <View style={s.form}><View style={s.rowTitle}><Text style={s.formTitle}>Etiketlerin</Text><Pressable onPress={()=>router.push('/activate/new')} style={s.add}><MaterialCommunityIcons name="plus" size={17} color={palette.bg}/><Text style={s.addText}>AKTİVE ET</Text></Pressable></View>{data.tags.length===0?<Text style={s.empty}>Henüz hesabına bağlı etiket yok.</Text>:data.tags.map((t:any)=><View key={t.id} style={s.tag}><View style={s.tagHead}><MaterialCommunityIcons name="nfc" size={24} color={palette.cyan}/><View style={{flex:1}}><Text style={s.tagCode}>{t.tag_code}</Text><Text style={s.tagMeta}>{t.serial_number} • {t.status}</Text></View></View><View style={s.tagActions}><Pressable disabled={busy} onPress={()=>run(async()=>{const x:any=await startTagTransfer(t.id);Alert.alert('Devir kodu',`${x.transferCode}\n\n24 saat geçerli. Yeni kullanıcı bu kodla etiketi devralabilir.`);return x;},'Devir başlatıldı.')} style={s.small}><Text style={s.smallText}>DEVRET</Text></Pressable><Pressable disabled={busy} onPress={()=>Alert.alert('Etiketi devre dışı bırak','Kayıp veya kullanılmayan etiket QR/NFC erişimini kapatır.',[{text:'Vazgeç',style:'cancel'},{text:'DEVRE DIŞI',style:'destructive',onPress:()=>run(()=>disableTag(t.id),'Etiket devre dışı bırakıldı.')}])} style={[s.small,{borderColor:'#5B2B32'}]}><Text style={[s.smallText,{color:palette.red}]}>DEVRE DIŞI</Text></Pressable></View></View>)}</View>}
-function Header({title}:{title:string}){return <View style={s.header}><Pressable onPress={()=>router.back()} style={s.back}><MaterialCommunityIcons name="chevron-left" size={27} color={palette.text}/></Pressable><Text style={s.headerTitle}>{title}</Text><View style={{width:42}}/></View>}
-function Field({label,value,set,placeholder}:{label:string;value:string;set:(v:string)=>void;placeholder:string}){return <View><Text style={s.label}>{label}</Text><TextInput value={value} onChangeText={set} placeholder={placeholder} placeholderTextColor="#5D687B" autoCapitalize="none" style={s.input}/></View>}
-function Toggle({label,value,set}:{label:string;value:boolean;set:(v:boolean)=>void}){return <View style={s.toggle}><Text style={s.toggleText}>{label}</Text><Switch value={value} onValueChange={set} trackColor={{true:'#2C6954'}} thumbColor={value?palette.green:'#7D8798'}/></View>}
-function Button({color,busy,label,onPress}:{color:string;busy:boolean;label:string;onPress:()=>void}){return <Pressable disabled={busy} onPress={onPress} style={[s.cta,{backgroundColor:color},busy&&{opacity:.6}]}>{busy?<ActivityIndicator color={palette.bg}/>:<Text style={s.ctaText}>{label}</Text>}</Pressable>}
-function Mini({title,detail}:{title:string;detail:string}){return <View style={s.mini}><MaterialCommunityIcons name="check-circle-outline" size={18} color={palette.green}/><View style={{flex:1}}><Text style={s.miniTitle}>{title}</Text><Text style={s.miniDetail}>{detail}</Text></View></View>}
-const s=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},scroll:{padding:19,paddingBottom:55},loader:{flex:1,alignItems:'center',justifyContent:'center'},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},back:{width:42,height:42,borderRadius:14,borderWidth:1,borderColor:palette.line,alignItems:'center',justifyContent:'center'},headerTitle:{color:palette.text,fontSize:14,fontWeight:'900'},hero:{marginTop:20,borderRadius:radius.xl,borderWidth:1,padding:20},icon:{width:60,height:60,borderRadius:20,alignItems:'center',justifyContent:'center'},over:{fontSize:8.5,fontWeight:'900',letterSpacing:1.5,marginTop:15},title:{color:palette.text,fontSize:27,fontWeight:'900',letterSpacing:-.9,marginTop:5},desc:{color:palette.muted,fontSize:11,lineHeight:16,marginTop:7},form:{marginTop:13,borderRadius:radius.lg,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:15},formTitle:{color:palette.text,fontSize:15,fontWeight:'900'},label:{color:'#7D899F',fontSize:8.5,fontWeight:'900',letterSpacing:1.1,marginTop:13,marginBottom:6},input:{height:49,borderRadius:14,borderWidth:1,borderColor:'#283249',backgroundColor:'#090E18',color:palette.text,paddingHorizontal:13,fontSize:12},toggle:{minHeight:50,flexDirection:'row',alignItems:'center',justifyContent:'space-between',borderBottomWidth:1,borderBottomColor:'#182032'},toggleText:{color:'#C7CDDB',fontSize:10.5,flex:1},cta:{height:53,borderRadius:16,alignItems:'center',justifyContent:'center',marginTop:17},ctaText:{color:palette.bg,fontSize:10,fontWeight:'900'},chips:{flexDirection:'row',gap:7},chip:{paddingHorizontal:11,paddingVertical:9,borderRadius:12,borderWidth:1,borderColor:palette.line},chipActive:{borderColor:'#28533F',backgroundColor:'#0E211A'},chipText:{color:palette.muted,fontSize:9,fontWeight:'900'},locked:{marginTop:13,borderRadius:14,borderWidth:1,borderColor:'#244638',backgroundColor:'#0D1D17',padding:11,flexDirection:'row',gap:8,alignItems:'center'},lockText:{color:'#8DBAA5',fontSize:9.5,flex:1},mini:{marginTop:8,borderRadius:14,borderWidth:1,borderColor:'#1C2639',backgroundColor:'#0A101B',padding:11,flexDirection:'row',alignItems:'center',gap:9},miniTitle:{color:palette.text,fontSize:10.5,fontWeight:'900'},miniDetail:{color:palette.muted,fontSize:8.8,marginTop:2},plusRow:{flexDirection:'row',alignItems:'center',gap:11,marginTop:12},plusTitle:{color:palette.yellow,fontSize:16,fontWeight:'900'},plusText:{color:palette.muted,fontSize:9.5,marginTop:3},native:{marginTop:12,borderRadius:14,borderWidth:1,borderColor:'#4B4322',backgroundColor:'#201D11',padding:11},nativeText:{color:'#C6BE91',fontSize:9.5,lineHeight:14},rowTitle:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},add:{borderRadius:11,backgroundColor:palette.cyan,paddingHorizontal:9,paddingVertical:7,flexDirection:'row',gap:4,alignItems:'center'},addText:{color:palette.bg,fontSize:7.5,fontWeight:'900'},empty:{color:palette.muted,fontSize:10.5,marginTop:12},tag:{marginTop:10,borderRadius:16,borderWidth:1,borderColor:'#254150',backgroundColor:'#0A171E',padding:12},tagHead:{flexDirection:'row',alignItems:'center',gap:10},tagCode:{color:palette.text,fontSize:13,fontWeight:'900'},tagMeta:{color:palette.muted,fontSize:8.5,marginTop:2},tagActions:{flexDirection:'row',gap:7,marginTop:10},small:{borderRadius:11,borderWidth:1,borderColor:'#255161',paddingHorizontal:10,paddingVertical:8},smallText:{color:palette.cyan,fontSize:8,fontWeight:'900'}});
+export default function FeatureScreen() {
+  const { slug } = useLocalSearchParams<{ slug?: string }>();
+  const key = String(slug || 'privacy');
+  const redirect = redirects[key];
+  const [data, setData] = useState<any>(null);
+  const [busy, setBusy] = useState(false);
+  const [subject, setSubject] = useState('');
+  const [body, setBody] = useState('');
+  const [privacy, setPrivacy] = useState({ showPlate: true, showBrandModel: true, showColor: true });
+
+  useEffect(() => {
+    if (redirect) {
+      router.replace(redirect as any);
+      return;
+    }
+    loadLiveDashboard().then(next => {
+      setData(next);
+      const current = next.profile?.privacy_settings || {};
+      setPrivacy({
+        showPlate: current.showPlate !== false,
+        showBrandModel: current.showBrandModel !== false,
+        showColor: current.showColor !== false,
+      });
+    }).catch(() => router.replace('/auth'));
+  }, [redirect]);
+
+  const plus = useMemo(() => data ? hasPlusEntitlement(data.profile, data.subscription) : false, [data]);
+
+  async function savePrivacy() {
+    setBusy(true);
+    try {
+      await updatePrivacySettings(privacy);
+      Alert.alert('Gizlilik güncellendi', 'QR/NFC ekranında gösterilecek araç alanları kaydedildi.');
+    } catch (error: any) {
+      Alert.alert('Kaydedilemedi', String(error?.message || 'İşlem başarısız.'));
+    } finally { setBusy(false); }
+  }
+
+  async function sendSupport() {
+    if (!subject.trim() || !body.trim()) return Alert.alert('Eksik bilgi', 'Konu ve açıklama gerekli.');
+    setBusy(true);
+    try {
+      await createSupportRequest(subject, body);
+      setSubject(''); setBody('');
+      Alert.alert('Destek kaydı oluşturuldu', 'Talebin DraBornPark Care sistemine kaydedildi.');
+    } catch (error: any) {
+      Alert.alert('Gönderilemedi', String(error?.message || 'İşlem başarısız.'));
+    } finally { setBusy(false); }
+  }
+
+  if (redirect || !data) return <SafeAreaView style={styles.safe}><View style={styles.loader}><ActivityIndicator color={palette.cyan} /></View></SafeAreaView>;
+
+  const isSupport = key === 'support';
+  const isPlus = key === 'plus';
+  const title = isSupport ? 'DraBornPark Destek' : isPlus ? 'DraBornPark+' : 'Güvenlik ve Gizlilik';
+  const color = isSupport ? palette.blue : isPlus ? palette.yellow : palette.green;
+  const icon = isSupport ? 'lifebuoy' : isPlus ? 'crown-outline' : 'shield-lock-outline';
+
+  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
+    <Header title={title} />
+    <View style={[styles.hero, { borderColor: `${color}55`, backgroundColor: `${color}10` }]}><View style={[styles.heroIcon,{backgroundColor:`${color}18`}]}><MaterialCommunityIcons name={icon} size={31} color={color} /></View><Text style={[styles.over,{color}]}>{isSupport ? 'DRABORNPARK CARE' : isPlus ? 'PREMIUM' : 'PRIVACY FIRST'}</Text><Text style={styles.title}>{title}</Text><Text style={styles.desc}>{isSupport ? 'Etiket, aktivasyon, park veya bildirim sorunları için güvenli destek kaydı oluştur.' : isPlus ? 'Gelişmiş araç iletişimi, aile ağı ve otomasyon özelliklerini tek üyelikte yönet.' : 'Telefon, e-posta, tam ad ve park geçmişi kamusal değildir. Araç alanlarının görünürlüğünü sen belirlersin.'}</Text></View>
+
+    {!isSupport && !isPlus ? <View style={styles.form}><Text style={styles.formTitle}>Kamusal araç alanları</Text><Toggle label="Plaka QR/NFC ekranında görünsün" value={privacy.showPlate} set={value=>setPrivacy(current=>({...current,showPlate:value}))}/><Toggle label="Marka / model görünsün" value={privacy.showBrandModel} set={value=>setPrivacy(current=>({...current,showBrandModel:value}))}/><Toggle label="Renk görünsün" value={privacy.showColor} set={value=>setPrivacy(current=>({...current,showColor:value}))}/><View style={styles.locked}><MaterialCommunityIcons name="lock" size={18} color={palette.green}/><Text style={styles.lockedText}>Telefon, e-posta, tam ad ve park geçmişi bu ayarlardan bağımsız olarak her zaman gizlidir.</Text></View><Button color={palette.green} busy={busy} label="GİZLİLİĞİ KAYDET" onPress={savePrivacy}/></View> : null}
+
+    {isSupport ? <View style={styles.form}><Text style={styles.formTitle}>Yeni destek kaydı</Text><Text style={styles.label}>KONU</Text><TextInput value={subject} onChangeText={setSubject} placeholder="Etiket aktivasyonu" placeholderTextColor="#627087" style={styles.input}/><Text style={styles.label}>AÇIKLAMA</Text><TextInput value={body} onChangeText={setBody} multiline placeholder="Sorunu kısaca anlat..." placeholderTextColor="#627087" style={[styles.input,styles.area]}/><Button color={palette.blue} busy={busy} label="DESTEK KAYDI OLUŞTUR" onPress={sendSupport}/><View style={styles.info}><MaterialCommunityIcons name="shield-lock-outline" size={19} color={palette.green}/><Text style={styles.infoText}>Destek kaydı yalnızca oturum açmış kullanıcı hesabına bağlı olarak kaydedilir.</Text></View></View> : null}
+
+    {isPlus ? <View style={styles.form}><View style={styles.plusTop}><MaterialCommunityIcons name="crown" size={34} color={palette.yellow}/><View style={{flex:1}}><Text style={styles.plusStatus}>{plus ? 'PLUS AKTİF' : 'BASIC'}</Text><Text style={styles.plusDetail}>{data.profile?.plus_trial_until ? `Deneme bitişi: ${new Date(data.profile.plus_trial_until).toLocaleString('tr-TR')}` : 'Basic etiket özellikleri üyelikten bağımsızdır.'}</Text></View></View>{[
+      ['account-group-outline','Family','Aile üyeleri ve izin bazlı park/bildirim paylaşımı'],
+      ['account-clock-outline','Geçici Sürücü','Süreli iletişim yönlendirmesi'],
+      ['wrench','Vale / Servis','Araç teslimi ve servis durum Timeline’ı'],
+      ['clock-outline','Zaman Kuralları','Gün ve saate göre akıllı yönlendirme'],
+      ['alert-circle-outline','Acil Durum Zinciri','Öncelikli acil kişi sıralaması'],
+      ['history','Gelişmiş Timeline','Araç olaylarını filtreli geçmişte inceleme'],
+    ].map(([featureIcon,featureTitle,detail])=><View key={featureTitle} style={styles.feature}><MaterialCommunityIcons name={featureIcon as any} size={20} color={palette.yellow}/><View style={{flex:1}}><Text style={styles.featureTitle}>{featureTitle}</Text><Text style={styles.featureDetail}>{detail}</Text></View><MaterialCommunityIcons name={plus?'check-circle':'lock-outline'} size={18} color={plus?palette.green:palette.muted}/></View>)}<View style={styles.billing}><MaterialCommunityIcons name="google-play" size={20} color={palette.cyan}/><Text style={styles.billingText}>Google Play Billing satın alma testi Expo Go içinde çalışmaz. Abonelik backend’i hazır; gerçek satın alma/yenileme doğrulaması development build aşamasında bağlanacaktır.</Text></View></View> : null}
+  </ScrollView></SafeAreaView>;
+}
+
+function Header({title}:{title:string}){return <View style={styles.header}><Pressable onPress={()=>router.back()} style={styles.back}><MaterialCommunityIcons name="chevron-left" size={27} color={palette.text}/></Pressable><Text style={styles.headerTitle}>{title}</Text><View style={{width:42}}/></View>}
+function Toggle({label,value,set}:{label:string;value:boolean;set:(value:boolean)=>void}){return <View style={styles.toggle}><Text style={styles.toggleText}>{label}</Text><Switch value={value} onValueChange={set} trackColor={{true:'#29523F'}} thumbColor={value?palette.green:'#7D8798'}/></View>}
+function Button({color,busy,label,onPress}:{color:string;busy:boolean;label:string;onPress:()=>void}){return <Pressable disabled={busy} onPress={onPress} style={[styles.cta,{backgroundColor:color},busy&&{opacity:.6}]}>{busy?<ActivityIndicator color={palette.bg}/>:<Text style={styles.ctaText}>{label}</Text>}</Pressable>}
+
+const styles=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},scroll:{padding:19,paddingBottom:55},loader:{flex:1,alignItems:'center',justifyContent:'center'},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},back:{width:42,height:42,borderRadius:14,borderWidth:1,borderColor:palette.line,alignItems:'center',justifyContent:'center'},headerTitle:{color:palette.text,fontSize:14,fontWeight:'900'},hero:{marginTop:20,borderRadius:radius.xl,borderWidth:1,padding:20},heroIcon:{width:60,height:60,borderRadius:20,alignItems:'center',justifyContent:'center'},over:{fontSize:8.5,fontWeight:'900',letterSpacing:1.5,marginTop:15},title:{color:palette.text,fontSize:27,fontWeight:'900',letterSpacing:-.9,marginTop:5},desc:{color:palette.muted,fontSize:11,lineHeight:16,marginTop:7},form:{marginTop:13,borderRadius:radius.lg,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:15},formTitle:{color:palette.text,fontSize:15,fontWeight:'900'},label:{color:'#7D899F',fontSize:8.5,fontWeight:'900',letterSpacing:1.1,marginTop:13,marginBottom:6},input:{height:49,borderRadius:14,borderWidth:1,borderColor:'#27324A',backgroundColor:'#090E18',color:palette.text,paddingHorizontal:13,fontSize:12},area:{height:120,textAlignVertical:'top',paddingTop:12},toggle:{minHeight:51,borderBottomWidth:1,borderBottomColor:'#171F31',flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10},toggleText:{color:palette.text,fontSize:10.5,fontWeight:'800',flex:1},locked:{marginTop:12,borderRadius:14,borderWidth:1,borderColor:'#234336',backgroundColor:'#0C1C16',padding:12,flexDirection:'row',gap:9},lockedText:{color:'#8DBAA5',fontSize:9.5,lineHeight:14,flex:1},cta:{height:54,borderRadius:16,alignItems:'center',justifyContent:'center',marginTop:16},ctaText:{color:palette.bg,fontSize:9.5,fontWeight:'900'},info:{marginTop:12,borderRadius:14,borderWidth:1,borderColor:'#234336',padding:12,flexDirection:'row',gap:9},infoText:{color:palette.muted,fontSize:9.5,lineHeight:14,flex:1},plusTop:{flexDirection:'row',alignItems:'center',gap:12,paddingBottom:12,borderBottomWidth:1,borderBottomColor:palette.line},plusStatus:{color:palette.yellow,fontSize:15,fontWeight:'900'},plusDetail:{color:palette.muted,fontSize:9.5,lineHeight:14,marginTop:3},feature:{minHeight:58,borderBottomWidth:1,borderBottomColor:'#171F31',flexDirection:'row',alignItems:'center',gap:10},featureTitle:{color:palette.text,fontSize:10.5,fontWeight:'900'},featureDetail:{color:palette.muted,fontSize:8.8,lineHeight:13,marginTop:2},billing:{marginTop:13,borderRadius:15,borderWidth:1,borderColor:'#214152',backgroundColor:'#0D1A21',padding:12,flexDirection:'row',gap:9},billingText:{color:'#8EA7B4',fontSize:9.3,lineHeight:14,flex:1}});
