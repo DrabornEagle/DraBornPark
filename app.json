@@ -2,11 +2,11 @@
   "expo": {
     "name": "DraBornPark",
     "slug": "drabornpark",
-    "version": "0.4.5",
+    "version": "0.4.6",
     "orientation": "portrait",
     "scheme": "drabornpark",
     "userInterfaceStyle": "dark",
-    "backgroundColor": "#030713",
+    "backgroundColor": "#050816",
     "plugins": [
       "expo-router",
       [
@@ -32,14 +32,25 @@
       ],
       "expo-notifications"
     ],
-    "experiments": { "typedRoutes": true, "reactCompiler": true },
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
     "android": {
       "package": "com.draborneagle.drabornpark",
-      "versionCode": 9,
-      "backgroundColor": "#030713",
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "POST_NOTIFICATIONS"]
+      "versionCode": 10,
+      "backgroundColor": "#050816",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "POST_NOTIFICATIONS"
+      ]
     },
-    "ios": { "bundleIdentifier": "com.draborneagle.drabornpark" },
-    "web": { "output": "single" }
+    "ios": {
+      "bundleIdentifier": "com.draborneagle.drabornpark"
+    },
+    "web": {
+      "output": "single"
+    }
   }
 }
