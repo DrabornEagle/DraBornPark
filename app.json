@@ -37,7 +37,7 @@
     },
     "android": {
       "package": "com.draborneagle.drabornpark",
-      "versionCode": 13,
+      "versionCode": 14,
       "backgroundColor": "#050816",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
