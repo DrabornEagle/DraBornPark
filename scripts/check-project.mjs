@@ -13,7 +13,7 @@ const versions=[['package.json',pkg.version],['app.json',app.expo?.version],['.g
 const expected=versions[0][1];
 for(const [file,value] of versions){if(value!==expected)fail.push(`Version mismatch: ${file}=${value}, expected ${expected}`)}
 if(expected!=='0.5.0')fail.push(`Release audit expected 0.5.0 but found ${expected}. Update this guard intentionally for the next release.`);
-if(!Number.isInteger(app.expo?.android?.versionCode)||app.expo.android.versionCode<13)fail.push('app.json android.versionCode must be >=13 for the current DraBornPark v0.5.0 developer APK.');
+if(!Number.isInteger(app.expo?.android?.versionCode)||app.expo.android.versionCode<14)fail.push('app.json android.versionCode must be >=14 for the current DraBornPark standalone developer APK.');
 if(app.expo?.experiments?.reactCompiler===true)fail.push('React Compiler must remain disabled for v0.5.0 controlled-input/focus stability.');
 if(pkg.dependencies?.['expo-file-system']!=='~57.0.1')fail.push('expo-file-system ~57.0.1 is required for reliable Android local image reads.');
 
@@ -64,7 +64,8 @@ const hasDeleteCopy=account.includes('Hesabımı ve kullanıcı verilerimi kalı
 if(!hasDeleteCopy||!account.includes('deleteDraBornParkAccount')||!account.includes('ACCOUNT_DELETION_URL'))fail.push('Account deletion must be directly available in-app and expose the external deletion resource.');
 
 const ci=read('.github/workflows/ci.yml');
-if(!ci.includes('assembleDebug')||!ci.includes('actions/upload-artifact@v4')||!ci.includes('developer-apk'))fail.push('CI must build and upload the Developer APK artifact on main/manual runs.');
+if(!ci.includes('assembleRelease')||ci.includes('assembleDebug')||!ci.includes('actions/upload-artifact@v4')||!ci.includes('developer-apk'))fail.push('CI must build and upload a standalone release-variant Developer APK with embedded JavaScript.');
+if(!ci.includes('index\\.android\\.bundle')||!ci.includes('apksigner'))fail.push('CI standalone APK must verify the embedded JS bundle and APK signature before upload.');
 
 for(const dirty of ['.github/workflows/v050-finalize.yml','scripts/.v050.part1','scripts/.v050.part2','scripts/.v050.part3','scripts/.v050.part4','scripts/.v050.part5']){
   if(exists(dirty))fail.push(`Temporary release artifact must be removed: ${dirty}`);
@@ -76,4 +77,4 @@ for(const migration of [
 ]){if(!exists(migration))fail.push(`v0.5.0 Supabase migration missing from repository: ${migration}`)}
 
 if(fail.length){console.error('\nDraBornPark integrity check failed:\n- '+fail.join('\n- '));process.exit(1)}
-console.log(`DraBornPark integrity OK • v${expected} • Android vc${app.expo.android.versionCode} • ${routeFiles.length} routes • animated park/loading UI • Android-safe image reads • developer APK CI • release hygiene verified.`);
+console.log(`DraBornPark integrity OK • v${expected} • Android vc${app.expo.android.versionCode} • ${routeFiles.length} routes • standalone APK bundle verification • animated park/loading UI • Android-safe image reads • release hygiene verified.`);
