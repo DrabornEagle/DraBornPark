@@ -2,14 +2,31 @@
   "expo": {
     "name": "DraBornPark",
     "slug": "drabornpark",
-    "version": "0.3.3",
+    "version": "0.4.0",
     "orientation": "portrait",
     "scheme": "drabornpark",
     "userInterfaceStyle": "dark",
-    "plugins": ["expo-router", "expo-notifications"],
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "DraBornPark yalnızca Park Ettim özelliğinde park konumunu kaydetmek ve Aracıma Git yönlendirmesini sağlamak için konumunu kullanır. Konum arka planda sürekli izlenmez."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "DraBornPark park yeri, otopark bileti ve isteğe bağlı araç bildirimi fotoğrafları için kamerayı yalnızca sen bu özelliği seçtiğinde kullanır.",
+          "photosPermission": "DraBornPark seçtiğin park veya araç görsellerini hesabına ekleyebilmek için fotoğraflarına erişir."
+        }
+      ],
+      "expo-notifications"
+    ],
     "experiments": { "typedRoutes": true, "reactCompiler": true },
     "android": {
       "package": "com.draborneagle.drabornpark",
+      "versionCode": 4,
       "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "POST_NOTIFICATIONS"]
     },
     "ios": { "bundleIdentifier": "com.draborneagle.drabornpark" },
