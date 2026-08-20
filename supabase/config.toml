@@ -1,0 +1,4 @@
+project_id = "xpdiwyxnnrmyvpcqwuyb"
+
+[functions.drabornpark-public-contact]
+verify_jwt = false
