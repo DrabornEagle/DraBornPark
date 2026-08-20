@@ -1,7 +1,7 @@
 import { SUPABASE_PUBLISHABLE_KEY, SUPABASE_URL } from '@/src/data';
 import { supabase } from '@/src/lib/supabase';
 
-export const DRABORNPARK_WEB = 'https://draborneagle.com/DraBornPark';
+export const DRABORNPARK_WEB = 'https://www.draborneagle.com/DraBornPark';
 export const PRIVACY_URL = `${DRABORNPARK_WEB}/privacy/`;
 export const TERMS_URL = `${DRABORNPARK_WEB}/terms/`;
 export const DATA_SAFETY_URL = `${DRABORNPARK_WEB}/data-safety/`;
