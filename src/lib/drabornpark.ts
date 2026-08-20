@@ -16,6 +16,12 @@ export type LiveDashboard = {
   subscription: any | null;
 };
 
+export type ProfileAvatarAsset = {
+  uri: string;
+  mimeType?: string | null;
+  fileName?: string | null;
+};
+
 async function currentUserId() {
   const { data, error } = await supabase.auth.getUser();
   if (error) throw error;
@@ -35,12 +41,64 @@ export function hasPlusEntitlement(profile: any | null, subscription: any | null
   return false;
 }
 
-export async function bootstrapProfile(displayName?: string) {
+export async function isUsernameAvailable(username: string) {
+  const normalized = username.trim().toLowerCase();
+  const { data, error } = await supabase.rpc('drabornpark_username_available', {
+    drabornpark_username: normalized,
+  });
+  if (error) throw error;
+  return Boolean(data);
+}
+
+export async function bootstrapProfile(displayName?: string, username?: string, avatarUrl?: string) {
+  const { data: userData } = await supabase.auth.getUser();
+  const user = userData.user;
+  const meta = user?.user_metadata ?? {};
+  const resolvedUsername = (
+    username ??
+    meta.username ??
+    displayName ??
+    meta.display_name ??
+    user?.email?.split('@')[0] ??
+    ''
+  ).trim().toLowerCase() || null;
+  const resolvedDisplay = displayName ?? meta.display_name ?? resolvedUsername ?? undefined;
   const { data, error } = await supabase.rpc('drabornpark_bootstrap_user', {
-    drabornpark_display_name: displayName ?? null,
+    drabornpark_display_name: resolvedDisplay ?? null,
+    drabornpark_username: resolvedUsername,
+    drabornpark_avatar_url: avatarUrl ?? meta.avatar_url ?? null,
   });
   if (error) throw error;
   return data;
+}
+
+export async function updateProfile(input: { username?: string; avatarUrl?: string }) {
+  const { data, error } = await supabase.rpc('drabornpark_update_profile', {
+    drabornpark_username: input.username?.trim().toLowerCase() ?? null,
+    drabornpark_avatar_url: input.avatarUrl ?? null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function uploadProfileAvatar(asset: ProfileAvatarAsset) {
+  const userId = await currentUserId();
+  const mime = (asset.mimeType || 'image/jpeg').toLowerCase();
+  const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : 'jpg';
+  const response = await fetch(asset.uri);
+  if (!response.ok) throw new Error('Profil resmi okunamadı.');
+  const bytes = await response.arrayBuffer();
+  const path = `${userId}/avatar-${Date.now()}.${ext}`;
+  const { error: uploadError } = await supabase.storage.from('drabornpark-avatars').upload(path, bytes, {
+    contentType: mime,
+    upsert: true,
+    cacheControl: '3600',
+  });
+  if (uploadError) throw uploadError;
+  const { data: publicData } = supabase.storage.from('drabornpark-avatars').getPublicUrl(path);
+  const publicUrl = publicData.publicUrl;
+  await updateProfile({ avatarUrl: publicUrl });
+  return publicUrl;
 }
 
 export async function loadLiveDashboard(): Promise<LiveDashboard> {
