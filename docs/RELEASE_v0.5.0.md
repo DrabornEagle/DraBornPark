@@ -57,4 +57,6 @@ The repository CI is configured to run on `main`, feature branches, pull request
 5. `npx expo export --platform web`
 6. tracked-source cleanliness verification
 
+A dedicated `ci/v050-verification` pull request is used to exercise the same workflow against the finalized v0.5.0 tree before the release audit is closed.
+
 This document is tracked so the release state is auditable from the repository rather than from chat history.
