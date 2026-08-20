@@ -33,8 +33,7 @@
       "expo-notifications"
     ],
     "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
+      "typedRoutes": true
     },
     "android": {
       "package": "com.draborneagle.drabornpark",
