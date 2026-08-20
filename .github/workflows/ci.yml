@@ -43,11 +43,11 @@ jobs:
         run: git diff --exit-code -- .
 
   developer-apk:
-    name: Developer APK
+    name: Developer Standalone APK
     needs: expo-check
     if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'build/')
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -74,21 +74,32 @@ jobs:
           CI: '1'
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Build debug APK
+      - name: Build standalone APK with embedded JS bundle
         working-directory: android
-        run: ./gradlew :app:assembleDebug --no-daemon
+        env:
+          CI: '1'
+        run: ./gradlew :app:assembleRelease --no-daemon
 
-      - name: Prepare developer APK artifact
+      - name: Verify standalone APK bundle and signature
+        run: |
+          APK="android/app/build/outputs/apk/release/app-release.apk"
+          test -f "$APK"
+          unzip -l "$APK" | grep -E 'assets/(index\.android\.bundle|.*\.hbc)' >/dev/null
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose "$APK"
+
+      - name: Prepare developer standalone APK artifact
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.0-vc13-developer.apk
-          sha256sum artifacts/DraBornPark-v0.5.0-vc13-developer.apk > artifacts/SHA256.txt
-          printf 'DraBornPark v0.5.0\nAndroid versionCode: 13\nCommit: %s\nBuild type: Developer / debug APK\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
+          cp android/app/build/outputs/apk/release/app-release.apk artifacts/DraBornPark-v0.5.0-vc14-developer-standalone.apk
+          sha256sum artifacts/DraBornPark-v0.5.0-vc14-developer-standalone.apk > artifacts/SHA256.txt
+          printf 'DraBornPark v0.5.0\nAndroid versionCode: 14\nCommit: %s\nBuild type: Developer standalone / release variant\nJavaScript bundle: embedded\nMetro required: no\nPurpose: physical-device testing only\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
 
-      - name: Upload Developer APK
+      - name: Upload Developer Standalone APK
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v0.5.0-vc13-developer-apk
+          name: DraBornPark-v0.5.0-vc14-developer-standalone-apk
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
