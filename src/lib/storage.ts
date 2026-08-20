@@ -1,3 +1,4 @@
+import { readLocalFileBytes } from '@/src/lib/localFile';
 import { supabase } from '@/src/lib/supabase';
 
 export async function uploadPrivateImage(uri: string, folder: 'parks' | 'tickets' | 'park-tickets' | 'reports') {
@@ -5,9 +6,7 @@ export async function uploadPrivateImage(uri: string, folder: 'parks' | 'tickets
   if (userError) throw userError;
   if (!userData.user) throw new Error('Oturum bulunamadı.');
 
-  const response = await fetch(uri);
-  if (!response.ok) throw new Error('Fotoğraf okunamadı.');
-  const bytes = await response.arrayBuffer();
+  const bytes = await readLocalFileBytes(uri, 'Fotoğraf okunamadı.');
   const path = `${userData.user.id}/${folder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.jpg`;
   const { error } = await supabase.storage.from('drabornpark-private').upload(path, bytes, {
     contentType: 'image/jpeg',
