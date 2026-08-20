@@ -2,40 +2,36 @@
 
 **“Aracına numaranı değil, DraBornPark’ı bırak.”**
 
-DraBornPark; araç ön camındaki NFC + QR etiketini gizlilik odaklı araç iletişimi, park hafızası, güvenlik, araç Timeline’ı, Family ve premium dijital servislerle birleştiren platformdur.
+DraBornPark; araç ön camındaki NFC + QR etiketini gizlilik odaklı araç iletişimi, park hafızası, güvenlik, araç geçmişi, aile paylaşımı ve premium dijital servislerle birleştiren kişisel araç ağıdır.
 
-## v0.1.0 test stack
+## v0.5.0
 
-- Expo SDK 57 / React Native 0.86
-- Expo Router
-- Expo Go 57.0.9 odaklı test akışı
+- Expo SDK 57 / React Native 0.86 / Expo Router
 - Supabase Postgres + RLS + Storage + Edge Functions
-- DraBornGarage verilerinden tamamen ayrı `drabornpark_*` veri alanı
-- Fiziksel etiket hedefi: NTAG213 + benzersiz QR + değişmeyen Tag ID
+- Android paket adı: `com.draborneagle.drabornpark`
+- Android `versionCode`: `12`
+- Kullanıcı adı + opsiyonel profil fotoğrafı
+- Canlı Araç kokpiti, Park Ettim, Aracıma Git, Hızlı Erişim ve Merkezim
+- Her ekranda durum duyarlı Bildirim zili
+- Scroll konumuna göre saydam/normal alt menü
+- NFC + QR aktivasyon, devir ve yeniden bağlama
+- Aile, Geçici Sürücü, Vale/Servis, zaman kuralları ve acil durum zinciri
+- İstatistiklerim, araç geçmişi, gizlilik/veri ve hesap silme akışları
+- Etkileşimli Demo modu ve Test1 web iletişim demosu
+- Yönetici korumalı Üretim Paneli
 
-## Expo Go’da şu anda test edilebilenler
+## v0.5.0 arayüz ve kararlılık notları
 
-- Premium DraBornPark ana ekranı
-- Gerçek cihaz konumuyla **Park Ettim**
-- Kapalı otopark kat / bölge / sıra / park numarası
-- Park fotoğrafı seçme
-- **Aracıma Git** ile yürüyüş rotasını harita uygulamasında açma
-- Son Park ve park geçmişi demo akışı
-- Bildirim merkezi ve anonim hazır cevap UI’si
-- Araç Timeline
-- Family, Geçici Sürücü, Vale, Servis, zaman kuralları, acil zincir, gizlilik, etiket ve destek modülleri
-- 14 günlük DraBornPark+ deneme/paket vitrini
-- Güvenli aktivasyon akışı
-- DraBornPark Factory Panel üretim demosu
-- Uygulama yüklemeden açılan `/t/[id]` QR/NFC web iletişim ekranı
-- DraBornPark Moto’ya uygun araç tipi altyapısı
-- Supabase’ten canlı demo senaryosu; bağlantı yoksa offline fallback demo
+- Uzun ekran başlıkları tek satırda ölçeklenir; `Etiketlerim` ve `DraBornPark Aile` mobil genişlikte bölünmez.
+- Loading göstergesinde dönen halka ve araç çekirdeği aynı sabit sahnede merkezlenir.
+- Giriş/kayıt formunda kontrollü TextInput odağı korunur; klavye yazı sırasında kendiliğinden kapanmamalıdır.
+- Expo Image Picker eski `MediaTypeOptions` API’si kullanılmaz.
+- `GİRİŞ YAP / KAYIT OL` ve `YENİ ETİKET AKTİVE ET` aksiyonları solid renk katmanları ve hafif hareketlerle vurgulanır; gradient/shadow/glow kullanılmaz.
+- Ana ekrandaki ikinci özellik kartı `Merkezim` olarak tüm modüllere gider.
 
 ## Backend
 
-`supabase/migrations/` altında DraBornPark’a ait tablolar, RLS politikaları, güvenli RPC’ler, private storage ve demo verileri bulunur.
-
-Temel tablolar:
+Temel kullanıcı ve araç tabloları `drabornpark_*` ad alanındadır. Önemli tablolar:
 
 - `drabornpark_profiles`
 - `drabornpark_vehicles`
@@ -47,68 +43,67 @@ Temel tablolar:
 - `drabornpark_timeline_events`
 - `drabornpark_family_members`
 - `drabornpark_guest_drivers`
+- `drabornpark_vehicle_modes`
 - `drabornpark_routing_rules`
 - `drabornpark_emergency_contacts`
 - `drabornpark_subscriptions`
 - `drabornpark_push_tokens`
 - `drabornpark_factory_events`
-- `drabornpark_scan_events`
-- `drabornpark_abuse_limits`
 - `drabornpark_support_requests`
-- `drabornpark_demo_scenarios`
 
-Güvenli RPC’ler:
+### v0.5.0 Supabase migration zinciri
 
-- `drabornpark_factory_create_tag`
-- `drabornpark_activate_tag`
-- `drabornpark_public_tag_snapshot`
+Repository ve canlı DraBornPark projesi aşağıdaki v0.5.0 migration’larını içerir:
 
-Public Edge Function:
+- `20260820211711_drabornpark_v050_profile_username_avatar_admin.sql`
+- `20260820211832_drabornpark_v050_admin_session_access.sql`
+- `20260820223248_drabornpark_v050_release_hardening.sql`
 
-- `drabornpark-public-contact`
-  - güvenli tag lookup
-  - araç bildirimi oluşturma
-  - geçici anonim chat oturumu
-  - telefon/e-posta maskeleme
-  - kaba/saldırgan metin nötrleştirme
-  - hashed-IP rate limit
-  - Timeline olayı
-  - push dağıtım backend’i
+Bunlar kullanıcı adı/`avatar_url`, `drabornpark-avatars` bucket’ı, profil RPC’leri, admin erişimi, kullanıcı adı doğrulama constraint’i ve RPC izin daraltmalarını kapsar.
 
-## Demo
+`draborneagle@gmail.com` üretim paneli yöneticisidir. Yönetici doğrulaması `drabornpark_is_admin()` üzerinden yapılır.
 
-Ana uygulama Supabase’teki `drabornpark_demo_scenarios/default` kaydını okur.
+## Profil fotoğrafları
 
-Dış kullanıcı etiketi:
+Profil görselleri `drabornpark-avatars` bucket’ında tutulur. Bucket yalnızca profil görselinin okunabilir URL ile gösterilebilmesi için public read kullanır; yazma/güncelleme/silme işlemleri kullanıcı kimliğinin kendi klasörüyle sınırlandırılmıştır. Dosya boyutu 5 MB ile, tipler JPEG/PNG/WebP ile sınırlandırılmıştır.
 
-```text
-DP-K7M4X2P9
-```
+## Demo ve Test1
 
-Uygulama içinden **Daha Fazla → Etiket Test Merkezi** ile açılabilir.
+Demo modu gerçek hesaptan ayrıdır ve v0.5.0 verileriyle araç, park, bildirim, etiket, aile, mod, gizlilik ve istatistik akışlarının test edilmesini sağlar.
 
-## Çalıştırma
+Test1 web deneyiminde `Başka bir mesaj` kartı ve `ARAÇ SAHİBİNE GÜVENLİ GÖNDER` aksiyonu v0.5.0 hareket katmanına sahiptir. Test1 demosu gerçek araç sahibine bildirim göndermez.
+
+## Termux — GitHub ile birebir eşitleme
+
+Lokal `projects/DraBornPark` klasörünü GitHub `main` ile birebir yapmak için:
 
 ```bash
+cd ~/projects/DraBornPark && \
+git fetch origin && \
+git reset --hard origin/main && \
+git clean -fd && \
 npm install
+```
+
+Ardından:
+
+```bash
 npx expo start --clear
 ```
 
-Expo Go ile QR kodu okut ve uygulamayı cihazda aç.
+> `git reset --hard` ve `git clean -fd` lokal, commit edilmemiş değişiklikleri siler. DraBornPark için kaynak gerçekliği GitHub `main` kabul edilir.
 
-## Native development-build katmanı
+## Release doğrulaması
 
-Expo Go’nun sağlamadığı native yetenekler için ayrı development build kullanılacak. Veri modeli ve UI giriş noktaları hazırdır:
+GitHub Actions `.github/workflows/ci.yml` şu kontrolleri çalıştırır:
 
-- Android remote push token/notification testi
-- Google Play Billing `drabornpark_plus`
-- NTAG213 Factory NFC writer + read-back verification
-- background Bluetooth park algılama
-- VoIP anonim çağrı
-- gelişmiş native harita
-- gerektiğinde BLE fiziksel yakınlık doğrulaması
+1. `npm run check`
+2. `npx expo install --check`
+3. `npm run typecheck`
+4. `npx expo export --platform web`
+5. Build sırasında tracked kaynak dosyalarının değişmediğinin doğrulanması
 
-Bu sınırlama fiziksel DraBornPark etiketinin QR/NFC URL mantığını değiştirmez; araca ulaşan kişi yine uygulama yüklemek zorunda değildir.
+`npm run check` ayrıca v0.5.0 sürüm eşleşmesini, Android versionCode’u, Expo Router default export’larını, başlık taşmalarını, deprecated ImagePicker kullanımını, klavye kararlılığı işaretlerini, Loading merkezlemesini, `Merkezim` kartını, geçici release dosyalarının kaldırıldığını ve v0.5.0 Supabase migration aynasını denetler.
 
 ## Güvenlik ilkeleri
 
@@ -116,6 +111,11 @@ Bu sınırlama fiziksel DraBornPark etiketinin QR/NFC URL mantığını değişt
 - Etiket ilk okutma ile sahiplenilemez; Tag ID + gizli aktivasyon PIN gerekir.
 - Aktivasyon PIN’inin açık hali veritabanında tutulmaz.
 - Kullanıcı varlıkları RLS ile hesap bazında ayrılır.
-- Medya bucket’ı private’tır.
-- Public iletişim fonksiyonu servis rolünü yalnızca sunucu içinde kullanır.
-- DraBornGarage tablolarına DraBornPark migration’ları dokunmaz.
+- Profil fotoğrafı dışındaki kullanıcı dosyalarında ilgili private-storage kuralları korunur.
+- Profil bucket’ında yalnızca public read vardır; owner write path’i auth UID ile sınırlandırılır.
+- Public iletişim akışı kişisel iletişim bilgisini ziyaretçiye açmaz.
+- DraBornPark migration’ları `drabornpark_*` adlandırmasını kullanır.
+
+## Sürüm
+
+Aktif sürüm: **v0.5.0**
