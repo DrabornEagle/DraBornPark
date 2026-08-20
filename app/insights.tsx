@@ -1,0 +1,61 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { router } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { AuroraBackground, ScreenHeader, SectionHeading } from '@/src/components/AppChrome';
+import { useDemo } from '@/src/demo/DemoContext';
+import { calculateMonthlyInsights } from '@/src/lib/extras';
+import { loadLiveDashboard } from '@/src/lib/drabornpark';
+import { palette, radius, type } from '@/src/theme';
+
+export default function InsightsScreen() {
+  const demo = useDemo();
+  const [data,setData]=useState<any>(null);
+  const [loading,setLoading]=useState(!demo.active);
+  useEffect(()=>{
+    if(demo.active){setLoading(false);return;}
+    loadLiveDashboard().then(setData).catch(()=>router.replace('/auth')).finally(()=>setLoading(false));
+  },[demo.active]);
+  const insight=useMemo(()=>{
+    if(demo.active){
+      return {
+        parks: demo.state.stats.parksThisMonth,
+        reports: demo.state.stats.reportsThisMonth,
+        emergencyReports: demo.state.notifications.filter((n:any)=>n.priority==='emergency').length,
+        averageParkMinutes: demo.state.stats.averageParkMinutes,
+        favoritePlace: demo.state.stats.favoritePlace,
+        activeDays: Math.min(demo.state.stats.parksThisMonth,12),
+      };
+    }
+    return calculateMonthlyInsights(data?.parks??[],data?.reports??[]);
+  },[demo.active,demo.state,data]);
+  const month=new Intl.DateTimeFormat('tr-TR',{month:'long',year:'numeric'}).format(new Date());
+  if(loading)return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.aqua}/><View style={s.loading}><ActivityIndicator color={palette.cyan}/><Text style={s.loadingText}>Aylık özet hazırlanıyor…</Text></View></SafeAreaView>;
+  return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.aqua} secondary={palette.orange}/><ScrollView contentContainerStyle={s.scroll}>
+    <ScreenHeader title="DraBorn Insights" eyebrow="AYLIK ARAÇ ÖZETİ" accent={palette.aqua} subtitle={`${month} • yalnızca sana özel`}/>
+    <View style={s.hero}><View style={s.heroIcon}><MaterialCommunityIcons name="chart-donut" size={34} color={palette.aqua}/></View><View style={{flex:1}}><Text style={s.heroKicker}>BU AY</Text><Text style={s.heroTitle}>{insight.parks} park • {insight.reports} bildirim</Text><Text style={s.heroBody}>Park alışkanlıkların, araç bildirimlerin ve güvenlik hareketlerin tek özet halinde.</Text></View></View>
+    <SectionHeading title="Ayın ritmi" subtitle="Öne çıkan kullanım göstergeleri" badge={demo.active?'DEMO':'CANLI'} color={palette.aqua}/>
+    <View style={s.metricGrid}>
+      <Metric icon="parking" color={palette.cyan} value={String(insight.parks)} label="Park kaydı"/>
+      <Metric icon="bell-ring-outline" color={palette.orange} value={String(insight.reports)} label="Araç bildirimi"/>
+      <Metric icon="calendar-check-outline" color={palette.green} value={String(insight.activeDays)} label="Aktif gün"/>
+      <Metric icon="timer-outline" color={palette.purple} value={insight.averageParkMinutes?`${Math.floor(insight.averageParkMinutes/60)}s ${insight.averageParkMinutes%60}dk`:'—'} label="Ort. park"/>
+    </View>
+    <View style={s.favorite}><View style={[s.favoriteIcon,{backgroundColor:`${palette.pink}20`}]}><MaterialCommunityIcons name="map-marker-heart-outline" size={28} color={palette.pink}/></View><View style={{flex:1}}><Text style={s.label}>EN SIK PARK</Text><Text style={s.favoriteTitle}>{insight.favoritePlace}</Text><Text style={s.body}>DraBornPark yalnızca senin “Park Ettim” kayıtlarını kullanır; sürekli konum takibi yapmaz.</Text></View></View>
+    <SectionHeading title="Güvenlik özeti" subtitle="Yüksek öncelikli olayları ayrı takip et"/>
+    <View style={s.security}><View style={[s.securityBubble,{backgroundColor:`${palette.red}18`}]}><MaterialCommunityIcons name="shield-alert-outline" size={28} color={palette.red}/></View><View style={{flex:1}}><Text style={s.securityTitle}>{insight.emergencyReports} acil bildirim</Text><Text style={s.body}>Acil kategoriler Timeline ve Bildirim Merkezi'nde ayrıca işaretlenir.</Text></View><MaterialCommunityIcons name="chevron-right" size={24} color={palette.red}/></View>
+    <Pressable onPress={()=>router.push('/timeline')} style={s.cta}><MaterialCommunityIcons name="history" size={23} color={palette.ink}/><Text style={s.ctaText}>TÜM TIMELINE'I AÇ</Text><MaterialCommunityIcons name="arrow-right" size={21} color={palette.ink}/></Pressable>
+  </ScrollView></SafeAreaView>;
+}
+
+function Metric({icon,color,value,label}:{icon:any;color:string;value:string;label:string}){return <View style={[s.metric,{borderColor:`${color}48`,backgroundColor:`${color}12`}]}><View style={[s.metricIcon,{backgroundColor:`${color}20`}]}><MaterialCommunityIcons name={icon} size={24} color={color}/></View><Text style={s.metricValue}>{value}</Text><Text style={s.metricLabel}>{label}</Text></View>}
+
+const s=StyleSheet.create({
+  safe:{flex:1,backgroundColor:palette.bg},scroll:{padding:20,paddingBottom:46},loading:{flex:1,alignItems:'center',justifyContent:'center',gap:14},loadingText:{color:palette.muted,fontSize:type.body},
+  hero:{minHeight:148,borderRadius:radius.xl,borderWidth:1,borderColor:`${palette.aqua}50`,backgroundColor:`${palette.aqua}12`,padding:20,flexDirection:'row',alignItems:'center',gap:16},heroIcon:{width:66,height:66,borderRadius:22,backgroundColor:`${palette.aqua}20`,alignItems:'center',justifyContent:'center'},heroKicker:{color:palette.aqua,fontSize:type.micro,fontWeight:'900',letterSpacing:1.2},heroTitle:{color:palette.text,fontSize:24,fontWeight:'900',marginTop:5},heroBody:{color:palette.muted,fontSize:type.caption,lineHeight:19,marginTop:7},
+  metricGrid:{flexDirection:'row',flexWrap:'wrap',gap:12},metric:{width:'48.2%',minHeight:142,borderRadius:radius.md,borderWidth:1,padding:16},metricIcon:{width:45,height:45,borderRadius:15,alignItems:'center',justifyContent:'center'},metricValue:{color:palette.text,fontSize:26,fontWeight:'900',marginTop:13},metricLabel:{color:palette.muted,fontSize:type.caption,fontWeight:'800',marginTop:4},
+  favorite:{marginTop:14,borderRadius:radius.lg,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:18,flexDirection:'row',gap:14},favoriteIcon:{width:58,height:58,borderRadius:19,alignItems:'center',justifyContent:'center'},label:{color:palette.pink,fontSize:type.micro,fontWeight:'900',letterSpacing:1},favoriteTitle:{color:palette.text,fontSize:type.section,fontWeight:'900',marginTop:4},body:{color:palette.muted,fontSize:type.caption,lineHeight:19,marginTop:5},
+  security:{borderRadius:radius.lg,borderWidth:1,borderColor:`${palette.red}42`,backgroundColor:`${palette.red}0E`,padding:17,flexDirection:'row',alignItems:'center',gap:14},securityBubble:{width:54,height:54,borderRadius:18,alignItems:'center',justifyContent:'center'},securityTitle:{color:palette.text,fontSize:type.cardTitle,fontWeight:'900'},
+  cta:{height:62,borderRadius:20,backgroundColor:palette.aqua,marginTop:18,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:10},ctaText:{color:palette.ink,fontSize:type.bodyStrong,fontWeight:'900'},
+});
