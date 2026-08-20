@@ -85,7 +85,7 @@ export default function HomeScreen() {
       <View style={styles.benefits}>{[
         ['phone-lock','Telefonun görünmez',palette.green],['nfc','NFC + QR tek bağlantı',palette.cyan],['map-marker-check-outline','Park yerini unutmaz',palette.orange],['timeline-clock-outline','Araç Timeline',palette.purple]
       ].map(([icon,title,color]) => <View key={title as string} style={styles.benefit}><MaterialCommunityIcons name={icon as any} size={23} color={color as string}/><Text style={styles.benefitText}>{title}</Text></View>)}</View>
-      <Pressable onPress={() => router.push('/auth')} style={styles.primary}><MaterialCommunityIcons name="account-shield" size={21} color={palette.bg}/><Text style={styles.primaryText}>GİRİŞ YAP / HESAP OLUŞTUR</Text></Pressable>
+      <Pressable onPress={() => router.push('/auth')} style={styles.primary}><MaterialCommunityIcons name="shield-account-outline" size={21} color={palette.bg}/><Text style={styles.primaryText}>GİRİŞ YAP / HESAP OLUŞTUR</Text></Pressable>
       <Pressable onPress={openDemo} style={styles.secondary}><MaterialCommunityIcons name="flask-outline" size={20} color={palette.cyan}/><Text style={styles.secondaryText}>DEMO MODUNU AÇ</Text></Pressable>
       <Text style={styles.note}>Expo Go v57 test akışı • Basic etiket fonksiyonları abonelik olmasa da devam eder.</Text>
     </ScrollView></SafeAreaView>;
@@ -105,7 +105,7 @@ export default function HomeScreen() {
 
   return <SafeAreaView style={styles.safe}><Animated.View style={{flex:1,opacity:intro,transform:[{translateY:intro.interpolate({inputRange:[0,1],outputRange:[12,0]})}]}}><ScrollView contentContainerStyle={styles.scroll} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.cyan}/> }>
     <Header name={live?.profile?.display_name || session?.user?.email?.split('@')[0] || 'DraBornPark'} badge={live?.profile?.subscription_status || 'BASIC'} onExit={signOut}/>
-    {activeVehicle ? <VehicleCard name={activeVehicle.vehicle_name} plate={activeVehicle.plate || 'Plaka gizli'} meta={[activeVehicle.brand,activeVehicle.model,activeVehicle.color].filter(Boolean).join(' • ')} tagCode={liveTag?.tag_code || 'Etiket bağlanmadı'}/> : <View style={styles.empty}><MaterialCommunityIcons name="car-plus" size={32} color={palette.cyan}/><Text style={styles.emptyTitle}>İlk aracını ekle</Text><Text style={styles.emptyBody}>Araba veya motosiklet profilini oluştur; ardından DraBornPark etiketini aktive et.</Text><Pressable onPress={() => router.push('/vehicle')} style={styles.mini}><Text style={styles.miniText}>ARAÇ EKLE</Text></Pressable></View>}
+    {activeVehicle ? <VehicleCard name={activeVehicle.vehicle_name} plate={activeVehicle.plate || 'Plaka gizli'} meta={[activeVehicle.brand,activeVehicle.model,activeVehicle.color].filter(Boolean).join(' • ')} tagCode={liveTag?.tag_code || 'Etiket bağlanmadı'}/> : <View style={styles.empty}><MaterialCommunityIcons name="car" size={32} color={palette.cyan}/><Text style={styles.emptyTitle}>İlk aracını ekle</Text><Text style={styles.emptyBody}>Araba veya motosiklet profilini oluştur; ardından DraBornPark etiketini aktive et.</Text><Pressable onPress={() => router.push('/vehicle')} style={styles.mini}><Text style={styles.miniText}>ARAÇ EKLE</Text></Pressable></View>}
 
     <View style={styles.heroActions}><Pressable disabled={!activeVehicle} onPress={() => { Haptics.selectionAsync(); router.push('/park'); }} style={[styles.heroButton,{backgroundColor:activeVehicle?palette.cyan:'#27303C'}]}><MaterialCommunityIcons name="map-marker-plus" size={25} color={activeVehicle?palette.bg:palette.muted}/><Text style={[styles.heroDark,!activeVehicle&&{color:palette.muted}]}>PARK ETTİM</Text></Pressable><Pressable disabled={!activePark?.latitude} onPress={goToPark} style={[styles.heroButton,{backgroundColor:activePark?.latitude?palette.orange:'#27303C'}]}><MaterialCommunityIcons name="walk" size={25} color={activePark?.latitude?palette.bg:palette.muted}/><Text style={[styles.heroDark,!activePark?.latitude&&{color:palette.muted}]}>ARACIMA GİT</Text></Pressable></View>
 
@@ -113,7 +113,7 @@ export default function HomeScreen() {
 
     <SectionHeader title="Hızlı merkez" action={`v0.2.0 • ${unread} yeni bildirim`}/>
     <View style={styles.grid}>
-      <ActionCard icon="car-plus" color={palette.blue} title="Araçlarım" detail="Araba veya motosiklet ekle ve profilini yönet." onPress={() => router.push('/vehicle')}/>
+      <ActionCard icon="car" color={palette.blue} title="Araçlarım" detail="Araba veya motosiklet ekle ve profilini yönet." onPress={() => router.push('/vehicle')}/>
       <ActionCard icon="bell-badge-outline" color={palette.orange} title="Bildirimler" detail={`${unread} okunmamış araç bildirimi ve hızlı cevaplar.`} onPress={() => router.push('/notifications')}/>
       <ActionCard icon="nfc" color={palette.cyan} title="Etiketlerim" detail="Aktivasyon, devir, sıfırlama ve güvenlik." onPress={() => router.push('/feature/tags')}/>
       <ActionCard icon="account-group-outline" color={palette.purple} title="Family" detail="Park paylaşımı ve aile bildirim izinleri." onPress={() => router.push('/feature/family')}/>
