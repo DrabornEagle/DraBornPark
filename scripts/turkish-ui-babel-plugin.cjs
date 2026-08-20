@@ -1,3 +1,4 @@
+const APP_VERSION = require('../package.json').version;
 const replacements = [
   ['PRIVATE VEHICLE NETWORK', 'ÖZEL ARAÇ AĞI'],
   ['NOVA CONTROL', 'NOVA KONTROL'],
@@ -21,9 +22,6 @@ const replacements = [
   ['Premium', 'Gelişmiş'],
   ['Care', 'Destek'],
   ['Dashboard', 'Gösterge Paneli'],
-  ['v0.4.0', 'v0.4.3'],
-  ['v0.4.1', 'v0.4.3'],
-  ['v0.4.2', 'v0.4.3'],
 ];
 const DISPLAY_KEYS = new Set(['title','subtitle','detail','body','label','caption','eyebrow','placeholder','description','text','message']);
 
@@ -31,6 +29,8 @@ function translate(value) {
   if (typeof value !== 'string') return value;
   let next = value;
   for (const [from, to] of replacements) next = next.split(from).join(to);
+  // Kullanıcıya gösterilen eski sürüm etiketlerinin repo sürümünden kopmasını engeller.
+  next = next.replace(/\bv\d+\.\d+\.\d+\b/g, `v${APP_VERSION}`);
   return next;
 }
 function isDisplayString(path){
