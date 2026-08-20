@@ -3,7 +3,7 @@ import React, { createContext, useContext, useMemo, useState } from 'react';
 export type DemoSection = 'vehicles'|'park'|'notifications'|'tags'|'timeline'|'family'|'guest'|'modes'|'routing'|'emergency'|'privacy'|'plus'|'support'|'factory'|'public';
 
 export type DemoState = {
-  profile: { displayName:string; plan:string; trialDaysLeft:number; memberSince:string };
+  profile: { displayName:string; username:string; avatarUrl:string|null; plan:string; trialDaysLeft:number; memberSince:string };
   vehicles: any[];
   parks: any[];
   notifications: any[];
@@ -21,16 +21,16 @@ export type DemoState = {
 };
 
 const initialDemo: DemoState = {
-  profile:{displayName:'Demo Kullanıcı',plan:'PLUS_TRIAL',trialDaysLeft:14,memberSince:'20 Ağustos 2026'},
+  profile:{displayName:'Demo Kullanıcı',username:'demo_kullanici',avatarUrl:null,plan:'PLUS_TRIAL',trialDaysLeft:14,memberSince:'21 Ağustos 2026'},
   vehicles:[
     {id:'v1',name:'Volkswagen Tiguan',plate:'06 DBP 2026',brand:'Volkswagen',model:'Tiguan',year:2025,color:'Gece Mavisi',type:'car',active:true,tagCode:'DP-K7M4X2P9'},
     {id:'v2',name:'Şehir Motoru',plate:'06 MOTO 26',brand:'Honda',model:'Forza 250',year:2026,color:'Mat Gri',type:'motorcycle',active:true,tagCode:'DP-M8T3Q7'},
     {id:'v3',name:'Aile Aracı',plate:'06 AIL 606',brand:'Volvo',model:'XC40',year:2024,color:'Beyaz',type:'car',active:true,tagCode:'DP-FAM606'},
   ],
   parks:[
-    {id:'p1',vehicleId:'v1',placeName:'Metromall AVM',floor:'P2',zoneColor:'Mavi',row:'C',bay:'128',latitude:39.9357,longitude:32.8063,parkedAt:'2026-08-20T11:32:00+03:00',endedAt:null,note:'Sinema girişine yakın',reminder:'1 saat'},
-    {id:'p2',vehicleId:'v1',placeName:'Ankamall',floor:'P1',zoneColor:'Turuncu',row:'B',bay:'42',parkedAt:'2026-08-19T18:46:00+03:00',endedAt:'2026-08-19T21:12:00+03:00'},
-    {id:'p3',vehicleId:'v2',placeName:'Armada AVM',floor:'Açık',zoneColor:'Yeşil',row:'D',bay:'17',parkedAt:'2026-08-17T14:10:00+03:00',endedAt:'2026-08-17T16:18:00+03:00'},
+    {id:'p1',vehicleId:'v1',placeName:'Metromall AVM',floor:'P2',zoneColor:'Mavi',row:'C',bay:'128',latitude:39.9357,longitude:32.8063,parkedAt:'2026-08-21T00:04:00+03:00',endedAt:null,note:'Sinema girişine yakın',reminder:'1 saat'},
+    {id:'p2',vehicleId:'v1',placeName:'Ankamall',floor:'P1',zoneColor:'Turuncu',row:'B',bay:'42',parkedAt:'2026-08-20T18:46:00+03:00',endedAt:'2026-08-20T21:12:00+03:00'},
+    {id:'p3',vehicleId:'v2',placeName:'Armada AVM',floor:'Açık',zoneColor:'Yeşil',row:'D',bay:'17',parkedAt:'2026-08-19T14:10:00+03:00',endedAt:'2026-08-19T16:18:00+03:00'},
   ],
   notifications:[
     {id:'n1',icon:'car-light-high',color:'#FFB15A',title:'Farlarınız açık olabilir',body:'Bir kullanıcı aracınızın farlarının açık olduğunu bildirdi.',time:'5 dk',seen:false,priority:'normal',reply:null},
@@ -39,14 +39,14 @@ const initialDemo: DemoState = {
     {id:'n4',icon:'dog-side',color:'#4FE6A4',title:'Araçta hayvan var',body:'Yüksek öncelikli bir durum bildirimi alındı.',time:'Dün',seen:true,priority:'emergency',reply:'Gördüm, geliyorum'},
   ],
   tags:[
-    {id:'t1',code:'DP-K7M4X2P9',serial:'DBP-260820-001',vehicleId:'v1',status:'ACTIVATED',nfc:'NFC doğrulandı',qr:'QR doğrulandı'},
-    {id:'t2',code:'DP-M8T3Q7',serial:'DBP-260820-002',vehicleId:'v2',status:'ACTIVATED',nfc:'NFC doğrulandı',qr:'QR doğrulandı'},
+    {id:'t1',code:'DP-K7M4X2P9',serial:'DBP-260821-001',vehicleId:'v1',status:'ACTIVATED',nfc:'NFC doğrulandı',qr:'QR doğrulandı'},
+    {id:'t2',code:'DP-M8T3Q7',serial:'DBP-260821-002',vehicleId:'v2',status:'ACTIVATED',nfc:'NFC doğrulandı',qr:'QR doğrulandı'},
   ],
   timeline:[
-    {id:'tl1',type:'PARKED',icon:'map-marker-check',color:'#26D9FF',title:'Park edildi',detail:'Metromall AVM • P2 • Mavi • C128',time:'Bugün 11:32'},
-    {id:'tl2',type:'REPORT',icon:'car-light-high',color:'#FFB15A',title:'Far açık bildirimi',detail:'Anonim kullanıcı bildirim gönderdi.',time:'Bugün 12:07'},
+    {id:'tl1',type:'PARKED',icon:'map-marker-check',color:'#26D9FF',title:'Park edildi',detail:'Metromall AVM • P2 • Mavi • C128',time:'Bugün 00:04'},
+    {id:'tl2',type:'REPORT',icon:'car-light-high',color:'#FFB15A',title:'Far açık bildirimi',detail:'Anonim kullanıcı bildirim gönderdi.',time:'Bugün 00:07'},
     {id:'tl3',type:'MODE',icon:'car-key',color:'#A97AFF',title:'Vale Modu tamamlandı',detail:'Kentpark Vale • 2 saatlik oturum.',time:'Dün 20:10'},
-    {id:'tl4',type:'TAG',icon:'nfc',color:'#4FE6A4',title:'NFC etiket doğrulandı',detail:'DP-K7M4X2P9 etiketi başarıyla doğrulandı.',time:'18 Ağustos 14:21'},
+    {id:'tl4',type:'TAG',icon:'nfc',color:'#4FE6A4',title:'NFC etiket doğrulandı',detail:'DP-K7M4X2P9 etiketi başarıyla doğrulandı.',time:'20 Ağustos 14:21'},
   ],
   family:[
     {id:'f1',name:'Eşim',email:'esim@example.com',status:'active',canViewPark:true,canNotify:true},
@@ -55,7 +55,7 @@ const initialDemo: DemoState = {
   ],
   guestDrivers:[
     {id:'g1',label:'Eşim',vehicleId:'v1',status:'active',endsAt:'Bugün 16:30',redirect:true},
-    {id:'g2',label:'Arkadaşım',vehicleId:'v2',status:'ended',endsAt:'18 Ağustos 21:00',redirect:true},
+    {id:'g2',label:'Arkadaşım',vehicleId:'v2',status:'ended',endsAt:'20 Ağustos 21:00',redirect:true},
   ],
   vehicleModes:[
     {id:'m1',type:'valet',vehicleId:'v1',label:'Kentpark Vale',status:'ended',state:'completed',endsAt:'Dün 20:10'},
@@ -73,14 +73,14 @@ const initialDemo: DemoState = {
   privacy:{showPlate:true,showBrandModel:true,showColor:true,familyParkShare:false},
   supportRequests:[
     {id:'s1',subject:'NFC okuma testi',status:'answered',time:'Dün 15:20',body:'Atermik camda okuma mesafesi hakkında bilgi istiyorum.'},
-    {id:'s2',subject:'Park fotoğrafı',status:'open',time:'Bugün 09:14',body:'Park fotoğrafını değiştirmek istiyorum.'},
+    {id:'s2',subject:'Park fotoğrafı',status:'open',time:'Bugün 00:09',body:'Park fotoğrafını değiştirmek istiyorum.'},
   ],
   factoryTags:[
-    {id:'ft1',code:'DP-X4A8K2',serial:'DBP-260820-021',status:'NFC doğrulandı',pin:'••••-4821'},
-    {id:'ft2',code:'DP-Q9M3T7',serial:'DBP-260820-022',status:'Paketlendi',pin:'••••-7194'},
-    {id:'ft3',code:'DP-L6P2R8',serial:'DBP-260820-023',status:'Satışa hazır',pin:'••••-3358'},
+    {id:'ft1',code:'DP-X4A8K2',serial:'DBP-260821-021',status:'NFC doğrulandı',pin:'••••-4821'},
+    {id:'ft2',code:'DP-Q9M3T7',serial:'DBP-260821-022',status:'Paketlendi',pin:'••••-7194'},
+    {id:'ft3',code:'DP-L6P2R8',serial:'DBP-260821-023',status:'Satışa hazır',pin:'••••-3358'},
   ],
-  stats:{parksThisMonth:17,reportsThisMonth:4,averageParkMinutes:102,favoritePlace:'Metromall AVM',privacyScore:96},
+  stats:{parksThisMonth:19,reportsThisMonth:5,averageParkMinutes:98,favoritePlace:'Metromall AVM',privacyScore:97},
 };
 
 type DemoContextValue = {
