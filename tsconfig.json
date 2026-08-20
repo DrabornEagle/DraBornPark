@@ -5,5 +5,5 @@
     "paths": { "@/*": ["./*"] }
   },
   "include": ["app/**/*.ts", "app/**/*.tsx", "src/**/*.ts", "src/**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
-  "exclude": ["supabase/functions/**", "app/feature/[slug].tsx", "app/t/[id].tsx"]
+  "exclude": ["supabase/functions/**"]
 }
