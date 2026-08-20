@@ -1,4 +1,5 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { router } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { DemoPayload } from '@/src/data';
@@ -18,13 +19,7 @@ const features: Array<{ slug: string; icon: IconName; title: string; detail: str
   { slug: 'support', icon: 'lifebuoy', title: 'Destek', detail: 'Kurulum ve destek kayıtları', color: palette.green }
 ];
 
-export function MoreScreen({ demo, onOpenPlus, onDemoTag, onFeature, onFactory }: {
-  demo: DemoPayload;
-  onOpenPlus: () => void;
-  onDemoTag: () => void;
-  onFeature: (slug: string) => void;
-  onFactory: () => void;
-}) {
+export function MoreScreen({ demo, onOpenPlus, onDemoTag }: { demo: DemoPayload; onOpenPlus: () => void; onDemoTag: () => void }) {
   return (
     <>
       <View style={styles.account}>
@@ -46,7 +41,7 @@ export function MoreScreen({ demo, onOpenPlus, onDemoTag, onFeature, onFactory }
       <SectionHeader title="DraBornPark Ağı" action="10 modül" />
       <View style={styles.grid}>
         {features.map((feature) => (
-          <Pressable key={feature.slug} onPress={() => onFeature(feature.slug)} style={({ pressed }) => [styles.feature, pressed && { opacity: 0.82 }]}>
+          <Pressable key={feature.slug} onPress={() => router.push(`/feature/${feature.slug}`)} style={({ pressed }) => [styles.feature, pressed && { opacity: 0.82 }]}>
             {feature.plus ? <View style={styles.plusBadge}><Text style={styles.plusBadgeText}>PLUS</Text></View> : null}
             <IconBubble icon={feature.icon} color={feature.color} />
             <Text style={styles.featureTitle}>{feature.title}</Text>
@@ -61,7 +56,7 @@ export function MoreScreen({ demo, onOpenPlus, onDemoTag, onFeature, onFactory }
         <View style={styles.scan}><MaterialCommunityIcons name="qrcode-scan" size={27} color={palette.cyan} /></View>
       </Pressable>
 
-      <Pressable onPress={onFactory} style={({ pressed }) => [styles.factory, pressed && { opacity: 0.82 }]}>
+      <Pressable onPress={() => router.push('/factory')} style={({ pressed }) => [styles.factory, pressed && { opacity: 0.82 }]}>
         <View style={styles.factoryIcon}><MaterialCommunityIcons name="factory" size={26} color={palette.orange} /></View>
         <View style={{ flex: 1 }}><Text style={styles.factoryTitle}>DraBornPark Factory Panel</Text><Text style={styles.factoryBody}>Tag ID, NFC URL, aktivasyon PIN, seri numarası ve üretim durumlarını test et.</Text></View>
         <MaterialCommunityIcons name="chevron-right" size={25} color={palette.muted} />
