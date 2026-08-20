@@ -53,15 +53,15 @@ function sanitizeMessage(input?: string) {
 }
 
 async function hitRateLimit(supabase: ReturnType<typeof createClient>, bucketKey: string) {
-  const now = new Date();
-  const { data } = await supabase.from("drabornpark_abuse_limits").select("window_started_at,request_count,blocked_until").eq("bucket_key", bucketKey).maybeSingle();
-  if (data?.blocked_until && new Date(data.blocked_until) > now) return { blocked: true, retryAfter: Math.ceil((new Date(data.blocked_until).getTime() - now.getTime()) / 1000) };
-  const windowStart = data?.window_started_at ? new Date(data.window_started_at) : null;
-  const expired = !windowStart || now.getTime() - windowStart.getTime() > 10 * 60 * 1000;
-  const count = expired ? 1 : Number(data?.request_count ?? 0) + 1;
-  const blockedUntil = count > 6 ? new Date(now.getTime() + 30 * 60 * 1000).toISOString() : null;
-  await supabase.from("drabornpark_abuse_limits").upsert({ bucket_key: bucketKey, window_started_at: expired ? now.toISOString() : data!.window_started_at, request_count: count, blocked_until: blockedUntil, updated_at: now.toISOString() });
-  return { blocked: count > 6, retryAfter: count > 6 ? 1800 : 0 };
+  const { data, error } = await supabase.rpc("drabornpark_hit_rate_limit", {
+    drabornpark_bucket_key: bucketKey,
+    drabornpark_limit: 6,
+    drabornpark_window_seconds: 600,
+    drabornpark_block_seconds: 1800,
+  });
+  if (error) throw error;
+  const result = Array.isArray(data) ? data[0] : data;
+  return { blocked: Boolean(result?.blocked), retryAfter: Number(result?.retry_after ?? 0) };
 }
 
 async function sendExpoPush(supabase: ReturnType<typeof createClient>, ownerUserId: string, title: string, body: string, reportId: string, priority: string) {
@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
       const token = String(payload?.sessionToken ?? "");
       const { data: session } = await supabase.from("drabornpark_contact_sessions").select("id,status,expires_at").eq("public_token", token).maybeSingle();
       if (!session) return json({ error: "session_not_found" }, 404);
+      if (session.status !== "open" || new Date(session.expires_at) <= new Date()) return json({ error: "session_closed" }, 410);
       const { data: messages } = await supabase.from("drabornpark_messages").select("id,sender_role,body_safe,created_at").eq("session_id", session.id).order("created_at", { ascending: true }).limit(50);
       return json({ ok: true, status: session.status, expiresAt: session.expires_at, messages: messages ?? [] });
     }
