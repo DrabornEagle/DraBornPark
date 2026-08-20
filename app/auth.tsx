@@ -4,107 +4,25 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AuroraBackground, ScreenHeader } from '@/src/components/AppChrome';
 import { bootstrapProfile } from '@/src/lib/drabornpark';
 import { supabase } from '@/src/lib/supabase';
-import { palette, radius } from '@/src/theme';
+import { palette, radius, type } from '@/src/theme';
 
-type Mode = 'login' | 'signup';
-
-export default function AuthScreen() {
-  const [mode, setMode] = useState<Mode>('login');
-  const [displayName, setDisplayName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [busy, setBusy] = useState(false);
-
-  async function submit() {
-    if (!email.trim() || password.length < 6) {
-      Alert.alert('Bilgileri kontrol et', 'Geçerli bir e-posta ve en az 6 karakterlik parola gir.');
-      return;
-    }
-    setBusy(true);
-    try {
-      if (mode === 'login') {
-        const { error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
-        if (error) throw error;
-        await bootstrapProfile();
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace('/');
-      } else {
-        const name = displayName.trim() || email.split('@')[0];
-        const { data, error } = await supabase.auth.signUp({
-          email: email.trim().toLowerCase(),
-          password,
-          options: { data: { display_name: name } },
-        });
-        if (error) throw error;
-        if (data.session) {
-          await bootstrapProfile(name);
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          router.replace('/');
-        } else {
-          Alert.alert('E-postanı doğrula', 'Hesap oluşturuldu. Supabase e-posta doğrulaması açıksa gelen bağlantıyı onayladıktan sonra giriş yapabilirsin.');
-          setMode('login');
-        }
-      }
-    } catch (error: any) {
-      Alert.alert('İşlem tamamlanamadı', error?.message || 'Beklenmeyen bir hata oluştu.');
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <SafeAreaView style={styles.safe}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-          <Pressable onPress={() => router.back()} style={styles.back}><MaterialCommunityIcons name="chevron-left" size={28} color={palette.text} /></Pressable>
-          <View style={styles.brandIcon}><MaterialCommunityIcons name="shield-car" size={38} color={palette.cyan} /></View>
-          <Text style={styles.brand}>DraBornPark</Text>
-          <Text style={styles.title}>{mode === 'login' ? 'Aracına güvenli şekilde bağlan' : 'DraBornPark hesabını oluştur'}</Text>
-          <Text style={styles.subtitle}>Telefon numaran araç üzerinde görünmez. NFC + QR, park hafızası ve araç olayları tek hesapta kalır.</Text>
-
-          <View style={styles.tabs}>
-            <Pressable onPress={() => setMode('login')} style={[styles.tab, mode === 'login' && styles.tabActive]}><Text style={[styles.tabText, mode === 'login' && styles.tabTextActive]}>GİRİŞ YAP</Text></Pressable>
-            <Pressable onPress={() => setMode('signup')} style={[styles.tab, mode === 'signup' && styles.tabActive]}><Text style={[styles.tabText, mode === 'signup' && styles.tabTextActive]}>HESAP OLUŞTUR</Text></Pressable>
-          </View>
-
-          <View style={styles.form}>
-            {mode === 'signup' ? <View><Text style={styles.label}>GÖRÜNEN AD</Text><TextInput value={displayName} onChangeText={setDisplayName} placeholder="Örn. Doğancan" placeholderTextColor="#58647B" style={styles.input} /></View> : null}
-            <View><Text style={styles.label}>E-POSTA</Text><TextInput value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" placeholder="ornek@mail.com" placeholderTextColor="#58647B" style={styles.input} /></View>
-            <View><Text style={styles.label}>PAROLA</Text><TextInput value={password} onChangeText={setPassword} secureTextEntry placeholder="En az 6 karakter" placeholderTextColor="#58647B" style={styles.input} /></View>
-            <Pressable disabled={busy} onPress={submit} style={({ pressed }) => [styles.cta, (pressed || busy) && { opacity: 0.7 }]}>{busy ? <ActivityIndicator color={palette.bg} /> : <><MaterialCommunityIcons name="shield-check" size={21} color={palette.bg} /><Text style={styles.ctaText}>{mode === 'login' ? 'GÜVENLİ GİRİŞ YAP' : 'HESABIMI OLUŞTUR'}</Text></>}</Pressable>
-          </View>
-
-          {mode === 'signup' ? <View style={styles.trial}><MaterialCommunityIcons name="crown" size={23} color={palette.yellow} /><View style={{ flex: 1 }}><Text style={styles.trialTitle}>14 Gün DraBornPark+ Hediye</Text><Text style={styles.trialBody}>Yeni hesap ilk aktivasyonda Plus denemesine hazırdır. Basic etiket işlevleri abonelik sona erse de kapanmaz.</Text></View></View> : null}
-          <View style={styles.privacy}><MaterialCommunityIcons name="lock-outline" size={18} color={palette.green} /><Text style={styles.privacyText}>Telefon, e-posta, tam ad ve park geçmişi QR/NFC ziyaretçisine gösterilmez.</Text></View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+type Mode='login'|'signup';
+export default function AuthScreen(){
+  const [mode,setMode]=useState<Mode>('login');const [displayName,setDisplayName]=useState('');const [email,setEmail]=useState('');const [password,setPassword]=useState('');const [busy,setBusy]=useState(false);
+  async function submit(){if(!email.trim()||password.length<6){Alert.alert('Bilgileri kontrol et','Geçerli bir e-posta ve en az 6 karakterlik parola gir.');return;}setBusy(true);try{if(mode==='login'){const {error}=await supabase.auth.signInWithPassword({email:email.trim().toLowerCase(),password});if(error)throw error;await bootstrapProfile();Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);router.replace('/');}else{const name=displayName.trim()||email.split('@')[0];const {data,error}=await supabase.auth.signUp({email:email.trim().toLowerCase(),password,options:{data:{display_name:name}}});if(error)throw error;if(data.session){await bootstrapProfile(name);Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);router.replace('/');}else{Alert.alert('E-postanı doğrula','Hesap oluşturuldu. E-posta doğrulaması açıksa gelen bağlantıyı onayladıktan sonra giriş yapabilirsin.');setMode('login');}}}catch(e:any){Alert.alert('İşlem tamamlanamadı',e?.message||'Beklenmeyen bir hata oluştu.');}finally{setBusy(false)}}
+  return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.cyan} secondary={palette.purple}/><KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS==='ios'?'padding':undefined}><ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+    <ScreenHeader title={mode==='login'?'Tekrar hoş geldin':'DraBornPark’a katıl'} eyebrow="GÜVENLİ HESAP" accent={palette.cyan} subtitle="Telefon numaran araç üzerinde görünmeden iletişim ve park ağını yönet."/>
+    <View style={s.hero}><View style={s.heroIcon}><MaterialCommunityIcons name="shield-car" size={38} color={palette.cyan}/></View><View style={{flex:1}}><Text style={s.heroKicker}>PRIVACY FIRST</Text><Text style={s.heroTitle}>{mode==='login'?'Araç ağın seni bekliyor.':'Aracın için güvenli bir dijital kimlik oluştur.'}</Text><Text style={s.heroBody}>NFC + QR, Park Hafızası, araç bildirimleri ve Family tek hesapta.</Text></View></View>
+    <View style={s.tabs}><Pressable onPress={()=>setMode('login')} style={[s.tab,mode==='login'&&s.tabActive]}><MaterialCommunityIcons name="login" size={20} color={mode==='login'?palette.cyan:palette.muted2}/><Text style={[s.tabText,mode==='login'&&{color:palette.text}]}>Giriş Yap</Text></Pressable><Pressable onPress={()=>setMode('signup')} style={[s.tab,mode==='signup'&&s.tabActive]}><MaterialCommunityIcons name="account-plus-outline" size={20} color={mode==='signup'?palette.purple:palette.muted2}/><Text style={[s.tabText,mode==='signup'&&{color:palette.text}]}>Hesap Oluştur</Text></Pressable></View>
+    <View style={s.form}>{mode==='signup'?<Field label="GÖRÜNEN AD" value={displayName} set={setDisplayName} placeholder="Örn. Doğancan" icon="account-outline"/>:null}<Field label="E-POSTA" value={email} set={setEmail} placeholder="ornek@mail.com" icon="email-outline" keyboard="email-address"/><Field label="PAROLA" value={password} set={setPassword} placeholder="En az 6 karakter" icon="lock-outline" secure/>
+      <Pressable disabled={busy} onPress={submit} style={[s.cta,busy&&{opacity:.6}]}>{busy?<ActivityIndicator color={palette.ink}/>:<><MaterialCommunityIcons name="shield-check" size={24} color={palette.ink}/><View style={{flex:1}}><Text style={s.ctaTitle}>{mode==='login'?'GÜVENLİ GİRİŞ YAP':'HESABIMI OLUŞTUR'}</Text><Text style={s.ctaSub}>{mode==='login'?'Araç merkezine devam et':'DraBornPark profilini başlat'}</Text></View><MaterialCommunityIcons name="arrow-right" size={22} color={palette.ink}/></>}</Pressable>
+    </View>
+    {mode==='signup'?<View style={s.trial}><View style={s.trialIcon}><MaterialCommunityIcons name="crown" size={27} color={palette.yellow}/></View><View style={{flex:1}}><Text style={s.trialTitle}>14 Gün DraBornPark+ Hediye</Text><Text style={s.trialBody}>Yeni kullanıcı deneme süresinde Family, Vale/Servis, Zaman Kuralları ve gelişmiş araç özelliklerini deneyebilir. Basic etiket işlevleri deneme bitince kapanmaz.</Text></View></View>:null}
+    <View style={s.privacy}><MaterialCommunityIcons name="shield-lock-outline" size={23} color={palette.green}/><Text style={s.privacyText}>Telefon, e-posta, tam ad ve park geçmişin QR/NFC ziyaretçisine gösterilmez.</Text></View>
+  </ScrollView></KeyboardAvoidingView></SafeAreaView>;
 }
-
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: palette.bg },
-  scroll: { padding: 22, paddingBottom: 50 },
-  back: { width: 44, height: 44, borderRadius: 15, borderWidth: 1, borderColor: palette.line, alignItems: 'center', justifyContent: 'center', marginBottom: 25 },
-  brandIcon: { width: 72, height: 72, borderRadius: 24, backgroundColor: '#0B2933', borderWidth: 1, borderColor: '#1B5361', alignItems: 'center', justifyContent: 'center' },
-  brand: { color: palette.cyan, fontSize: 12, fontWeight: '900', letterSpacing: 2.3, marginTop: 16 },
-  title: { color: palette.text, fontSize: 30, lineHeight: 34, fontWeight: '900', letterSpacing: -1.1, marginTop: 7, maxWidth: 360 },
-  subtitle: { color: palette.muted, fontSize: 13, lineHeight: 20, marginTop: 11, maxWidth: 390 },
-  tabs: { flexDirection: 'row', backgroundColor: palette.panel, borderRadius: radius.md, borderWidth: 1, borderColor: palette.line, padding: 5, marginTop: 27 },
-  tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: 14 },
-  tabActive: { backgroundColor: '#17313A', borderWidth: 1, borderColor: '#285966' },
-  tabText: { color: palette.muted, fontSize: 10, fontWeight: '900' },
-  tabTextActive: { color: palette.cyan },
-  form: { marginTop: 15, gap: 15, padding: 17, borderRadius: radius.lg, borderWidth: 1, borderColor: palette.line, backgroundColor: palette.panel },
-  label: { color: '#7E8DA8', fontSize: 9, fontWeight: '900', letterSpacing: 1.3, marginBottom: 7 },
-  input: { height: 52, borderRadius: 15, borderWidth: 1, borderColor: '#26334D', backgroundColor: '#090E19', color: palette.text, paddingHorizontal: 14, fontSize: 14 },
-  cta: { height: 55, borderRadius: 17, backgroundColor: palette.cyan, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 9, marginTop: 3 },
-  ctaText: { color: palette.bg, fontSize: 11, fontWeight: '900', letterSpacing: 0.6 },
-  trial: { marginTop: 15, borderRadius: radius.lg, borderWidth: 1, borderColor: '#4C4424', backgroundColor: '#201E13', padding: 15, flexDirection: 'row', gap: 11 },
-  trialTitle: { color: palette.yellow, fontSize: 13, fontWeight: '900' },
-  trialBody: { color: '#BFB996', fontSize: 10.5, lineHeight: 15, marginTop: 4 },
-  privacy: { marginTop: 15, flexDirection: 'row', gap: 9, alignItems: 'center', paddingHorizontal: 4 },
-  privacyText: { color: '#7FA897', fontSize: 10.5, lineHeight: 15, flex: 1 },
-});
+function Field({label,value,set,placeholder,icon,keyboard,secure}:{label:string;value:string;set:(v:string)=>void;placeholder:string;icon:any;keyboard?:any;secure?:boolean}){return <View><Text style={s.label}>{label}</Text><View style={s.inputWrap}><MaterialCommunityIcons name={icon} size={22} color={palette.cyan}/><TextInput value={value} onChangeText={set} autoCapitalize="none" keyboardType={keyboard} secureTextEntry={secure} placeholder={placeholder} placeholderTextColor={palette.muted2} style={s.input}/></View></View>}
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},scroll:{padding:20,paddingBottom:50},hero:{minHeight:180,borderRadius:radius.xl,borderWidth:1,borderColor:`${palette.cyan}48`,backgroundColor:`${palette.cyan}0E`,padding:20,flexDirection:'row',alignItems:'center',gap:16},heroIcon:{width:76,height:76,borderRadius:26,backgroundColor:`${palette.cyan}20`,alignItems:'center',justifyContent:'center'},heroKicker:{color:palette.cyan,fontSize:type.micro,fontWeight:'900',letterSpacing:1.2},heroTitle:{color:palette.text,fontSize:24,fontWeight:'900',lineHeight:29,letterSpacing:-.6,marginTop:5},heroBody:{color:palette.muted,fontSize:type.caption,lineHeight:19,marginTop:7},tabs:{flexDirection:'row',borderRadius:radius.md,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:6,marginTop:18,gap:6},tab:{flex:1,minHeight:58,borderRadius:17,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8},tabActive:{backgroundColor:palette.panel3},tabText:{color:palette.muted,fontSize:type.body,fontWeight:'900'},form:{marginTop:14,borderRadius:radius.lg,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:17,gap:13},label:{color:palette.aqua,fontSize:type.micro,fontWeight:'900',letterSpacing:.9,marginBottom:7},inputWrap:{height:58,borderRadius:18,borderWidth:1,borderColor:palette.line,backgroundColor:palette.bg2,paddingHorizontal:14,flexDirection:'row',alignItems:'center',gap:10},input:{flex:1,color:palette.text,fontSize:type.body},cta:{minHeight:68,borderRadius:21,backgroundColor:palette.aqua,marginTop:4,paddingHorizontal:15,flexDirection:'row',alignItems:'center',gap:11},ctaTitle:{color:palette.ink,fontSize:type.bodyStrong,fontWeight:'900'},ctaSub:{color:'#285D59',fontSize:type.caption,marginTop:2},trial:{marginTop:14,borderRadius:radius.lg,borderWidth:1,borderColor:`${palette.yellow}45`,backgroundColor:`${palette.yellow}0E`,padding:16,flexDirection:'row',gap:12},trialIcon:{width:52,height:52,borderRadius:18,backgroundColor:`${palette.yellow}20`,alignItems:'center',justifyContent:'center'},trialTitle:{color:palette.text,fontSize:type.cardTitle,fontWeight:'900'},trialBody:{color:palette.muted,fontSize:type.caption,lineHeight:19,marginTop:4},privacy:{marginTop:14,borderRadius:radius.md,borderWidth:1,borderColor:`${palette.green}38`,backgroundColor:`${palette.green}0B`,padding:15,flexDirection:'row',alignItems:'center',gap:11},privacyText:{flex:1,color:palette.muted,fontSize:type.caption,lineHeight:19}});

@@ -64,10 +64,63 @@ async function hitRateLimit(supabase: ReturnType<typeof createClient>, bucketKey
   return { blocked: Boolean(result?.blocked), retryAfter: Number(result?.retry_after ?? 0) };
 }
 
-async function sendExpoPush(supabase: ReturnType<typeof createClient>, ownerUserId: string, title: string, body: string, reportId: string, priority: string) {
-  const { data: tokens } = await supabase.from("drabornpark_push_tokens").select("expo_push_token").eq("user_id", ownerUserId).eq("is_enabled", true);
+function localClock(timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone, weekday: "short", hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(new Date());
+  const map = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  const dayMap: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+  return { day: dayMap[map.weekday] ?? 1, time: `${map.hour ?? "00"}:${map.minute ?? "00"}` };
+}
+
+function ruleMatches(rule: any, currentDay: number, currentTime: string) {
+  const days = Array.isArray(rule.days_of_week) ? rule.days_of_week.map(Number) : [];
+  const start = String(rule.start_time ?? "00:00").slice(0, 5);
+  const end = String(rule.end_time ?? "23:59").slice(0, 5);
+  if (start <= end) return days.includes(currentDay) && currentTime >= start && currentTime <= end;
+  if (currentTime >= start) return days.includes(currentDay);
+  const previousDay = currentDay === 1 ? 7 : currentDay - 1;
+  return currentTime <= end && days.includes(previousDay);
+}
+
+async function resolvePushRecipients(supabase: ReturnType<typeof createClient>, ownerUserId: string, vehicleId: string | null, priority: string) {
+  const { data: profile } = await supabase.from("drabornpark_profiles").select("notification_settings").eq("user_id", ownerUserId).maybeSingle();
+  const timeZone = String(profile?.notification_settings?.timezone || "Europe/Istanbul");
+  let clock: { day: number; time: string };
+  try { clock = localClock(timeZone); } catch { clock = localClock("Europe/Istanbul"); }
+
+  let query = supabase.from("drabornpark_routing_rules")
+    .select("id,vehicle_id,days_of_week,start_time,end_time,target_type,target_user_id,updated_at")
+    .eq("owner_user_id", ownerUserId)
+    .eq("is_enabled", true);
+  if (vehicleId) query = query.or(`vehicle_id.is.null,vehicle_id.eq.${vehicleId}`);
+  else query = query.is("vehicle_id", null);
+  const { data: rules } = await query;
+  const sorted = [...(rules ?? [])].sort((a: any, b: any) => {
+    const exactA = vehicleId && a.vehicle_id === vehicleId ? 1 : 0;
+    const exactB = vehicleId && b.vehicle_id === vehicleId ? 1 : 0;
+    if (exactA !== exactB) return exactB - exactA;
+    return new Date(b.updated_at ?? 0).getTime() - new Date(a.updated_at ?? 0).getTime();
+  });
+  const activeRule = sorted.find((rule: any) => ruleMatches(rule, clock.day, clock.time));
+  let routedTarget = ownerUserId;
+  if (activeRule?.target_type === "family" && activeRule.target_user_id) {
+    const { data: family } = await supabase.from("drabornpark_family_members")
+      .select("id")
+      .eq("owner_user_id", ownerUserId)
+      .eq("member_user_id", activeRule.target_user_id)
+      .eq("status", "active")
+      .eq("can_receive_notifications", true)
+      .maybeSingle();
+    if (family) routedTarget = activeRule.target_user_id;
+  }
+  const recipients = priority === "emergency" ? [ownerUserId, routedTarget] : [routedTarget];
+  return { recipients: [...new Set(recipients)], routingRuleId: activeRule?.id ?? null, timeZone };
+}
+
+async function sendExpoPush(supabase: ReturnType<typeof createClient>, userIds: string[], title: string, body: string, reportId: string, priority: string) {
+  if (!userIds.length) return;
+  const { data: tokens } = await supabase.from("drabornpark_push_tokens").select("user_id,expo_push_token").in("user_id", userIds).eq("is_enabled", true);
   if (!tokens?.length) return;
-  const messages = tokens.map((token: { expo_push_token: string }) => ({
+  const messages = tokens.map((token: { user_id: string; expo_push_token: string }) => ({
     to: token.expo_push_token,
     title,
     body,
@@ -138,10 +191,11 @@ Deno.serve(async (req) => {
       const { data: session, error: sessionError } = await supabase.from("drabornpark_contact_sessions").insert({ report_id: report.id, tag_id: tag.id, owner_user_id: tag.owner_user_id }).select("public_token,expires_at").single();
       if (sessionError) throw sessionError;
 
+      const routing = await resolvePushRecipients(supabase, tag.owner_user_id, tag.vehicle_id, category.priority);
       await supabase.from("drabornpark_scan_events").insert({ tag_id: tag.id, session_key: sessionKey, ip_hash: ipHash, user_agent: userAgent, action: "notify" });
-      await supabase.from("drabornpark_timeline_events").insert({ owner_user_id: tag.owner_user_id, vehicle_id: tag.vehicle_id, event_type: "REPORT_RECEIVED", title: category.title, description: safe, metadata: { reportId: report.id, priority: category.priority } });
-      await sendExpoPush(supabase, tag.owner_user_id, category.title, safe, report.id, category.priority);
-      return json({ ok: true, reportId: report.id, sessionToken: session.public_token, expiresAt: session.expires_at, ownerMessage: "Bildirim araç sahibine güvenli şekilde iletildi." }, 201);
+      await supabase.from("drabornpark_timeline_events").insert({ owner_user_id: tag.owner_user_id, vehicle_id: tag.vehicle_id, event_type: "REPORT_RECEIVED", title: category.title, description: safe, metadata: { reportId: report.id, priority: category.priority, routingRuleId: routing.routingRuleId, routedRecipients: routing.recipients.length } });
+      await sendExpoPush(supabase, routing.recipients, category.title, safe, report.id, category.priority);
+      return json({ ok: true, reportId: report.id, sessionToken: session.public_token, expiresAt: session.expires_at, ownerMessage: "Bildirim DraBornPark yönlendirme kurallarına göre güvenli şekilde iletildi." }, 201);
     }
 
     if (action === "chat") {

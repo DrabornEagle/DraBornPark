@@ -1,6 +1,6 @@
 import { supabase } from '@/src/lib/supabase';
 
-export async function uploadPrivateImage(uri: string, folder: 'parks' | 'tickets' | 'reports') {
+export async function uploadPrivateImage(uri: string, folder: 'parks' | 'tickets' | 'park-tickets' | 'reports') {
   const { data: userData, error: userError } = await supabase.auth.getUser();
   if (userError) throw userError;
   if (!userData.user) throw new Error('Oturum bulunamadı.');

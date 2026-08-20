@@ -3,80 +3,30 @@ import { router } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AuroraBackground, ScreenHeader, SectionHeading } from '@/src/components/AppChrome';
 import { loadLiveDashboard } from '@/src/lib/drabornpark';
-import { palette, radius } from '@/src/theme';
+import { palette, radius, type } from '@/src/theme';
 
-type Filter = 'all' | 'park' | 'notice' | 'mode' | 'tag';
-
-function classify(eventType: string): Filter {
-  const type = String(eventType || '').toUpperCase();
-  if (type.includes('PARK')) return 'park';
-  if (type.includes('REPORT') || type.includes('MESSAGE') || type.includes('NOTIFICATION')) return 'notice';
-  if (type.includes('VALET') || type.includes('SERVICE') || type.includes('GUEST')) return 'mode';
-  if (type.includes('TAG') || type.includes('ACTIVAT') || type.includes('TRANSFER')) return 'tag';
-  return 'all';
-}
-
-function eventIcon(eventType: string) {
-  const kind = classify(eventType);
-  if (kind === 'park') return 'map-marker-outline' as const;
-  if (kind === 'notice') return 'bell-outline' as const;
-  if (kind === 'mode') return 'car' as const;
-  if (kind === 'tag') return 'nfc' as const;
-  return 'history' as const;
-}
-
-function eventColor(eventType: string) {
-  const kind = classify(eventType);
-  if (kind === 'park') return palette.orange;
-  if (kind === 'notice') return palette.cyan;
-  if (kind === 'mode') return palette.purple;
-  if (kind === 'tag') return palette.green;
-  return palette.muted;
-}
-
-export default function TimelineScreen() {
-  const [data, setData] = useState<any>(null);
-  const [filter, setFilter] = useState<Filter>('all');
-  const [vehicleId, setVehicleId] = useState<string | null>(null);
-
-  async function refresh() {
-    try { setData(await loadLiveDashboard()); }
-    catch { router.replace('/auth'); }
-  }
-  useEffect(() => { refresh(); }, []);
-
-  const events = useMemo(() => {
-    if (!data) return [];
-    return data.timeline.filter((item: any) => {
-      const filterMatch = filter === 'all' || classify(item.event_type) === filter;
-      const vehicleMatch = !vehicleId || item.vehicle_id === vehicleId;
-      return filterMatch && vehicleMatch;
-    });
-  }, [data, filter, vehicleId]);
-
-  if (!data) return <SafeAreaView style={styles.safe}><View style={styles.loader}><ActivityIndicator color={palette.purple} /></View></SafeAreaView>;
-
-  return <SafeAreaView style={styles.safe}><ScrollView contentContainerStyle={styles.scroll}>
-    <Header />
-    <Text style={styles.over}>ARAÇ HAFIZASI</Text><Text style={styles.title}>Timeline</Text><Text style={styles.sub}>Park, bildirim, etiket, geçici sürücü, Vale ve Servis olaylarının tamamı tek kronolojik geçmişte.</Text>
-
-    <Text style={styles.label}>ARAÇ</Text><View style={styles.chips}><Pressable onPress={() => setVehicleId(null)} style={[styles.chip, !vehicleId && styles.chipActive]}><Text style={[styles.chipText, !vehicleId && styles.chipTextActive]}>TÜMÜ</Text></Pressable>{data.vehicles.map((vehicle: any) => <Pressable key={vehicle.id} onPress={() => setVehicleId(vehicle.id)} style={[styles.chip, vehicleId === vehicle.id && styles.chipActive]}><Text style={[styles.chipText, vehicleId === vehicle.id && styles.chipTextActive]}>{vehicle.vehicle_name}</Text></Pressable>)}</View>
-    <Text style={styles.label}>FİLTRE</Text><View style={styles.filters}>{[
-      ['all','Tümü'],['park','Park'],['notice','Bildirim'],['mode','Modlar'],['tag','Etiket']
-    ].map(([key,label]) => <Pressable key={key} onPress={() => setFilter(key as Filter)} style={[styles.filter, filter === key && styles.filterActive]}><Text style={[styles.filterText, filter === key && { color: palette.purple }]}>{label}</Text></Pressable>)}</View>
-
-    <View style={styles.summary}><View><Text style={styles.summaryValue}>{events.length}</Text><Text style={styles.summaryLabel}>GÖSTERİLEN OLAY</Text></View><View><Text style={styles.summaryValue}>{data.timeline.length}</Text><Text style={styles.summaryLabel}>TOPLAM HAFIZA</Text></View><MaterialCommunityIcons name="history" size={30} color={palette.purple} /></View>
-
-    {events.length === 0 ? <View style={styles.empty}><MaterialCommunityIcons name="history" size={30} color={palette.muted} /><Text style={styles.emptyTitle}>Bu filtrede olay yok</Text><Text style={styles.emptyBody}>Yeni park ve araç olayları oluştukça burada görünecek.</Text></View> : events.map((item: any, index: number) => { const color = eventColor(item.event_type); return <View key={item.id || `${item.event_type}-${index}`} style={styles.event}><View style={styles.rail}><View style={[styles.dot,{ borderColor: color, backgroundColor: `${color}22` }]}><MaterialCommunityIcons name={eventIcon(item.event_type)} size={18} color={color} /></View>{index < events.length - 1 ? <View style={styles.line} /> : null}</View><View style={styles.eventBody}><View style={styles.eventTop}><Text style={styles.eventTitle}>{item.title || item.event_type}</Text><Text style={styles.time}>{new Date(item.occurred_at).toLocaleString('tr-TR')}</Text></View><Text style={styles.eventText}>{item.description || formatMetadata(item.metadata)}</Text><Text style={[styles.eventType,{ color }]}>{String(item.event_type).replaceAll('_',' ')}</Text></View></View>; })}
+type Filter='all'|'park'|'notice'|'mode'|'tag';
+function classify(value:string):Filter{const x=String(value||'').toUpperCase();if(x.includes('PARK'))return'park';if(x.includes('REPORT')||x.includes('MESSAGE')||x.includes('NOTIFICATION'))return'notice';if(x.includes('VALET')||x.includes('SERVICE')||x.includes('GUEST'))return'mode';if(x.includes('TAG')||x.includes('ACTIVAT')||x.includes('TRANSFER'))return'tag';return'all'}
+function icon(value:string){const k=classify(value);if(k==='park')return'map-marker-outline' as const;if(k==='notice')return'bell-outline' as const;if(k==='mode')return'car-key' as const;if(k==='tag')return'nfc' as const;return'history' as const}
+function color(value:string){const k=classify(value);if(k==='park')return palette.orange;if(k==='notice')return palette.cyan;if(k==='mode')return palette.purple;if(k==='tag')return palette.green;return palette.muted}
+export default function TimelineScreen(){
+  const [data,setData]=useState<any>(null);const [filter,setFilter]=useState<Filter>('all');const [vehicleId,setVehicleId]=useState<string|null>(null);
+  async function refresh(){try{setData(await loadLiveDashboard())}catch{router.replace('/auth')}}useEffect(()=>{refresh()},[]);
+  const events=useMemo(()=>data?data.timeline.filter((item:any)=>(filter==='all'||classify(item.event_type)===filter)&&(!vehicleId||item.vehicle_id===vehicleId)):[],[data,filter,vehicleId]);
+  if(!data)return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.purple}/><View style={s.loading}><ActivityIndicator color={palette.purple}/><Text style={s.loadingText}>Timeline hazırlanıyor…</Text></View></SafeAreaView>;
+  return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.purple} secondary={palette.cyan}/><ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+    <ScreenHeader title="DraBornPark Timeline" eyebrow="ARAÇ HAFIZASI" accent={palette.purple} subtitle="Park, bildirim, etiket ve geçici araç modlarını kronolojik olarak takip et." right={<Pressable onPress={refresh} style={s.refresh}><MaterialCommunityIcons name="refresh" size={22} color={palette.purple}/></Pressable>}/>
+    <View style={s.summary}><View style={[s.summaryIcon,{backgroundColor:`${palette.purple}20`}]}><MaterialCommunityIcons name="history" size={31} color={palette.purple}/></View><View style={{flex:1}}><Text style={s.summaryValue}>{events.length} olay gösteriliyor</Text><Text style={s.summaryBody}>Toplam hafıza: {data.timeline.length} kayıt • son 100 olay canlı tutuluyor</Text></View></View>
+    <SectionHeading title="Araç seç" subtitle="Timeline'ı tek araca daralt"/>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.rail}><Chip on={!vehicleId} title="Tüm araçlar" onPress={()=>setVehicleId(null)}/>{data.vehicles.map((v:any)=><Chip key={v.id} on={vehicleId===v.id} title={v.vehicle_name} onPress={()=>setVehicleId(v.id)}/>)}</ScrollView>
+    <SectionHeading title="Olay türü" subtitle="İstediğin kategoriye odaklan"/>
+    <View style={s.filterRow}>{([['all','Tümü','apps'],['park','Park','parking'],['notice','Bildirim','bell-outline'],['mode','Modlar','car-key'],['tag','Etiket','nfc']] as const).map(([key,label,filterIcon])=><Pressable key={key} onPress={()=>setFilter(key)} style={[s.filter,filter===key&&s.filterOn]}><MaterialCommunityIcons name={filterIcon} size={20} color={filter===key?palette.purple:palette.muted}/><Text style={[s.filterText,filter===key&&{color:palette.text}]}>{label}</Text></Pressable>)}</View>
+    <SectionHeading title="Olay akışı" subtitle="En yeni olay üstte" badge={`${events.length} OLAY`} color={palette.purple}/>
+    {events.length===0?<View style={s.empty}><MaterialCommunityIcons name="history" size={39} color={palette.muted}/><Text style={s.emptyTitle}>Bu filtrede olay yok</Text><Text style={s.emptyBody}>Yeni park ve araç olayları oluştukça burada görünecek.</Text></View>:<View style={s.timeline}>{events.map((item:any,index:number)=>{const c=color(item.event_type);return <View key={item.id||`${item.event_type}-${index}`} style={s.event}><View style={s.railLine}>{index<events.length-1?<View style={s.line}/>:null}<View style={[s.dot,{borderColor:`${c}60`,backgroundColor:`${c}18`}]}><MaterialCommunityIcons name={icon(item.event_type)} size={22} color={c}/></View></View><View style={[s.eventCard,{borderColor:`${c}35`}]}><View style={s.eventTop}><Text style={s.eventTitle}>{item.title||item.event_type}</Text><Text style={s.eventTime}>{new Date(item.occurred_at).toLocaleString('tr-TR')}</Text></View><Text style={s.eventBody}>{item.description||formatMetadata(item.metadata)}</Text><View style={[s.typeBadge,{backgroundColor:`${c}12`,borderColor:`${c}35`}]}><Text style={[s.typeText,{color:c}]}>{String(item.event_type).replaceAll('_',' ')}</Text></View></View></View>})}</View>}
   </ScrollView></SafeAreaView>;
 }
-
-function formatMetadata(metadata: any) {
-  if (!metadata || Object.keys(metadata).length === 0) return 'Araç olayı kaydedildi.';
-  const entries = Object.entries(metadata).slice(0, 3).map(([key,value]) => `${key}: ${String(value)}`);
-  return entries.join(' • ');
-}
-function Header() { return <View style={styles.header}><Pressable onPress={() => router.back()} style={styles.back}><MaterialCommunityIcons name="chevron-left" size={27} color={palette.text} /></Pressable><Text style={styles.headerTitle}>Timeline</Text><Pressable onPress={() => router.replace('/timeline')} style={styles.back}><MaterialCommunityIcons name="refresh" size={20} color={palette.muted} /></Pressable></View>; }
-
-const styles = StyleSheet.create({ safe:{flex:1,backgroundColor:palette.bg},scroll:{padding:19,paddingBottom:55},loader:{flex:1,alignItems:'center',justifyContent:'center'},header:{flexDirection:'row',alignItems:'center',justifyContent:'space-between'},back:{width:42,height:42,borderRadius:14,borderWidth:1,borderColor:palette.line,alignItems:'center',justifyContent:'center'},headerTitle:{color:palette.text,fontSize:14,fontWeight:'900'},over:{color:palette.purple,fontSize:8.5,fontWeight:'900',letterSpacing:1.4,marginTop:25},title:{color:palette.text,fontSize:31,fontWeight:'900',letterSpacing:-1.1,marginTop:5},sub:{color:palette.muted,fontSize:11.5,lineHeight:17,marginTop:7},label:{color:'#7E8A9F',fontSize:8.5,fontWeight:'900',letterSpacing:1.1,marginTop:16,marginBottom:7},chips:{flexDirection:'row',flexWrap:'wrap',gap:7},chip:{borderRadius:12,borderWidth:1,borderColor:palette.line,paddingHorizontal:10,paddingVertical:9},chipActive:{borderColor:'#563A75',backgroundColor:'#1E162A'},chipText:{color:palette.muted,fontSize:8.5,fontWeight:'800'},chipTextActive:{color:palette.purple},filters:{flexDirection:'row',gap:6},filter:{flex:1,height:38,borderRadius:11,borderWidth:1,borderColor:palette.line,alignItems:'center',justifyContent:'center'},filterActive:{borderColor:'#563A75',backgroundColor:'#1E162A'},filterText:{color:palette.muted,fontSize:8.2,fontWeight:'900'},summary:{marginTop:17,borderRadius:radius.lg,borderWidth:1,borderColor:'#3C2C50',backgroundColor:'#171121',padding:15,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},summaryValue:{color:palette.text,fontSize:20,fontWeight:'900'},summaryLabel:{color:palette.muted,fontSize:7.5,fontWeight:'900',marginTop:2},event:{flexDirection:'row',gap:11,marginTop:13},rail:{width:38,alignItems:'center'},dot:{width:38,height:38,borderRadius:14,borderWidth:1,alignItems:'center',justifyContent:'center'},line:{width:1,flex:1,minHeight:48,backgroundColor:palette.line,marginTop:5},eventBody:{flex:1,borderBottomWidth:1,borderBottomColor:'#171F31',paddingBottom:14},eventTop:{flexDirection:'row',gap:8,alignItems:'flex-start'},eventTitle:{color:palette.text,fontSize:12,fontWeight:'900',flex:1},time:{color:'#657187',fontSize:8.5},eventText:{color:palette.muted,fontSize:9.8,lineHeight:14,marginTop:4},eventType:{fontSize:7.5,fontWeight:'900',letterSpacing:.8,marginTop:6},empty:{marginTop:25,borderRadius:radius.lg,borderWidth:1,borderColor:palette.line,padding:24,alignItems:'center'},emptyTitle:{color:palette.text,fontSize:15,fontWeight:'900',marginTop:10},emptyBody:{color:palette.muted,fontSize:10,textAlign:'center',marginTop:4} });
+function formatMetadata(metadata:any){if(!metadata||Object.keys(metadata).length===0)return'Araç olayı kaydedildi.';return Object.entries(metadata).slice(0,3).map(([k,v])=>`${k}: ${String(v)}`).join(' • ')}
+function Chip({on,title,onPress}:{on:boolean;title:string;onPress:()=>void}){return <Pressable onPress={onPress} style={[s.chip,on&&s.chipOn]}><Text style={[s.chipText,on&&{color:palette.text}]}>{title}</Text></Pressable>}
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},scroll:{padding:20,paddingBottom:50},loading:{flex:1,alignItems:'center',justifyContent:'center',gap:12},loadingText:{color:palette.muted,fontSize:type.body},refresh:{width:48,height:48,borderRadius:17,borderWidth:1,borderColor:`${palette.purple}45`,backgroundColor:`${palette.purple}0E`,alignItems:'center',justifyContent:'center'},summary:{minHeight:116,borderRadius:radius.lg,borderWidth:1,borderColor:`${palette.purple}45`,backgroundColor:`${palette.purple}0E`,padding:16,flexDirection:'row',alignItems:'center',gap:13},summaryIcon:{width:60,height:60,borderRadius:20,alignItems:'center',justifyContent:'center'},summaryValue:{color:palette.text,fontSize:type.section,fontWeight:'900'},summaryBody:{color:palette.muted,fontSize:type.caption,lineHeight:19,marginTop:4},rail:{gap:8,paddingRight:14},chip:{minHeight:46,borderRadius:15,borderWidth:1,borderColor:palette.line,paddingHorizontal:13,alignItems:'center',justifyContent:'center'},chipOn:{borderColor:`${palette.purple}55`,backgroundColor:`${palette.purple}10`},chipText:{color:palette.muted,fontSize:type.caption,fontWeight:'900'},filterRow:{flexDirection:'row',gap:7},filter:{flex:1,minHeight:72,borderRadius:17,borderWidth:1,borderColor:palette.line,alignItems:'center',justifyContent:'center',gap:5,paddingHorizontal:4},filterOn:{borderColor:`${palette.purple}55`,backgroundColor:`${palette.purple}10`},filterText:{color:palette.muted,fontSize:type.micro,fontWeight:'900'},timeline:{gap:0},event:{flexDirection:'row',gap:12},railLine:{width:48,alignItems:'center'},line:{position:'absolute',top:50,bottom:-4,width:2,backgroundColor:palette.lineSoft},dot:{width:46,height:46,borderRadius:16,borderWidth:1,alignItems:'center',justifyContent:'center'},eventCard:{flex:1,borderRadius:radius.md,borderWidth:1,backgroundColor:palette.panel,padding:15,marginBottom:12},eventTop:{flexDirection:'row',alignItems:'flex-start',gap:9},eventTitle:{color:palette.text,fontSize:type.cardTitle,fontWeight:'900',flex:1},eventTime:{color:palette.muted2,fontSize:type.micro,maxWidth:105,textAlign:'right'},eventBody:{color:palette.muted,fontSize:type.caption,lineHeight:19,marginTop:6},typeBadge:{alignSelf:'flex-start',borderRadius:999,borderWidth:1,paddingHorizontal:9,paddingVertical:6,marginTop:10},typeText:{fontSize:type.micro,fontWeight:'900'},empty:{borderRadius:radius.lg,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:28,alignItems:'center'},emptyTitle:{color:palette.text,fontSize:type.cardTitle,fontWeight:'900',marginTop:10},emptyBody:{color:palette.muted,fontSize:type.caption,lineHeight:19,textAlign:'center',marginTop:5}});
