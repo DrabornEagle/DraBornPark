@@ -45,7 +45,7 @@ jobs:
   developer-apk:
     name: Developer APK
     needs: expo-check
-    if: github.event_name != 'pull_request'
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'build/')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
