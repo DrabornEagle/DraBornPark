@@ -10,6 +10,9 @@ export type LiveDashboard = {
   timeline: any[];
   family: any[];
   guestDrivers: any[];
+  vehicleModes: any[];
+  routingRules: any[];
+  emergencyContacts: any[];
   subscription: any | null;
 };
 
@@ -18,6 +21,18 @@ async function currentUserId() {
   if (error) throw error;
   if (!data.user) throw new Error('Oturum bulunamadı.');
   return data.user.id;
+}
+
+export function hasPlusEntitlement(profile: any | null, subscription: any | null) {
+  if (!profile) return false;
+  if (['PLUS', 'PLUS_ACTIVE', 'ACTIVE'].includes(profile.subscription_status)) return true;
+  if (profile.subscription_status === 'PLUS_TRIAL' && profile.plus_trial_until) {
+    if (new Date(profile.plus_trial_until).getTime() > Date.now()) return true;
+  }
+  if (subscription && ['active', 'trialing', 'grace_period'].includes(String(subscription.status).toLowerCase())) {
+    return !subscription.expires_at || new Date(subscription.expires_at).getTime() > Date.now();
+  }
+  return false;
 }
 
 export async function bootstrapProfile(displayName?: string) {
@@ -30,19 +45,48 @@ export async function bootstrapProfile(displayName?: string) {
 
 export async function loadLiveDashboard(): Promise<LiveDashboard> {
   const userId = await currentUserId();
-  const [profileRes, vehiclesRes, tagsRes, parksRes, reportsRes, timelineRes, familyRes, guestRes, subscriptionRes] = await Promise.all([
+  const [
+    profileRes,
+    vehiclesRes,
+    tagsRes,
+    parksRes,
+    reportsRes,
+    timelineRes,
+    familyRes,
+    guestRes,
+    modesRes,
+    routingRes,
+    emergencyRes,
+    subscriptionRes,
+  ] = await Promise.all([
     supabase.from('drabornpark_profiles').select('*').eq('user_id', userId).maybeSingle(),
     supabase.from('drabornpark_vehicles').select('*').eq('owner_user_id', userId).eq('is_active', true).order('created_at'),
     supabase.from('drabornpark_tags').select('id,tag_code,serial_number,nfc_url,status,vehicle_id,manufactured_at,sold_at,activated_at,disabled_at,transfer_expires_at').eq('owner_user_id', userId).order('created_at', { ascending: false }),
     supabase.from('drabornpark_parks').select('*').eq('owner_user_id', userId).order('parked_at', { ascending: false }).limit(30),
     supabase.from('drabornpark_reports').select('*').eq('owner_user_id', userId).order('created_at', { ascending: false }).limit(40),
-    supabase.from('drabornpark_timeline_events').select('*').eq('owner_user_id', userId).order('occurred_at', { ascending: false }).limit(50),
+    supabase.from('drabornpark_timeline_events').select('*').eq('owner_user_id', userId).order('occurred_at', { ascending: false }).limit(100),
     supabase.from('drabornpark_family_members').select('*').eq('owner_user_id', userId).order('created_at', { ascending: false }),
     supabase.from('drabornpark_guest_drivers').select('*').eq('owner_user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('drabornpark_vehicle_modes').select('*').eq('owner_user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('drabornpark_routing_rules').select('*').eq('owner_user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('drabornpark_emergency_contacts').select('*').eq('owner_user_id', userId).order('priority').order('created_at'),
     supabase.from('drabornpark_subscriptions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
   ]);
 
-  const errors = [profileRes.error, vehiclesRes.error, tagsRes.error, parksRes.error, reportsRes.error, timelineRes.error, familyRes.error, guestRes.error, subscriptionRes.error].filter(Boolean);
+  const errors = [
+    profileRes.error,
+    vehiclesRes.error,
+    tagsRes.error,
+    parksRes.error,
+    reportsRes.error,
+    timelineRes.error,
+    familyRes.error,
+    guestRes.error,
+    modesRes.error,
+    routingRes.error,
+    emergencyRes.error,
+    subscriptionRes.error,
+  ].filter(Boolean);
   if (errors.length) throw errors[0];
 
   return {
@@ -55,6 +99,9 @@ export async function loadLiveDashboard(): Promise<LiveDashboard> {
     timeline: timelineRes.data ?? [],
     family: familyRes.data ?? [],
     guestDrivers: guestRes.data ?? [],
+    vehicleModes: modesRes.data ?? [],
+    routingRules: routingRes.data ?? [],
+    emergencyContacts: emergencyRes.data ?? [],
     subscription: subscriptionRes.data,
   };
 }
@@ -204,6 +251,17 @@ export async function addFamilyMember(input: { email: string; displayName?: stri
   return data;
 }
 
+export async function updateFamilyMember(memberId: string, patch: { can_view_park?: boolean; can_receive_notifications?: boolean; display_name?: string }) {
+  const { data, error } = await supabase.from('drabornpark_family_members').update(patch).eq('id', memberId).select('*').single();
+  if (error) throw error;
+  return data;
+}
+
+export async function removeFamilyMember(memberId: string) {
+  const { error } = await supabase.from('drabornpark_family_members').delete().eq('id', memberId);
+  if (error) throw error;
+}
+
 export async function addGuestDriver(input: { vehicleId: string; label: string; endsAt: string }) {
   const ownerUserId = await currentUserId();
   const { data, error } = await supabase.from('drabornpark_guest_drivers').insert({
@@ -217,6 +275,110 @@ export async function addGuestDriver(input: { vehicleId: string; label: string; 
   }).select('*').single();
   if (error) throw error;
   return data;
+}
+
+export async function endGuestDriver(guestDriverId: string) {
+  const { data, error } = await supabase.rpc('drabornpark_end_guest_driver', {
+    drabornpark_guest_driver_id: guestDriverId,
+  });
+  if (error) throw error;
+  return Boolean(data);
+}
+
+export async function startVehicleMode(input: {
+  vehicleId: string;
+  modeType: 'valet' | 'service';
+  label?: string;
+  durationMinutes: number;
+  metadata?: Record<string, unknown>;
+}) {
+  const { data, error } = await supabase.rpc('drabornpark_start_vehicle_mode', {
+    drabornpark_vehicle_id: input.vehicleId,
+    drabornpark_mode_type: input.modeType,
+    drabornpark_label: input.label?.trim() || null,
+    drabornpark_duration_minutes: input.durationMinutes,
+    drabornpark_metadata: input.metadata ?? {},
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function endVehicleMode(modeId: string) {
+  const { data, error } = await supabase.rpc('drabornpark_end_vehicle_mode', {
+    drabornpark_mode_id: modeId,
+  });
+  if (error) throw error;
+  return Boolean(data);
+}
+
+export async function setServiceState(modeId: string, serviceState: 'in_service' | 'extra_work' | 'ready' | 'pickup', note?: string) {
+  const { data, error } = await supabase.rpc('drabornpark_set_service_state', {
+    drabornpark_mode_id: modeId,
+    drabornpark_service_state: serviceState,
+    drabornpark_note: note?.trim() || null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function createRoutingRule(input: {
+  vehicleId?: string | null;
+  ruleName: string;
+  daysOfWeek: number[];
+  startTime: string;
+  endTime: string;
+  targetType: 'owner' | 'family' | 'guest';
+  targetUserId?: string | null;
+}) {
+  const { data, error } = await supabase.rpc('drabornpark_create_routing_rule', {
+    drabornpark_vehicle_id: input.vehicleId ?? null,
+    drabornpark_rule_name: input.ruleName.trim(),
+    drabornpark_days_of_week: input.daysOfWeek,
+    drabornpark_start_time: input.startTime,
+    drabornpark_end_time: input.endTime,
+    drabornpark_target_type: input.targetType,
+    drabornpark_target_user_id: input.targetUserId ?? null,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function setRoutingRuleEnabled(ruleId: string, enabled: boolean) {
+  const { data, error } = await supabase.from('drabornpark_routing_rules').update({ is_enabled: enabled }).eq('id', ruleId).select('*').single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteRoutingRule(ruleId: string) {
+  const { data, error } = await supabase.rpc('drabornpark_delete_routing_rule', {
+    drabornpark_rule_id: ruleId,
+  });
+  if (error) throw error;
+  return Boolean(data);
+}
+
+export async function addEmergencyContact(input: { name: string; phone?: string; priority: number }) {
+  const { data, error } = await supabase.rpc('drabornpark_add_emergency_contact', {
+    drabornpark_contact_name: input.name.trim(),
+    drabornpark_phone_e164: input.phone?.trim() || null,
+    drabornpark_priority: input.priority,
+  });
+  if (error) throw error;
+  return data;
+}
+
+export async function setEmergencyContactEnabled(contactId: string, enabled: boolean) {
+  const { data, error } = await supabase.from('drabornpark_emergency_contacts').update({ is_enabled: enabled }).eq('id', contactId).select('*').single();
+  if (error) throw error;
+  return data;
+}
+
+export async function deleteEmergencyContact(contactId: string) {
+  const { data, error } = await supabase.rpc('drabornpark_delete_emergency_contact', {
+    drabornpark_contact_id: contactId,
+  });
+  if (error) throw error;
+  return Boolean(data);
 }
 
 export async function createSupportRequest(subject: string, body: string) {
