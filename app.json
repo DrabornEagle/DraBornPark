@@ -2,7 +2,7 @@
   "expo": {
     "name": "DraBornPark",
     "slug": "drabornpark",
-    "version": "0.4.3",
+    "version": "0.4.4",
     "orientation": "portrait",
     "scheme": "drabornpark",
     "userInterfaceStyle": "dark",
@@ -26,7 +26,7 @@
     "experiments": { "typedRoutes": true, "reactCompiler": true },
     "android": {
       "package": "com.draborneagle.drabornpark",
-      "versionCode": 7,
+      "versionCode": 8,
       "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION", "POST_NOTIFICATIONS"]
     },
     "ios": { "bundleIdentifier": "com.draborneagle.drabornpark" },
