@@ -10,6 +10,15 @@
     "plugins": [
       "expo-router",
       [
+        "expo-dev-client",
+        {
+          "launchMode": "most-recent",
+          "android": {
+            "defaultLaunchURL": "http://127.0.0.1:8081"
+          }
+        }
+      ],
+      [
         "expo-navigation-bar",
         {
           "enforceContrast": false,
@@ -30,14 +39,19 @@
           "photosPermission": "DraBornPark seçtiğin park veya araç görsellerini hesabına ekleyebilmek için fotoğraflarına erişir."
         }
       ],
-      "expo-notifications"
+      [
+        "expo-notifications",
+        {
+          "defaultChannel": "drabornpark-core"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "android": {
       "package": "com.draborneagle.drabornpark",
-      "versionCode": 14,
+      "versionCode": 15,
       "backgroundColor": "#050816",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
