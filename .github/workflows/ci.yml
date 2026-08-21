@@ -24,12 +24,10 @@ jobs:
           node-version: 22
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Project integrity and production hygiene
+      - name: TypeScript and Expo Doctor
         run: npm run check
       - name: Expo dependency compatibility
         run: npx expo install --check
-      - name: TypeScript
-        run: npm run typecheck
       - name: Expo web export
         run: npx expo export --platform web
       - name: Verify tracked source stayed clean
@@ -66,24 +64,25 @@ jobs:
         env:
           CI: '1'
         run: ./gradlew :app:assembleDebug --no-daemon
-      - name: Verify Developer APK
+      - name: Verify Developer APK package/version/signature
         run: |
           APK="android/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
-          "$AAPT" dump badging "$APK" | grep "package: name='com.draborneagle.drabornpark'"
+          BADGING="$($AAPT dump badging "$APK")"
+          echo "$BADGING" | grep "package: name='com.draborneagle.drabornpark' versionCode='1' versionName='0.6.0'"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           "$APKSIGNER" verify --verbose "$APK"
       - name: Prepare Developer APK artifact
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.3-vc19-developer-debug.apk
-          sha256sum artifacts/DraBornPark-v0.5.3-vc19-developer-debug.apk > artifacts/SHA256.txt
-          printf 'DraBornPark v0.5.3\nAndroid versionCode: 19\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear\nNotification channel: drabornpark-alerts-v3\nWorklets native/JS version: 0.10.1\nCamera-only timestamped evidence: enabled on secure web contact\nEvidence storage: private owner-only signed URL\nFull-screen evidence viewer: enabled\nRealtime + polling fallback anonymous chat: enabled\nInbox pagination: 5 + 5\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.6.0-vc1-developer-debug.apk
+          sha256sum artifacts/DraBornPark-v0.6.0-vc1-developer-debug.apk > artifacts/SHA256.txt
+          printf 'DraBornPark v0.6.0\nAndroid versionCode: 1\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear\nNotification channel: drabornpark-alerts-v3\nGoogle Play Billing: monthly/yearly client + server verification prepared\nSupport admin notification routing: enabled\n14-day DraBornPark+ reward: granted on eligible tag activation\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
       - name: Upload Developer APK
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v0.5.3-vc19-developer-apk
+          name: DraBornPark-v0.6.0-vc1-developer-apk
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
