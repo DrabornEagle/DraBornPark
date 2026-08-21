@@ -1,35 +1,61 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const jsonHeaders={"content-type":"application/json","cache-control":"no-store"};
-const PACKAGE_NAME="com.draborneagle.drabornpark";
-const ALLOWED_PRODUCTS=new Set(["drabornpark_plus_monthly","drabornpark_plus_yearly"]);
+const dkdJsonHeaders={"content-type":"application/json","cache-control":"no-store"};
+const DKD_PACKAGE_NAME="com.draborneagle.drabornpark";
+const DKD_ALLOWED_PRODUCTS=new Set(["drabornpark_plus_monthly","drabornpark_plus_yearly"]);
 
-function b64url(input:Uint8Array|string){const bytes=typeof input==="string"?new TextEncoder().encode(input):input;let binary="";for(const b of bytes)binary+=String.fromCharCode(b);return btoa(binary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");}
-function pemBytes(pem:string){const base64=pem.replace(/-----BEGIN PRIVATE KEY-----/g,"").replace(/-----END PRIVATE KEY-----/g,"").replace(/\s+/g,"");const raw=atob(base64);const out=new Uint8Array(raw.length);for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);return out;}
-async function accessToken(serviceAccount:any){const now=Math.floor(Date.now()/1000);const header=b64url(JSON.stringify({alg:"RS256",typ:"JWT"}));const claim=b64url(JSON.stringify({iss:serviceAccount.client_email,scope:"https://www.googleapis.com/auth/androidpublisher",aud:"https://oauth2.googleapis.com/token",iat:now,exp:now+3500}));const unsigned=`${header}.${claim}`;const key=await crypto.subtle.importKey("pkcs8",pemBytes(serviceAccount.private_key),{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);const signature=new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5",key,new TextEncoder().encode(unsigned)));const assertion=`${unsigned}.${b64url(signature)}`;const body=new URLSearchParams({grant_type:"urn:ietf:params:oauth:grant-type:jwt-bearer",assertion});const response=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body});const payload=await response.json();if(!response.ok||!payload.access_token)throw new Error(payload.error_description||payload.error||"google_oauth_failed");return String(payload.access_token);}
-async function sha256(value:string){const digest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)));return Array.from(digest).map(x=>x.toString(16).padStart(2,"0")).join("");}
-function mapStatus(state:string){if(state==="SUBSCRIPTION_STATE_ACTIVE")return "active";if(state==="SUBSCRIPTION_STATE_IN_GRACE_PERIOD")return "grace_period";if(state==="SUBSCRIPTION_STATE_CANCELED")return "canceled";if(state==="SUBSCRIPTION_STATE_PAUSED")return "paused";if(state==="SUBSCRIPTION_STATE_ON_HOLD")return "on_hold";if(state==="SUBSCRIPTION_STATE_PENDING")return "pending";return "expired";}
+function dkdB64url(input:Uint8Array|string){const dkdBytes=typeof input==="string"?new TextEncoder().encode(input):input;let dkdBinary="";for(const dkdByte of dkdBytes)dkdBinary+=String.fromCharCode(dkdByte);return btoa(dkdBinary).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/g,"");}
+function dkdPemBytes(pem:string){const dkdBase64=pem.replace(/-----BEGIN PRIVATE KEY-----/g,"").replace(/-----END PRIVATE KEY-----/g,"").replace(/\s+/g,"");const dkdRaw=atob(dkdBase64);const dkdOut=new Uint8Array(dkdRaw.length);for(let dkdIndex=0;dkdIndex<dkdRaw.length;dkdIndex++)dkdOut[dkdIndex]=dkdRaw.charCodeAt(dkdIndex);return dkdOut;}
+async function dkdAccessToken(serviceAccount:any){const dkdNow=Math.floor(Date.now()/1000);const dkdHeader=dkdB64url(JSON.stringify({alg:"RS256",typ:"JWT"}));const dkdClaim=dkdB64url(JSON.stringify({iss:serviceAccount.client_email,scope:"https://www.googleapis.com/auth/androidpublisher",aud:"https://oauth2.googleapis.com/token",iat:dkdNow,exp:dkdNow+3500}));const dkdUnsigned=`${dkdHeader}.${dkdClaim}`;const dkdKey=await crypto.subtle.importKey("pkcs8",dkdPemBytes(serviceAccount.private_key),{name:"RSASSA-PKCS1-v1_5",hash:"SHA-256"},false,["sign"]);const dkdSignature=new Uint8Array(await crypto.subtle.sign("RSASSA-PKCS1-v1_5",dkdKey,new TextEncoder().encode(dkdUnsigned)));const dkdAssertion=`${dkdUnsigned}.${dkdB64url(dkdSignature)}`;const dkdBody=new URLSearchParams({grant_type:"urn:ietf:params:oauth2.0:grant-type:jwt-bearer",assertion:dkdAssertion});const dkdResponse=await fetch("https://oauth2.googleapis.com/token",{method:"POST",headers:{"content-type":"application/x-www-form-urlencoded"},body:dkdBody});const dkdPayload=await dkdResponse.json();if(!dkdResponse.ok||!dkdPayload.access_token)throw new Error(dkdPayload.error_description||dkdPayload.error||"google_oauth_failed");return String(dkdPayload.access_token);}
+async function dkdSha256(value:string){const dkdDigest=new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(value)));return Array.from(dkdDigest).map(dkdValue=>dkdValue.toString(16).padStart(2,"0")).join("");}
+function dkdMapStatus(state:string){if(state==="SUBSCRIPTION_STATE_ACTIVE")return "active";if(state==="SUBSCRIPTION_STATE_IN_GRACE_PERIOD")return "grace_period";if(state==="SUBSCRIPTION_STATE_CANCELED")return "canceled";if(state==="SUBSCRIPTION_STATE_PAUSED")return "paused";if(state==="SUBSCRIPTION_STATE_ON_HOLD")return "on_hold";if(state==="SUBSCRIPTION_STATE_PENDING")return "pending";return "expired";}
+function dkdResponse(payload:unknown,status=200){return new Response(JSON.stringify(payload),{status,headers:dkdJsonHeaders});}
 
-Deno.serve(async(req:Request)=>{
-  if(req.method!=="POST")return new Response(JSON.stringify({error:"method_not_allowed"}),{status:405,headers:jsonHeaders});
-  const url=Deno.env.get("SUPABASE_URL")!;const anon=Deno.env.get("SUPABASE_ANON_KEY")!;const service=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;const auth=req.headers.get("authorization")||"";
-  const userClient=createClient(url,anon,{global:{headers:{Authorization:auth}}});const {data:userData,error:userError}=await userClient.auth.getUser();
-  if(userError||!userData.user)return new Response(JSON.stringify({error:"unauthorized"}),{status:401,headers:jsonHeaders});
-  const body=await req.json().catch(()=>({}));const productId=String(body?.productId||"");const purchaseToken=String(body?.purchaseToken||"");const requestedBasePlan=body?.basePlanId?String(body.basePlanId):null;
-  if(!ALLOWED_PRODUCTS.has(productId)||!purchaseToken)return new Response(JSON.stringify({error:"invalid_purchase_payload"}),{status:400,headers:jsonHeaders});
-  const rawSecret=Deno.env.get("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON");if(!rawSecret)return new Response(JSON.stringify({error:"google_play_service_account_not_configured"}),{status:503,headers:jsonHeaders});
+Deno.serve(async(dkdReq:Request)=>{
+  if(dkdReq.method!=="POST")return dkdResponse({error:"method_not_allowed"},405);
+  const dkdUrl=Deno.env.get("SUPABASE_URL")!;const dkdAnon=Deno.env.get("SUPABASE_ANON_KEY")!;const dkdService=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;const dkdAuth=dkdReq.headers.get("authorization")||"";
+  const dkdUserClient=createClient(dkdUrl,dkdAnon,{global:{headers:{Authorization:dkdAuth}}});const {data:dkdUserData,error:dkdUserError}=await dkdUserClient.auth.getUser();
+  if(dkdUserError||!dkdUserData.user)return dkdResponse({error:"unauthorized"},401);
+  const dkdBody=await dkdReq.json().catch(()=>({}));const dkdProductId=String(dkdBody?.productId||"");const dkdPurchaseToken=String(dkdBody?.purchaseToken||"");const dkdRequestedBasePlan=dkdBody?.basePlanId?String(dkdBody.basePlanId):null;
+  if(!DKD_ALLOWED_PRODUCTS.has(dkdProductId)||!dkdPurchaseToken)return dkdResponse({error:"invalid_purchase_payload"},400);
+  const dkdRawSecret=Deno.env.get("GOOGLE_PLAY_SERVICE_ACCOUNT_JSON");if(!dkdRawSecret)return dkdResponse({error:"google_play_service_account_not_configured"},503);
   try{
-    const serviceAccount=JSON.parse(rawSecret);const token=await accessToken(serviceAccount);const endpoint=`https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(PACKAGE_NAME)}/purchases/subscriptionsv2/tokens/${encodeURIComponent(purchaseToken)}`;const googleRes=await fetch(endpoint,{headers:{authorization:`Bearer ${token}`}});const google=await googleRes.json();
-    if(!googleRes.ok)return new Response(JSON.stringify({error:"google_play_verification_failed",details:google?.error?.message||null}),{status:400,headers:jsonHeaders});
-    const lineItems=Array.isArray(google.lineItems)?google.lineItems:[];const matching=lineItems.find((x:any)=>x?.productId===productId)||lineItems[0]||{};
-    if(matching?.productId&&matching.productId!==productId)return new Response(JSON.stringify({error:"product_mismatch"}),{status:400,headers:jsonHeaders});
-    const basePlanId=matching?.offerDetails?.basePlanId||requestedBasePlan||null;const expiresAt=matching?.expiryTime||null;const status=mapStatus(String(google.subscriptionState||""));const autoRenewing=Boolean(matching?.autoRenewingPlan?.autoRenewEnabled);const purchaseTokenHash=await sha256(purchaseToken);const admin=createClient(url,service,{auth:{persistSession:false,autoRefreshToken:false}});
-    const record={user_id:userData.user.id,provider:"google_play",product_id:productId,base_plan_id:basePlanId,purchase_token_hash:purchaseTokenHash,status,started_at:google.startTime||new Date().toISOString(),expires_at:expiresAt,auto_renewing:autoRenewing,last_verified_at:new Date().toISOString(),order_id:matching?.latestSuccessfulOrderId||google.latestOrderId||null,package_name:PACKAGE_NAME,environment:"production",acknowledged:google.acknowledgementState==="ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED",raw_provider_state:{subscriptionState:google.subscriptionState,lineItems:lineItems.map((x:any)=>({productId:x?.productId,expiryTime:x?.expiryTime,basePlanId:x?.offerDetails?.basePlanId||null,autoRenewEnabled:x?.autoRenewingPlan?.autoRenewEnabled??null}))},updated_at:new Date().toISOString()};
-    const {data:stored,error:storeError}=await admin.from("drabornpark_subscriptions").upsert(record,{onConflict:"purchase_token_hash"}).select("id,status,product_id,base_plan_id,expires_at,auto_renewing").single();if(storeError)throw storeError;
-    const entitled=["active","grace_period"].includes(status)&&(!expiresAt||new Date(expiresAt).getTime()>Date.now());
-    if(entitled)await admin.from("drabornpark_profiles").update({subscription_status:"PLUS_ACTIVE",updated_at:new Date().toISOString()}).eq("user_id",userData.user.id);
-    else if(status==="expired")await admin.from("drabornpark_profiles").update({subscription_status:"BASIC",updated_at:new Date().toISOString()}).eq("user_id",userData.user.id).lte("plus_trial_until",new Date().toISOString());
-    return new Response(JSON.stringify({ok:true,verified:true,entitled,subscription:stored}),{status:200,headers:jsonHeaders});
-  }catch(error:any){console.error("drabornpark-google-play-verify",String(error?.message||error));return new Response(JSON.stringify({error:"verification_internal_error"}),{status:500,headers:jsonHeaders});}
+    const dkdServiceAccount=JSON.parse(dkdRawSecret);const dkdGoogleToken=await dkdAccessToken(dkdServiceAccount);
+    const dkdEndpoint=`https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(DKD_PACKAGE_NAME)}/purchases/subscriptionsv2/tokens/${encodeURIComponent(dkdPurchaseToken)}`;
+    const dkdGoogleRes=await fetch(dkdEndpoint,{headers:{authorization:`Bearer ${dkdGoogleToken}`}});const dkdGoogle=await dkdGoogleRes.json();
+    if(!dkdGoogleRes.ok)return dkdResponse({error:"google_play_verification_failed",details:dkdGoogle?.error?.message||null},400);
+
+    const dkdExternalId=String(dkdGoogle?.externalAccountIdentifiers?.obfuscatedExternalAccountId||"");
+    if(dkdExternalId&&dkdExternalId!==dkdUserData.user.id)return dkdResponse({error:"purchase_account_mismatch"},403);
+
+    const dkdLineItems=Array.isArray(dkdGoogle.lineItems)?dkdGoogle.lineItems:[];const dkdMatching=dkdLineItems.find((dkdItem:any)=>dkdItem?.productId===dkdProductId)||dkdLineItems[0]||{};
+    if(dkdMatching?.productId&&dkdMatching.productId!==dkdProductId)return dkdResponse({error:"product_mismatch"},400);
+    const dkdBasePlanId=dkdMatching?.offerDetails?.basePlanId||dkdRequestedBasePlan||null;const dkdExpiresAt=dkdMatching?.expiryTime||null;const dkdStatus=dkdMapStatus(String(dkdGoogle.subscriptionState||""));const dkdAutoRenewing=Boolean(dkdMatching?.autoRenewingPlan?.autoRenewEnabled);const dkdPurchaseTokenHash=await dkdSha256(dkdPurchaseToken);
+    const dkdAdmin=createClient(dkdUrl,dkdService,{auth:{persistSession:false,autoRefreshToken:false}});
+
+    const {data:dkdExisting,error:dkdExistingError}=await dkdAdmin.from("drabornpark_subscriptions").select("id,user_id").eq("purchase_token_hash",dkdPurchaseTokenHash).maybeSingle();
+    if(dkdExistingError)throw dkdExistingError;
+    if(dkdExisting?.user_id&&dkdExisting.user_id!==dkdUserData.user.id)return dkdResponse({error:"purchase_owner_mismatch"},403);
+
+    let dkdAcknowledged=dkdGoogle.acknowledgementState==="ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED";
+    if(!dkdAcknowledged){
+      const dkdAckUrl=`https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(DKD_PACKAGE_NAME)}/purchases/subscriptions/${encodeURIComponent(dkdProductId)}/tokens/${encodeURIComponent(dkdPurchaseToken)}:acknowledge`;
+      const dkdAckRes=await fetch(dkdAckUrl,{method:"POST",headers:{authorization:`Bearer ${dkdGoogleToken}`,"content-type":"application/json"},body:"{}"});
+      if(!dkdAckRes.ok){const dkdAckError=await dkdAckRes.json().catch(()=>({}));return dkdResponse({error:"google_play_acknowledgement_failed",details:dkdAckError?.error?.message||null},502);}
+      dkdAcknowledged=true;
+    }
+
+    const dkdRecord={user_id:dkdUserData.user.id,provider:"google_play",product_id:dkdProductId,base_plan_id:dkdBasePlanId,purchase_token_hash:dkdPurchaseTokenHash,status:dkdStatus,started_at:dkdGoogle.startTime||new Date().toISOString(),expires_at:dkdExpiresAt,auto_renewing:dkdAutoRenewing,last_verified_at:new Date().toISOString(),order_id:dkdMatching?.latestSuccessfulOrderId||dkdGoogle.latestOrderId||null,package_name:DKD_PACKAGE_NAME,environment:"production",acknowledged:dkdAcknowledged,raw_provider_state:{subscriptionState:dkdGoogle.subscriptionState,accountBound:Boolean(dkdExternalId),lineItems:dkdLineItems.map((dkdItem:any)=>({productId:dkdItem?.productId,expiryTime:dkdItem?.expiryTime,basePlanId:dkdItem?.offerDetails?.basePlanId||null,autoRenewEnabled:dkdItem?.autoRenewingPlan?.autoRenewEnabled??null}))},updated_at:new Date().toISOString()};
+    const {data:dkdStored,error:dkdStoreError}=await dkdAdmin.from("drabornpark_subscriptions").upsert(dkdRecord,{onConflict:"purchase_token_hash"}).select("id,status,product_id,base_plan_id,expires_at,auto_renewing,acknowledged").single();if(dkdStoreError)throw dkdStoreError;
+
+    const dkdNotExpired=!dkdExpiresAt||new Date(dkdExpiresAt).getTime()>Date.now();const dkdEntitled=["active","grace_period","canceled"].includes(dkdStatus)&&dkdNotExpired;
+    if(dkdEntitled){
+      await dkdAdmin.from("drabornpark_profiles").update({subscription_status:"PLUS_ACTIVE",updated_at:new Date().toISOString()}).eq("user_id",dkdUserData.user.id);
+    }else{
+      const {data:dkdProfile}=await dkdAdmin.from("drabornpark_profiles").select("plus_trial_until").eq("user_id",dkdUserData.user.id).maybeSingle();const dkdTrialActive=Boolean(dkdProfile?.plus_trial_until&&new Date(dkdProfile.plus_trial_until).getTime()>Date.now());
+      await dkdAdmin.from("drabornpark_profiles").update({subscription_status:dkdTrialActive?"PLUS_TRIAL":"BASIC",updated_at:new Date().toISOString()}).eq("user_id",dkdUserData.user.id);
+    }
+    return dkdResponse({ok:true,verified:true,entitled:dkdEntitled,subscription:dkdStored});
+  }catch(dkdError:any){console.error("drabornpark-google-play-verify",String(dkdError?.message||dkdError));return dkdResponse({error:"verification_internal_error"},500);}
 });
