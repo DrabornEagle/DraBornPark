@@ -63,19 +63,13 @@ export function subscribeInboxChanges(onChange: () => void) {
   let channel: ReturnType<typeof supabase.channel> | null = null;
   let fallbackTimer: ReturnType<typeof setInterval> | null = null;
 
-  void supabase.auth.getSession().then(async ({ data, error }) => {
+  void supabase.auth.getUser().then(({ data, error }) => {
     if (error) throw error;
-    const session = data.session;
-    const userId = session?.user.id;
-    if (!active || !session || !userId) return;
-
-    await supabase.realtime.setAuth(session.access_token);
-    if (!active) return;
+    const userId = data.user?.id;
+    if (!active || !userId) return;
 
     channel = supabase
-      .channel(`drabornpark-owner:${userId}`, { config: { private: true } })
-      .on('broadcast', { event: 'report' }, onChange)
-      .on('broadcast', { event: 'message' }, onChange)
+      .channel(`drabornpark-inbox-v052-${userId}-${Date.now()}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -87,13 +81,11 @@ export function subscribeInboxChanges(onChange: () => void) {
         schema: 'public',
         table: 'drabornpark_messages',
       }, onChange)
-      .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') onChange();
-      });
+      .subscribe();
 
     fallbackTimer = setInterval(() => {
       if (active) onChange();
-    }, 2500);
+    }, 2000);
   }).catch(() => undefined);
 
   return {
