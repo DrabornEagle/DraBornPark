@@ -4,123 +4,138 @@
 
 DraBornPark; araç ön camındaki NFC + QR etiketini gizlilik odaklı araç iletişimi, park hafızası, güvenlik, araç geçmişi, aile paylaşımı ve premium dijital servislerle birleştiren kişisel araç ağıdır.
 
-## Aktif sürüm — v0.5.3
+## Aktif sürüm — v0.6.0
 
 - Expo SDK 57 / React Native 0.86 / Expo Router
 - Android paket adı: `com.draborneagle.drabornpark`
-- Android `versionCode`: `19`
+- Android `versionCode`: **1**
+- `versionCode` ilk yayın AAB çıktısı alınana kadar **1 olarak sabittir**.
 - Özel URI scheme: `drabornpark`
 - Expo Developer APK + Metro geliştirme akışı
-- Supabase Postgres + RLS + private Storage + Edge Functions
+- Supabase Postgres + RLS + Storage + Edge Functions
 - NFC + QR aktivasyon, devir, yeniden bağlama ve özel kullanıcı bağlantısı
-- Park hafızası, araç geçmişi, aile paylaşımı ve anonim araç iletişimi
-- Bildirim Merkezi: ilk 5 kayıt + `Daha Fazla` ile 5’er kayıt
-- Bildirim silme ve bağlı anonim konuşma/kanıt temizliği
-- Realtime anonim mesajlaşma + polling fallback
-- Kategoriye göre Türkçe bildirim başlığı
+- Park Hafızası, araç geçmişi, Aile, Geçici Sürücü, Vale / Servis ve zaman kuralları
+- DraBornPark+ Google Play aylık/yıllık abonelik istemcisi + sunucu doğrulama katmanı
 - Android bildirim kanalı: `drabornpark-alerts-v3`
 
-## v0.5.3 — anlık kanıt fotoğrafı
+## v0.6.0 öne çıkanlar
 
-Güvenli Araç İletişimi sayfasında ziyaretçi isteğe bağlı kanıt fotoğrafı gönderebilir.
+- Kayıt sırasında kullanıcı adı + telefon numarası + isteğe bağlı profil resmi.
+- Android profil resmi seçiminde ActivityResultLauncher/lifecycle koruması ve kontrollü tekrar deneme.
+- Araç eklendi akışı için özel modern popup.
+- Ana sayfada daha renkli/animasyonlu Aktif Araç ve DraBornPark+ kartları.
+- Alt menü: `Ana Sayfa`, `Park Alanı`, `Bildirimler`, `Merkezim`.
+- Uygulama içi destek merkezi: **Nasıl Yardımcı Olabiliriz?**
+- Kullanıcının destek kayıt geçmişi ve yönetici destek kuyruğu.
+- Yeni destek kaydında yönetici bildirimi ve bildirime dokununca `/admin/support/<id>` detay yönlendirmesi.
+- Son Park kartında gerçekten kaydedilmiş yer/GPS/kat/bölge/sıra/park yeri özetinin gösterilmesi.
+- Etiket devral alanının açılır/kapanır kategori olması ve ilk açılışta kapalı başlaması.
+- Yeni uygun etiket aktivasyonunda backend tarafından verilen 14 günlük DraBornPark+ ödülü.
+- Abonelik durumu yenileme/iptal/geri yükleme sonrası yeniden uzlaştırılır; süresi dolmuş Plus yetkisi profil üzerinde kalıcılaşmaz.
 
-- Galeriden seçim yapılmaz.
-- Fotoğraf yalnızca o anda canlı kameradan çekilir.
-- Çekim tarih ve saati JPEG’in içine işlenir.
-- Göndermeden önce önizleme yapılabilir, fotoğraf kaldırılabilir veya yeniden çekilebilir.
-- Kanıt özel storage alanında tutulur.
-- Araç sahibi uygulamada küçük önizlemeye dokunup fotoğrafı tam ekran açabilir.
-- Uygulama kısa süreli imzalı URL kullanır; kalıcı public dosya adresi yayınlanmaz.
-- Bildirim silindiğinde ilişkili özel kanıt dosyalarının temizlenmesi de release akışına dahildir.
+## DraBornPark+ / Google Play
 
-## Canlı mesajlaşma ve bildirimler
+Android istemcisi şu ürün kimliklerini bekler:
 
-- Güvenli Araç İletişimi ile uygulamadaki Bildirim Merkezi aynı anonim konuşmayı kullanır.
-- İlk mesajdan sonraki yeni ziyaretçi mesajları da aynı konuşma içinde gösterilir.
-- Uygulamadaki cevaplar web tarafına Realtime ile yansır; polling fallback bağlantı kopmalarına karşı devrededir.
-- Uygulama ön plandayken yeni ziyaretçi mesajı için yerel Android bildirimi üretme katmanı bulunur.
-- Push token kaydı `drabornpark_push_tokens` üzerinden yapılır.
-- `expo-notifications` Expo Go’da native push için kullanılmaz; push/yerel bildirim testleri Developer APK ile yapılmalıdır.
+- `drabornpark_plus_monthly`
+- `drabornpark_plus_yearly`
 
-## Demo durumu
+Satın alma tamamlandığında purchase token uygulamada Premium yetki açmak için tek başına yeterli değildir. `drabornpark-google-play-verify` Edge Function Google Android Publisher API üzerinden aboneliği doğrular, tokenın açık değerini kalıcı tabloda tutmak yerine SHA-256 özeti kullanır, aynı tokenın farklı kullanıcıya geçirilmesini engeller ve gerekirse Google Play acknowledgement işlemini sunucu tarafında tamamlar.
 
-Eski üretim demosu kapatılmıştır. `app/public-demo.tsx`, `app/demo/[section].tsx` ve eski demo doğrulama dokümanları release hijyen kontrolünde yasaklıdır.
+İlk Play yayını öncesinde Play Console tarafında iki abonelik ürününün/base planlarının aktif edilmesi ve Android Publisher yetkili servis hesabının JSON bilgisinin Supabase Edge secret olarak `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` adına bağlanması gerekir. Bu gizli anahtar repoya veya mobil uygulamaya kesinlikle yazılmaz.
 
-## Backend / Supabase
+## 14 günlük Premium ödül
 
-Temel kullanıcı ve araç tabloları `drabornpark_*` ad alanındadır. v0.5.1–v0.5.3 iletişim zincirinde aşağıdaki migration’lar zorunludur:
+Hesap oluşturmak tek başına trial başlatmaz. Kullanıcı uygun yeni DraBornPark etiketini güvenli PIN ile aktive ettiğinde backend:
 
-- `20260821083000_drabornpark_v051_live_chat_realtime.sql`
-- `20260821131500_dkd_drabornpark_v052_realtime_broadcast.sql`
-- `20260821143000_dkd_drabornpark_v053_evidence_photo.sql`
+- etiketi kullanıcı + araca bağlar,
+- `PLUS_TRIAL` hakkını başlatır/uygun şekilde uzatır,
+- bitiş zamanını döndürür,
+- uygulama ödül popup'ında 14 günlük Premium bilgisini ve DraBornPark+ yönlendirmesini gösterir.
 
-v0.5.3 migration’ı mesajlara kanıt metadata alanlarını, Realtime broadcast katmanını ve private kanıt akışını ekler. Public iletişim Edge Function kaynağı `supabase/functions/drabornpark-public-contact/index.ts` içindedir.
+Premium bittiğinde temel NFC + QR ürün kimliği ve Basic güvenlik işlevleri çalışmaya devam eder.
 
-## Termux — sıfırdan kurulum ve GitHub ile birebir eşitleme
+## Destek ve yönetici bildirimi
 
-Aşağıdaki komut lokal `~/projects/DraBornPark` klasörünü GitHub `main` ile birebir yapar. Lokal, commit edilmemiş değişiklikler silinir.
+Kullanıcı `Merkezim → Destek Merkezi` veya `Hesabım → DraBornPark Destek` yolundan kayıt oluşturabilir. Kayıt `drabornpark_support_requests` tablosuna eklenir. Trigger yönetici bildirim kaydı üretir; Developer APK cihazında yönetici push tokenı kayıtlıysa `drabornpark-support-notify-admin` Edge Function uzak push gönderir. Bildirimin route verisi doğrudan ilgili destek ayrıntısını açar.
+
+## Gizlilik / Google Play yayın URL’leri
+
+- Gizlilik Politikası: `https://www.draborneagle.com/DraBornPark/privacy/`
+- Kullanım Koşulları: `https://www.draborneagle.com/DraBornPark/terms/`
+- Veri Güvenliği: `https://www.draborneagle.com/DraBornPark/data-safety/`
+- Hesap Silme: `https://www.draborneagle.com/DraBornPark/account-deletion/`
+- Web Destek: `https://www.draborneagle.com/DraBornPark/support/`
+
+Uygulama içindeki Gizlilik & Veri Merkezi de bu davranışlarla eşleştirilmiştir. Telefon/e-posta QR/NFC ziyaretçisine gösterilmez; park geçmişi kamusal değildir; kullanıcı hesabını ve hesaba bağlı kullanıcı verilerini uygulama veya herkese açık web silme sayfası üzerinden silebilir.
+
+## Supabase v0.6.0 migration zinciri
+
+v0.6.0 için kaynak repoda canlı backend ile eşleşen migration’lar bulunur. Özellikle:
+
+- `20260821230000_drabornpark_v060_release.sql`
+- `20260821233000_drabornpark_v060_entitlement_reconcile.sql`
+- `20260821233500_drabornpark_v060_rpc_privilege_hardening.sql`
+
+Yeni/yenilenen DraBornPark backend tanımları `drabornpark_*` ve yeni yerel değişken/yardımcı tanımlar `dkd_` / `dkd` adlandırmasını korur.
+
+## Termux — GitHub ile birebir eşitle ve çalıştır
+
+Aşağıdaki blok `~/projects/DraBornPark` klasörünü GitHub `main` ile birebir eşitler. Lokal commit edilmemiş değişiklikler silinir.
 
 ```bash
 pkg update -y && pkg upgrade -y && \
-pkg install -y git nodejs-lts && \
+pkg install -y git nodejs-lts ripgrep && \
 mkdir -p ~/projects && \
 if [ ! -d ~/projects/DraBornPark/.git ]; then \
   rm -rf ~/projects/DraBornPark && \
   git clone https://github.com/DrabornEagle/DraBornPark.git ~/projects/DraBornPark; \
 fi && \
 cd ~/projects/DraBornPark && \
-git fetch origin && \
+git fetch --prune origin && \
+git checkout -B main origin/main && \
 git reset --hard origin/main && \
 git clean -fd && \
+rm -rf node_modules .expo && \
 npm install --no-audit --no-fund && \
 npm run check && \
+npx expo install --check && \
 npm run typecheck && \
 npx expo start --dev-client --clear
 ```
 
-Aynı Wi‑Fi üzerinde bağlantı sorununda:
+Aynı Wi‑Fi bağlantısı sorun çıkarırsa:
 
 ```bash
 cd ~/projects/DraBornPark && npx expo start --dev-client --clear --tunnel
 ```
 
-Developer APK zaten kuruluysa bundan sonraki JavaScript/TypeScript/UI değişikliklerinin büyük bölümü için tekrar APK almak gerekmez; `npx expo start --dev-client --clear` ile Metro’yu başlatmak yeterlidir. Native dependency, Expo plugin, Android izinleri veya native config değiştiğinde yeni Developer APK gerekir.
-
-## Yerel doğrulama
-
-```bash
-cd ~/projects/DraBornPark && \
-npm run check && \
-npx expo install --check && \
-npm run typecheck
-```
+Developer APK zaten kuruluysa JS/TS/UI değişikliklerinin büyük bölümünde yeniden APK gerekmez. Native dependency, Expo plugin, Android izinleri veya native config değiştiğinde yeni Developer APK gerekir.
 
 ## GitHub Actions / Developer APK
 
-`.github/workflows/ci.yml` push ve manuel çalıştırmada şu kontrolleri yapar:
+`.github/workflows/ci.yml` v0.6.0 için:
 
-1. `npm run check`
-2. `npx expo install --check`
-3. `npm run typecheck`
-4. `npx expo export --platform web`
-5. Tracked kaynakların build sırasında değişmediğinin doğrulanması
-6. Android development prebuild
-7. `:app:assembleDebug`
-8. APK package ve imza doğrulaması
-9. `DraBornPark-v0.5.3-vc19-developer-apk` artifact üretimi
+1. proje bütünlük kontrollerini,
+2. Expo dependency uyumluluğunu,
+3. web export doğrulamasını,
+4. Android development prebuild’i,
+5. `:app:assembleDebug` build’ini,
+6. paket adı + `versionCode=1` + `versionName=0.6.0` doğrulamasını,
+7. APK imza doğrulamasını,
+8. `DraBornPark-v0.6.0-vc1-developer-apk` artifact üretimini
 
-## Release hijyeni
-
-`npm run check` v0.5.3 için sürüm/versionCode eşleşmesini, Expo Router route’larını, demo kalıntılarının kaldırıldığını, deprecated ImagePicker kullanımını, Developer APK ayarlarını, Worklets sürüm eşleşmesini, Realtime/push işaretlerini, kanıt fotoğrafı viewer’ını, public contact Edge Function işaretlerini ve v0.5.1–v0.5.3 migration zincirini doğrular.
+yapar.
 
 ## Güvenlik ilkeleri
 
 - Telefon numarası, e-posta ve açık kimlik bilgileri public etiket ekranında yayınlanmaz.
 - Etiket ilk okutma ile sahiplenilemez; Tag ID + gizli aktivasyon PIN gerekir.
 - Aktivasyon PIN’inin açık hali veritabanında tutulmaz.
-- Kullanıcı varlıkları RLS ile hesap bazında ayrılır.
-- Kanıt fotoğrafları private storage alanında tutulur ve sahibi tarafından kısa süreli imzalı URL ile görüntülenir.
+- Kullanıcı varlıkları RLS ve kullanıcı kimliği kontrolleriyle ayrılır.
 - Public iletişim akışı kişisel iletişim bilgisini ziyaretçiye açmaz.
-- Yeni backend tanımları `drabornpark_*` / `dkd_drabornpark_*` adlandırmasını korur.
+- Private/admin RPC’lerde anonymous EXECUTE yetkisi kapatılmıştır.
+- Google Play purchase token açık biçimde abonelik tablosunda tutulmaz.
+- Premium hakkı satın alma istemcisi tarafından değil, sunucu doğrulaması sonucu verilir.
 
-**Aktif sürüm: v0.5.3 — Android vc19**
+**Aktif sürüm: v0.6.0 — Android vc1**
