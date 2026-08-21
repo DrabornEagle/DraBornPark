@@ -39,7 +39,7 @@
       [
         "expo-notifications",
         {
-          "defaultChannel": "drabornpark-alerts-v2"
+          "defaultChannel": "drabornpark-alerts-v3"
         }
       ]
     ],
