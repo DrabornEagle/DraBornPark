@@ -3,7 +3,7 @@ name: DraBornPark CI
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/**, build/**]
+    branches: [main, feature/**, build/**, fix/**]
   pull_request:
     branches: [main]
 
@@ -45,7 +45,7 @@ jobs:
   android-developer-apk:
     name: Android Developer APK
     needs: expo-check
-    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'build/')
+    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'build/') || startsWith(github.head_ref, 'fix/')
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
@@ -69,7 +69,7 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Generate Android debug project
+      - name: Generate Android development project
         env:
           CI: '1'
         run: npx expo prebuild --platform android --clean --no-install
@@ -92,14 +92,14 @@ jobs:
       - name: Prepare Developer APK artifact
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.0-vc15-developer-debug.apk
-          sha256sum artifacts/DraBornPark-v0.5.0-vc15-developer-debug.apk > artifacts/SHA256.txt
-          printf 'DraBornPark v0.5.0\nAndroid versionCode: 15\nCommit: %s\nBuild type: Android debug / Developer APK\nMetro required: yes\nRecommended Termux command: npx expo start --clear\nExpo Go remains the default development client. This APK is only for native-only capabilities such as Android remote push notifications.\nNative dependency/config changes require rebuilding this APK.\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.0-vc16-developer-debug.apk
+          sha256sum artifacts/DraBornPark-v0.5.0-vc16-developer-debug.apk > artifacts/SHA256.txt
+          printf 'DraBornPark v0.5.0\nAndroid versionCode: 16\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear\nNotification channel: drabornpark-alerts-v2\nWorklets native/JS version: 0.11.4\nNative dependency/config changes require rebuilding this APK.\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
 
       - name: Upload Developer APK
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v0.5.0-vc15-developer-apk
+          name: DraBornPark-v0.5.0-vc16-developer-apk
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
