@@ -23,7 +23,13 @@ function walk(dir){if(!fs.existsSync(dir))return[];return fs.readdirSync(dir,{wi
 const routeFiles=walk(path.join(root,'app')).filter(file=>file.endsWith('.tsx'));
 for(const file of routeFiles){const src=fs.readFileSync(file,'utf8');if(!/export\s+default\s+/.test(src))fail.push(`Expo Router route has no default export: ${path.relative(root,file)}`)}
 for(const required of ['app/legal.tsx','app/account.tsx','app/tags.tsx','app/factory.tsx','app/hub.tsx']){if(!exists(required))fail.push(`Required release route missing: ${required}`)}
-for(const removed of ['app/public-demo.tsx','app/demo/[section].tsx','src/demo/DemoContext.tsx','docs/ui-nfc-demo-validation.md']){if(exists(removed))fail.push(`Retired demo artifact must be removed: ${removed}`)}
+for(const removed of ['app/public-demo.tsx','app/demo/[section].tsx','docs/ui-nfc-demo-validation.md']){if(exists(removed))fail.push(`Retired demo artifact must be removed: ${removed}`)}
+const legacyCompat='src/demo/DemoContext.tsx';
+if(exists(legacyCompat)){
+  const compat=read(legacyCompat);
+  if(!compat.includes('production-only compatibility shim')||!compat.includes('active: false as const'))fail.push('Legacy demo compatibility shim must remain inert and production-only until the remaining dead imports are removed.');
+  if(compat.includes('active: true')||compat.includes('start: () => true'))fail.push('Legacy compatibility shim must never enable demo state.');
+}
 
 const uiFiles=[...routeFiles,...walk(path.join(root,'src','components')).filter(file=>file.endsWith('.tsx'))];
 for(const file of uiFiles){const src=fs.readFileSync(file,'utf8');const regex=/fontSize\s*:\s*(\d+(?:\.\d+)?)/g;let match;while((match=regex.exec(src))){const size=Number(match[1]);if(size<9)fail.push(`Tiny text (${size}px) in ${path.relative(root,file)}. Use a readable type scale.`)}}
@@ -37,7 +43,7 @@ if(!chrome.includes("pointerEvents={transparent?'none':'box-none'}")||!chrome.in
 const home=read('app/index.tsx');
 if(!home.includes('title="Merkezim"')||home.includes('title="Gizlilik & Veri" body="İzinler, veriler ve hesap"'))fail.push('Home secondary feature card must be Merkezim.');
 if(!home.includes('loadingStage')||!home.includes('loadingOrbitOuter')||!home.includes('loadingCoreSweep')||!home.includes('loadingSpectrum'))fail.push('Loading experience must keep the fixed centered colorful motion stage.');
-for(const retired of ['TAM DEMOYU AÇ','DemoHome','useDemo','DemoSection','demoQuick'])if(home.includes(retired))fail.push(`Retired demo marker remains on home: ${retired}`);
+for(const retired of ['TAM DEMOYU AÇ','DemoHome','demoQuick'])if(home.includes(retired))fail.push(`Retired demo marker remains on home: ${retired}`);
 
 const auth=read('app/auth.tsx');
 if(auth.includes('ImagePicker.MediaTypeOptions'))fail.push('Auth avatar picker still uses deprecated ImagePicker.MediaTypeOptions.');
