@@ -2,65 +2,22 @@
   "expo": {
     "name": "DraBornPark",
     "slug": "drabornpark",
-    "version": "0.5.2",
+    "version": "0.5.3",
     "orientation": "portrait",
     "scheme": "drabornpark",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#050816",
     "plugins": [
       "expo-router",
-      [
-        "expo-dev-client",
-        {
-          "launchMode": "most-recent"
-        }
-      ],
-      [
-        "expo-navigation-bar",
-        {
-          "enforceContrast": false,
-          "style": "dark",
-          "hidden": false
-        }
-      ],
-      [
-        "expo-location",
-        {
-          "locationWhenInUsePermission": "DraBornPark yalnızca Park Ettim özelliğinde park konumunu kaydetmek ve Aracıma Git yönlendirmesini sağlamak için konumunu kullanır. Konum arka planda sürekli izlenmez."
-        }
-      ],
-      [
-        "expo-image-picker",
-        {
-          "cameraPermission": "DraBornPark park yeri, otopark bileti ve isteğe bağlı araç bildirimi fotoğrafları için kamerayı yalnızca sen bu özelliği seçtiğinde kullanır.",
-          "photosPermission": "DraBornPark seçtiğin park veya araç görsellerini hesabına ekleyebilmek için fotoğraflarına erişir."
-        }
-      ],
-      [
-        "expo-notifications",
-        {
-          "defaultChannel": "drabornpark-alerts-v3"
-        }
-      ]
+      ["expo-dev-client",{"launchMode":"most-recent"}],
+      ["expo-navigation-bar",{"enforceContrast":false,"style":"dark","hidden":false}],
+      ["expo-location",{"locationWhenInUsePermission":"DraBornPark yalnızca Park Ettim özelliğinde park konumunu kaydetmek ve Aracıma Git yönlendirmesini sağlamak için konumunu kullanır. Konum arka planda sürekli izlenmez."}],
+      ["expo-image-picker",{"cameraPermission":"DraBornPark park yeri, otopark bileti ve isteğe bağlı araç bildirimi fotoğrafları için kamerayı yalnızca sen bu özelliği seçtiğinde kullanır.","photosPermission":"DraBornPark seçtiğin park veya araç görsellerini hesabına ekleyebilmek için fotoğraflarına erişir."}],
+      ["expo-notifications",{"defaultChannel":"drabornpark-alerts-v3"}]
     ],
-    "experiments": {
-      "typedRoutes": true
-    },
-    "android": {
-      "package": "com.draborneagle.drabornpark",
-      "versionCode": 18,
-      "backgroundColor": "#050816",
-      "permissions": [
-        "ACCESS_COARSE_LOCATION",
-        "ACCESS_FINE_LOCATION",
-        "POST_NOTIFICATIONS"
-      ]
-    },
-    "ios": {
-      "bundleIdentifier": "com.draborneagle.drabornpark"
-    },
-    "web": {
-      "output": "single"
-    }
+    "experiments":{"typedRoutes":true},
+    "android":{"package":"com.draborneagle.drabornpark","versionCode":19,"backgroundColor":"#050816","permissions":["ACCESS_COARSE_LOCATION","ACCESS_FINE_LOCATION","POST_NOTIFICATIONS"]},
+    "ios":{"bundleIdentifier":"com.draborneagle.drabornpark"},
+    "web":{"output":"single"}
   }
 }
