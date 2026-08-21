@@ -6,6 +6,7 @@
     "start": "expo start --dev-client",
     "android": "expo run:android",
     "web": "expo start --web",
+    "typecheck": "tsc --noEmit",
     "check": "tsc --noEmit && npx expo-doctor"
   },
   "dependencies": {
