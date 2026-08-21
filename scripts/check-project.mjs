@@ -36,17 +36,18 @@ for(const marker of ['visibleCount','Daha Fazla','Anonim mesajlaşma','Kısa bir
 if(!exists('src/lib/contactThreads.ts'))fail.push('Live contact thread helper is missing.');
 else{
   const threads=read('src/lib/contactThreads.ts');
-  for(const marker of ['drabornpark_contact_sessions','drabornpark_messages','postgres_changes','broadcast','drabornpark-owner:','setAuth'])if(!threads.includes(marker))fail.push(`v0.5.2 live thread helper marker missing: ${marker}`);
+  for(const marker of ['drabornpark_contact_sessions','drabornpark_messages','postgres_changes'])if(!threads.includes(marker))fail.push(`v0.5.2 live thread helper marker missing: ${marker}`);
 }
 
 const push=read('src/lib/push.ts');
 if(/import\s+.*from\s+['\"]expo-notifications['\"]/.test(push))fail.push('expo-notifications must remain dynamically imported.');
-for(const marker of ["import('expo-notifications')",'getExpoPushTokenAsync','drabornpark_push_tokens','drabornpark-alerts-v2','drabornpark_messages','presentLocalVisitorMessage','scheduleNotificationAsync','initializeNotificationPresentation','drabornpark-owner:','config:{private:true}'])if(!push.includes(marker))fail.push(`v0.5.2 push marker missing: ${marker}`);
+for(const marker of ["import('expo-notifications')",'getExpoPushTokenAsync','drabornpark_push_tokens','drabornpark-alerts-v3','drabornpark_messages','presentLocalVisitorMessage','scheduleNotificationAsync','initializeNotificationPresentation','CATEGORY_TITLES','pollMessages'])if(!push.includes(marker))fail.push(`v0.5.2 push marker missing: ${marker}`);
+if(push.includes("sound:'default'"))fail.push('Local Android notifications must not reference the removed custom default sound.');
 const layout=read('app/_layout.tsx');
 if(!layout.includes('startForegroundReportNotifications')||!layout.includes('syncPushRegistration')||!layout.includes('initializeNotificationPresentation'))fail.push('Root layout notification registration is incomplete.');
 
 const publicContact=read('supabase/functions/drabornpark-public-contact/index.ts');
-for(const marker of ['VERSION="0.5.1"','initialMessage','drabornpark_messages','Yeni anonim araç mesajı','limit(100)'])if(!publicContact.includes(marker))fail.push(`Public contact compatibility marker missing: ${marker}`);
+for(const marker of ['VERSION="0.5.2"','initialMessage','drabornpark_messages','category.title','drabornpark-alerts-v3','limit(100)'])if(!publicContact.includes(marker))fail.push(`Public contact compatibility marker missing: ${marker}`);
 for(const migration of ['supabase/migrations/20260821083000_drabornpark_v051_live_chat_realtime.sql','supabase/migrations/20260821131500_dkd_drabornpark_v052_realtime_broadcast.sql'])if(!exists(migration))fail.push(`Migration missing: ${migration}`);
 const realtimeMigration=read('supabase/migrations/20260821131500_dkd_drabornpark_v052_realtime_broadcast.sql');
 for(const marker of ['dkd_drabornpark_broadcast_message_v052','realtime.send','drabornpark-session:','drabornpark-owner:','dkd_drabornpark_owner_broadcast_receive_v052'])if(!realtimeMigration.includes(marker))fail.push(`v0.5.2 realtime migration marker missing: ${marker}`);
@@ -57,7 +58,7 @@ const park=read('app/park.tsx');
 if(!park.includes('Konumunu neden istiyoruz?')||!park.includes('requestForegroundPermissionsAsync'))fail.push('Park location disclosure is missing.');
 
 const ci=read('.github/workflows/ci.yml');
-if(!ci.includes('vc18-developer-debug')||!ci.includes('DraBornPark-v0.5.2')||!ci.includes('assembleDebug')||!ci.includes('expo start --dev-client --clear'))fail.push('v0.5.2 Developer APK CI pipeline is incomplete.');
+if(!ci.includes('vc18-developer-debug')||!ci.includes('DraBornPark-v0.5.2')||!ci.includes('assembleDebug')||!ci.includes('expo start --dev-client --clear')||!ci.includes('drabornpark-alerts-v3'))fail.push('v0.5.2 Developer APK CI pipeline is incomplete.');
 
 if(fail.length){console.error('\nDraBornPark integrity check failed:\n- '+fail.join('\n- '));process.exit(1)}
-console.log(`DraBornPark integrity OK • v${expected} • Android vc${app.expo.android.versionCode} • ${routeFiles.length} routes • 5+5 inbox pagination • Realtime Broadcast chat • foreground Android system notifications • Developer APK pipeline verified.`);
+console.log(`DraBornPark integrity OK • v${expected} • Android vc${app.expo.android.versionCode} • ${routeFiles.length} routes • 5+5 inbox pagination • Realtime + polling fallback chat • category-aware Android notifications • Developer APK pipeline verified.`);
