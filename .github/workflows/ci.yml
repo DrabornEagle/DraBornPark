@@ -3,7 +3,7 @@ name: DraBornPark CI
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/**]
+    branches: [main, feature/**, build/**]
   pull_request:
     branches: [main]
 
@@ -27,7 +27,7 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Project integrity and release hygiene
+      - name: Project integrity and production hygiene
         run: npm run check
 
       - name: Expo dependency compatibility
@@ -42,12 +42,12 @@ jobs:
       - name: Verify tracked source stayed clean
         run: git diff --exit-code -- .
 
-  developer-apk:
-    name: Developer Standalone APK
+  expo-development-apk:
+    name: Expo Development APK
     needs: expo-check
     if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'build/')
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 55
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -69,37 +69,37 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Generate Android project
+      - name: Generate Android development project
         env:
           CI: '1'
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Build standalone APK with embedded JS bundle
+      - name: Build reusable Expo development client
         working-directory: android
         env:
           CI: '1'
-        run: ./gradlew :app:assembleRelease --no-daemon
+        run: ./gradlew :app:assembleDebug --no-daemon
 
-      - name: Verify standalone APK bundle and signature
+      - name: Verify development APK
         run: |
-          APK="android/app/build/outputs/apk/release/app-release.apk"
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK"
-          unzip -l "$APK" | grep -E 'assets/(index\.android\.bundle|.*\.hbc)' >/dev/null
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          "$AAPT" dump badging "$APK" | grep "package: name='com.draborneagle.drabornpark'"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          test -n "$APKSIGNER"
           "$APKSIGNER" verify --verbose "$APK"
 
-      - name: Prepare developer standalone APK artifact
+      - name: Prepare Expo development APK artifact
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/release/app-release.apk artifacts/DraBornPark-v0.5.0-vc14-developer-standalone.apk
-          sha256sum artifacts/DraBornPark-v0.5.0-vc14-developer-standalone.apk > artifacts/SHA256.txt
-          printf 'DraBornPark v0.5.0\nAndroid versionCode: 14\nCommit: %s\nBuild type: Developer standalone / release variant\nJavaScript bundle: embedded\nMetro required: no\nPurpose: physical-device testing only\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.0-vc15-expo-development.apk
+          sha256sum artifacts/DraBornPark-v0.5.0-vc15-expo-development.apk > artifacts/SHA256.txt
+          printf 'DraBornPark v0.5.0\nAndroid versionCode: 15\nCommit: %s\nBuild type: Expo development client / debug\nMetro required: yes\nRecommended Termux command: npm run dev\nNative dependency/config changes still require rebuilding this APK.\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
 
-      - name: Upload Developer Standalone APK
+      - name: Upload Expo Development APK
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v0.5.0-vc14-developer-standalone-apk
+          name: DraBornPark-v0.5.0-vc15-expo-development-apk
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
