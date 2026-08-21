@@ -27,6 +27,7 @@ async function loadNotifications(allowExpoGoLocal=false):Promise<NotificationsMo
       if(!handlerConfigured){
         module.setNotificationHandler({
           handleNotification:async()=>({shouldShowBanner:true,shouldShowList:true,shouldPlaySound:true,shouldSetBadge:true}),
+          handleError:error=>console.warn('[DraBornPark bildirim] foreground handler hatası',String((error as any)?.message||error)),
         });
         handlerConfigured=true;
       }
@@ -49,6 +50,7 @@ async function ensureAndroidChannel(Notifications:NotificationsModule){
     lightColor:'#FF5CBD',
     enableVibrate:true,
     showBadge:true,
+    sound:'default',
   });
 }
 
@@ -57,6 +59,15 @@ async function ensurePermission(Notifications:NotificationsModule){
   let status=current.status;
   if(status!=='granted')status=(await Notifications.requestPermissionsAsync()).status;
   return status==='granted';
+}
+
+export function initializeNotificationPresentation(){
+  if(Platform.OS==='web')return;
+  void loadNotifications(true).then(async Notifications=>{
+    if(!Notifications)return;
+    await ensureAndroidChannel(Notifications);
+    await ensurePermission(Notifications);
+  }).catch(error=>console.warn('[DraBornPark bildirim] foreground hazırlığı başarısız',String((error as any)?.message||error)));
 }
 
 function normalizeAlertBody(value:unknown){
@@ -114,16 +125,12 @@ async function presentSystemNotification(input:{title:string;body:string;data:Re
   if(!Notifications)return;
   await ensureAndroidChannel(Notifications);
   if(!await ensurePermission(Notifications))return;
-  const content={title:input.title,body:input.body,data:input.data};
+  const content={title:input.title,body:input.body,data:input.data,sound:'default' as const};
   try{
-    if(Platform.OS==='android'){
-      await Notifications.scheduleNotificationAsync({
-        content,
-        trigger:{type:Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,seconds:1,repeats:false,channelId:DKD_PUSH_CHANNEL_ID},
-      });
-    }else{
-      await Notifications.scheduleNotificationAsync({content,trigger:null});
-    }
+    await Notifications.scheduleNotificationAsync({
+      content,
+      trigger:Platform.OS==='android'?{channelId:DKD_PUSH_CHANNEL_ID}:null,
+    });
   }catch(error){
     console.warn('[DraBornPark bildirim] sistem bildirimi gösterilemedi',String((error as any)?.message||error));
   }
@@ -154,18 +161,29 @@ async function presentLocalVisitorMessage(message:any){
 export function startForegroundReportNotifications():PushSubscription{
   let active=true;
   let channel:ReturnType<typeof supabase.channel>|null=null;
-  void currentUser().then(user=>{
-    if(!active||!user)return;
+  void supabase.auth.getSession().then(async({data,error})=>{
+    if(error)throw error;
+    const session=data.session;
+    const user=session?.user;
+    if(!active||!session||!user)return;
+    await supabase.realtime.setAuth(session.access_token);
+    if(!active)return;
     channel=supabase
-      .channel(`drabornpark-live-alerts-${user.id}-${Date.now()}`)
+      .channel(`drabornpark-owner:${user.id}`,{config:{private:true}})
+      .on('broadcast',{event:'report'},event=>{
+        void presentLocalReport((event as any).payload);
+      })
+      .on('broadcast',{event:'message'},event=>{
+        void presentLocalVisitorMessage((event as any).payload);
+      })
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_reports',filter:`owner_user_id=eq.${user.id}`},payload=>{
         void presentLocalReport((payload as any).new);
       })
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_messages'},payload=>{
         void presentLocalVisitorMessage((payload as any).new);
       })
-      .subscribe(status=>{
-        if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('[DraBornPark bildirim] canlı bildirim kanalı yeniden bağlantı bekliyor',status);
+      .subscribe((status,errorInfo)=>{
+        if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('[DraBornPark bildirim] canlı bildirim kanalı bağlantı sorunu',status,String((errorInfo as any)?.message||errorInfo||''));
       });
   }).catch(error=>console.warn('[DraBornPark bildirim] canlı sistem bildirimi başlatılamadı',String((error as any)?.message||error)));
   return {remove:()=>{active=false;if(channel)void supabase.removeChannel(channel);}};
