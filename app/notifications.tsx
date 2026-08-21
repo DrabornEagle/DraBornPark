@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuroraBackground, BottomDock, ScreenHeader, SectionHeading } from '@/src/components/AppChrome';
+import { EvidencePhoto } from '@/src/components/EvidencePhoto';
 import { loadContactThreads, subscribeInboxChanges, type ContactMessage, type ContactSession } from '@/src/lib/contactThreads';
 import { loadLiveDashboard, markReportSeen, quickReply } from '@/src/lib/drabornpark';
 import { deleteReport } from '@/src/lib/reportActions';
@@ -78,14 +79,10 @@ export default function NotificationsScreen(){
   }
   function confirmDelete(report:any){
     if(deleting)return;
-    Alert.alert(
-      'Bildirimi sil',
-      'Bu bildirim ve ona bağlı anonim mesaj geçmişi kalıcı olarak silinecek.',
-      [
-        {text:'Vazgeç',style:'cancel'},
-        {text:'Sil',style:'destructive',onPress:()=>{void removeReport(String(report.id));}},
-      ],
-    );
+    Alert.alert('Bildirimi sil','Bu bildirim ve ona bağlı anonim mesaj geçmişi kalıcı olarak silinecek.',[
+      {text:'Vazgeç',style:'cancel'},
+      {text:'Sil',style:'destructive',onPress:()=>{void removeReport(String(report.id));}},
+    ]);
   }
   async function removeReport(id:string){
     setDeleting(id);
@@ -97,9 +94,8 @@ export default function NotificationsScreen(){
       setSessionsByReport(current=>{const next={...current};delete next[id];return next;});
       setDrafts(current=>{const next={...current};delete next[id];return next;});
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    }catch(e:any){
-      Alert.alert('Bildirim silinemedi',e?.message||'Lütfen tekrar deneyin.');
-    }finally{setDeleting(null);}
+    }catch(e:any){Alert.alert('Bildirim silinemedi',e?.message||'Lütfen tekrar deneyin.');}
+    finally{setDeleting(null);}
   }
 
   if(loading)return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.orange}/><View style={s.loading}><ActivityIndicator color={palette.orange}/><Text style={s.loadingText}>Bildirim Merkezi açılıyor…</Text></View></SafeAreaView>;
@@ -110,25 +106,25 @@ export default function NotificationsScreen(){
   const visibleReports=reports.slice(0,visibleCount);
 
   return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.orange} secondary={palette.pink}/><ScrollView contentContainerStyle={s.scroll} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={palette.orange}/>} showsVerticalScrollIndicator={false}>
-    <ScreenHeader title="Bildirim Merkezi" eyebrow="ANONİM ARAÇ İLETİŞİMİ" accent={palette.orange} subtitle="QR/NFC üzerinden gelen olayları ve tüm anonim mesajları tek yerden yanıtla."/>
+    <ScreenHeader title="Bildirim Merkezi" eyebrow="ANONİM ARAÇ İLETİŞİMİ" accent={palette.orange} subtitle="QR/NFC üzerinden gelen olayları, kanıt fotoğraflarını ve anonim mesajları tek yerden yanıtla."/>
     <View style={s.stats}><Stat icon="bell-badge-outline" value={unread} label="Yeni" color={palette.orange}/><Stat icon="shield-alert-outline" value={urgent} label="Acil" color={palette.red}/><Stat icon="message-check-outline" value={answered} label="Cevaplandı" color={palette.green}/></View>
     <SectionHeading title="Gelen kutusu" subtitle="İlk 5 kayıt gösterilir" badge={`${reports.length} KAYIT`} color={palette.orange}/>
     {reports.length===0?<View style={s.empty}><View style={s.emptyIcon}><MaterialCommunityIcons name="bell-check-outline" size={38} color={palette.green}/></View><Text style={s.emptyTitle}>Her şey sakin</Text><Text style={s.emptyBody}>DraBornPark etiketin tarandığında güvenli araç bildirimleri burada görünecek.</Text></View>:visibleReports.map(report=><ReportCard key={report.id} report={report} messages={messagesByReport[report.id]??[]} session={sessionsByReport[report.id]} sending={sending===report.id} deleting={deleting===report.id} draft={drafts[report.id]??''} setDraft={value=>setDrafts(current=>({...current,[report.id]:value}))} onSeen={()=>seen(report.id)} onReply={text=>sendReply(report,text)} onDelete={()=>confirmDelete(report)}/>)}
     {visibleCount<reports.length?<Pressable style={s.more} onPress={()=>setVisibleCount(count=>Math.min(count+5,reports.length))}><MaterialCommunityIcons name="chevron-down-circle-outline" size={22} color={palette.cyan}/><Text style={s.moreText}>Daha Fazla</Text><Text style={s.moreCount}>+{Math.min(5,reports.length-visibleCount)}</Text></Pressable>:null}
-    <View style={s.privacy}><MaterialCommunityIcons name="shield-lock-outline" size={23} color={palette.green}/><Text style={s.privacyText}>Mesajlar geçici DraBornPark oturumuna gider. Telefon ve e-posta iki tarafta da otomatik maskelenir.</Text></View>
+    <View style={s.privacy}><MaterialCommunityIcons name="shield-lock-outline" size={23} color={palette.green}/><Text style={s.privacyText}>Kanıt fotoğrafları özel alanda saklanır. Mesajlar geçici DraBornPark oturumuna gider; telefon ve e-posta iki tarafta da maskelenir.</Text></View>
     <BottomDock active="inbox"/>
   </ScrollView></SafeAreaView>;
 }
 
 function ReportCard({report,messages,session,sending,deleting,draft,setDraft,onSeen,onReply,onDelete}:{report:any;messages:ContactMessage[];session?:ContactSession;sending:boolean;deleting:boolean;draft:string;setDraft:(value:string)=>void;onSeen:()=>void;onReply:(text:string)=>void;onDelete:()=>void}){
   const color=report.priority==='emergency'?palette.red:report.priority==='high'?palette.orange:palette.cyan;
-  const thread=useMemo(()=>messages.filter((message,index)=>!(index===0&&message.sender_role==='visitor'&&message.body_safe===report.message_safe)),[messages,report.message_safe]);
+  const thread=useMemo(()=>messages.filter((message,index)=>!(index===0&&message.sender_role==='visitor'&&message.body_safe===report.message_safe&&!message.attachment_path)),[messages,report.message_safe]);
   const open=!session||(session.status==='open'&&new Date(session.expires_at).getTime()>Date.now());
   return <View style={[s.card,{borderColor:!report.seen_at?`${color}65`:palette.line}]}>
     <View style={s.cardHead}><View style={[s.icon,{backgroundColor:`${color}20`}]}><MaterialCommunityIcons name={report.priority==='emergency'?'alert-octagon-outline':'bell-ring-outline'} size={26} color={color}/></View><View style={{flex:1}}><Text style={s.category}>{CATEGORY_NAMES[report.category]||'Araç bildirimi'}</Text><Text style={s.time}>{new Date(report.created_at).toLocaleString('tr-TR')}</Text></View><View style={s.cardActions}><View style={[s.status,{borderColor:`${color}50`,backgroundColor:`${color}10`}]}><Text style={[s.statusText,{color}]}>{STATUS_NAMES[String(report.status||'new')]||'BİLDİRİM'}</Text></View><Pressable accessibilityRole="button" accessibilityLabel="Bildirimi sil" disabled={deleting} onPress={onDelete} style={s.deleteButton}>{deleting?<ActivityIndicator size="small" color={palette.red}/>:<><MaterialCommunityIcons name="trash-can-outline" size={16} color={palette.red}/><Text style={s.deleteText}>Sil</Text></>}</Pressable></View></View>
     <Text style={s.body}>{report.message_safe||'Aracınız için yeni bir bildirim gönderildi.'}</Text>
     {!report.seen_at?<Pressable onPress={onSeen} style={s.seen}><MaterialCommunityIcons name="check-all" size={19} color={palette.cyan}/><Text style={s.seenText}>Okundu işaretle</Text></Pressable>:null}
-    {thread.length?<View style={s.thread}><View style={s.threadHead}><MaterialCommunityIcons name="message-processing-outline" size={18} color={palette.purple}/><Text style={s.threadTitle}>Anonim mesajlaşma</Text><Text style={s.threadCount}>{thread.length} mesaj</Text></View>{thread.slice(-8).map(message=><View key={message.id} style={[s.bubble,message.sender_role==='owner'?s.ownerBubble:s.visitorBubble]}><Text style={s.bubbleRole}>{message.sender_role==='owner'?'SEN':'ZİYARETÇİ'}</Text><Text style={s.bubbleText}>{message.body_safe}</Text><Text style={s.bubbleTime}>{new Date(message.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</Text></View>)}</View>:null}
+    {thread.length?<View style={s.thread}><View style={s.threadHead}><MaterialCommunityIcons name="message-processing-outline" size={18} color={palette.purple}/><Text style={s.threadTitle}>Anonim mesajlaşma</Text><Text style={s.threadCount}>{thread.length} mesaj</Text></View>{thread.slice(-8).map(message=><View key={message.id} style={[s.bubble,message.sender_role==='owner'?s.ownerBubble:s.visitorBubble]}><Text style={s.bubbleRole}>{message.sender_role==='owner'?'SEN':'ZİYARETÇİ'}</Text><Text style={s.bubbleText}>{message.body_safe}</Text>{message.attachment_kind==='evidence_photo'&&message.attachment_path?<EvidencePhoto path={message.attachment_path} capturedAt={message.attachment_captured_at}/>:null}<Text style={s.bubbleTime}>{new Date(message.created_at).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</Text></View>)}</View>:null}
     <Text style={s.replyLabel}>{open?'HIZLI CEVAP':'OTURUM KAPALI'}</Text>
     {open?<><ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.replyRail}>{QUICK_REPLIES.map(text=><Pressable disabled={sending||deleting} key={text} onPress={()=>onReply(text)} style={s.reply}>{sending?<ActivityIndicator size="small" color={palette.green}/>:<Text style={s.replyText}>{text}</Text>}</Pressable>)}</ScrollView><View style={s.compose}><TextInput value={draft} onChangeText={setDraft} editable={!sending&&!deleting} maxLength={700} placeholder="Kısa bir mesaj yaz…" placeholderTextColor={palette.muted2} style={s.input}/><Pressable disabled={sending||deleting||!draft.trim()} onPress={()=>onReply(draft)} style={[s.sendButton,(!draft.trim()||sending||deleting)&&s.sendButtonDisabled]}>{sending?<ActivityIndicator size="small" color={palette.bg}/>:<MaterialCommunityIcons name="send" size={20} color={palette.bg}/>}</Pressable></View></>:null}
   </View>;

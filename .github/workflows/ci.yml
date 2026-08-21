@@ -18,27 +18,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-
       - name: Project integrity and production hygiene
         run: npm run check
-
       - name: Expo dependency compatibility
         run: npx expo install --check
-
       - name: TypeScript
         run: npm run typecheck
-
       - name: Expo web export
         run: npx expo export --platform web
-
       - name: Verify tracked source stayed clean
         run: git diff --exit-code -- .
 
@@ -51,35 +44,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
           node-version: 22
-
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '17'
-
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
-
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-
       - name: Generate Android development project
         env:
           CI: '1'
         run: npx expo prebuild --platform android --clean --no-install
-
       - name: Build Developer APK
         working-directory: android
         env:
           CI: '1'
         run: ./gradlew :app:assembleDebug --no-daemon
-
       - name: Verify Developer APK
         run: |
           APK="android/app/build/outputs/apk/debug/app-debug.apk"
@@ -88,18 +74,16 @@ jobs:
           "$AAPT" dump badging "$APK" | grep "package: name='com.draborneagle.drabornpark'"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           "$APKSIGNER" verify --verbose "$APK"
-
       - name: Prepare Developer APK artifact
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.2-vc18-developer-debug.apk
-          sha256sum artifacts/DraBornPark-v0.5.2-vc18-developer-debug.apk > artifacts/SHA256.txt
-          printf 'DraBornPark v0.5.2\nAndroid versionCode: 18\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear\nNotification channel: drabornpark-alerts-v3\nWorklets native/JS version: 0.10.1\nRealtime + polling fallback anonymous chat: enabled\nCategory-aware foreground Android system notifications: enabled\nInbox pagination: 5 + 5\nNative dependency/config changes require rebuilding this APK.\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
-
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.3-vc19-developer-debug.apk
+          sha256sum artifacts/DraBornPark-v0.5.3-vc19-developer-debug.apk > artifacts/SHA256.txt
+          printf 'DraBornPark v0.5.3\nAndroid versionCode: 19\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear\nNotification channel: drabornpark-alerts-v3\nWorklets native/JS version: 0.10.1\nCamera-only timestamped evidence: enabled on secure web contact\nEvidence storage: private owner-only signed URL\nFull-screen evidence viewer: enabled\nRealtime + polling fallback anonymous chat: enabled\nInbox pagination: 5 + 5\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
       - name: Upload Developer APK
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v0.5.2-vc18-developer-apk
+          name: DraBornPark-v0.5.3-vc19-developer-apk
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
