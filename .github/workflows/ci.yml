@@ -42,8 +42,8 @@ jobs:
       - name: Verify tracked source stayed clean
         run: git diff --exit-code -- .
 
-  expo-development-apk:
-    name: Expo Development APK
+  android-developer-apk:
+    name: Android Developer APK
     needs: expo-check
     if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'build/')
     runs-on: ubuntu-latest
@@ -69,18 +69,18 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Generate Android development project
+      - name: Generate Android debug project
         env:
           CI: '1'
         run: npx expo prebuild --platform android --clean --no-install
 
-      - name: Build reusable Expo development client
+      - name: Build Developer APK
         working-directory: android
         env:
           CI: '1'
         run: ./gradlew :app:assembleDebug --no-daemon
 
-      - name: Verify development APK
+      - name: Verify Developer APK
         run: |
           APK="android/app/build/outputs/apk/debug/app-debug.apk"
           test -f "$APK"
@@ -89,17 +89,17 @@ jobs:
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           "$APKSIGNER" verify --verbose "$APK"
 
-      - name: Prepare Expo development APK artifact
+      - name: Prepare Developer APK artifact
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.0-vc15-expo-development.apk
-          sha256sum artifacts/DraBornPark-v0.5.0-vc15-expo-development.apk > artifacts/SHA256.txt
-          printf 'DraBornPark v0.5.0\nAndroid versionCode: 15\nCommit: %s\nBuild type: Expo development client / debug\nMetro required: yes\nRecommended Termux command: npm run dev\nNative dependency/config changes still require rebuilding this APK.\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.0-vc15-developer-debug.apk
+          sha256sum artifacts/DraBornPark-v0.5.0-vc15-developer-debug.apk > artifacts/SHA256.txt
+          printf 'DraBornPark v0.5.0\nAndroid versionCode: 15\nCommit: %s\nBuild type: Android debug / Developer APK\nMetro required: yes\nRecommended Termux command: npx expo start --clear\nExpo Go remains the default development client. This APK is only for native-only capabilities such as Android remote push notifications.\nNative dependency/config changes require rebuilding this APK.\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
 
-      - name: Upload Expo Development APK
+      - name: Upload Developer APK
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v0.5.0-vc15-expo-development-apk
+          name: DraBornPark-v0.5.0-vc15-developer-apk
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
