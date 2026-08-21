@@ -24,7 +24,7 @@ export function EvidencePhoto({path,capturedAt}:{path:string;capturedAt?:string|
   return <>
     <Pressable accessibilityRole="button" accessibilityLabel="Kanıt fotoğrafını tam ekran aç" onPress={()=>setOpen(true)} style={s.card}>
       <Image source={{uri:url}} style={s.thumb} resizeMode="cover"/>
-      <View style={s.meta}><MaterialCommunityIcons name="camera-check-outline" size={18} color={palette.green}/><View style={{flex:1}}><Text style={s.title}>ANLIK KANIT FOTOĞRAFI</Text><Text style={s.time}>{label}</Text></View><MaterialCommunityIcons name="arrow-expand-all" size={20} color={palette.cyan}/></View>
+      <View style={s.meta}><MaterialCommunityIcons name="camera-lock-outline" size={18} color={palette.green}/><View style={{flex:1}}><Text style={s.title}>ANLIK KANIT FOTOĞRAFI</Text><Text style={s.time}>{label}</Text></View><MaterialCommunityIcons name="arrow-expand-all" size={20} color={palette.cyan}/></View>
     </Pressable>
     <Modal visible={open} transparent animationType="fade" statusBarTranslucent onRequestClose={()=>setOpen(false)}>
       <View style={s.modal}>
