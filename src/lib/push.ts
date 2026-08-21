@@ -41,7 +41,7 @@ async function ensureAndroidChannel(Notifications:NotificationsModule){
   if(Platform.OS!=='android')return;
   await Notifications.setNotificationChannelAsync(DKD_PUSH_CHANNEL_ID,{
     name:'DraBornPark Araç Bildirimleri',
-    description:'Araç bildirimi, güvenli mesaj ve önemli DraBornPark uyarıları',
+    description:'Araç bildirimi, anonim mesaj ve önemli DraBornPark uyarıları',
     importance:Notifications.AndroidImportance.MAX,
     vibrationPattern:[0,250,150,250],
     lightColor:'#FF5CBD',
@@ -77,7 +77,7 @@ export async function syncPushRegistration():Promise<PushRegistrationResult>{
   const user=await currentUser();
   if(!user)return {ok:false,reason:'Oturum bulunamadı.'};
   const projectId=(Constants.expoConfig?.extra as any)?.eas?.projectId??(Constants as any).easConfig?.projectId??null;
-  if(!projectId)return {ok:false,reason:'Expo push projectId yapılandırılmadı. Uygulama açıkken yerel bildirim yedeği çalışır; kapalıyken uzak push için EAS projectId gerekir.',projectId};
+  if(!projectId)return {ok:false,reason:'Expo push projectId yapılandırılmadı. Uygulama açıkken canlı yerel sistem bildirimi çalışır.',projectId};
   try{
     const result=await Notifications.getExpoPushTokenAsync({projectId});
     const token=result.data;
@@ -93,33 +93,50 @@ export async function syncPushRegistration():Promise<PushRegistrationResult>{
   }
 }
 
-async function presentRealtimeFallback(report:any){
-  if(remotePushReady)return;
+async function presentLocalVisitorMessage(message:any){
+  if(remotePushReady||String(message?.sender_role)!=='visitor')return;
   const Notifications=await loadNotifications(true);
   if(!Notifications)return;
   await ensureAndroidChannel(Notifications);
   if(!await ensurePermission(Notifications))return;
-  const title=String(report?.priority)==='emergency'?'DraBornPark • ACİL ARAÇ BİLDİRİMİ':'DraBornPark • Yeni araç bildirimi';
-  const body=String(report?.message_safe||'Aracınız için yeni bir bildirim geldi.');
-  const content={title,body,data:{type:'drabornpark_report',reportId:report?.id,source:'realtime-fallback'}};
-  if(Platform.OS==='android')await Notifications.scheduleNotificationAsync({content,trigger:{type:Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,seconds:1,channelId:DKD_PUSH_CHANNEL_ID}});
-  else await Notifications.scheduleNotificationAsync({content,trigger:null});
+  const body=String(message?.body_safe||'Yeni anonim araç mesajı geldi.');
+  const content={
+    title:'DraBornPark • Yeni anonim mesaj',
+    body,
+    data:{type:'drabornpark_chat',messageId:message?.id,sessionId:message?.session_id,source:'realtime-local'},
+  };
+  if(Platform.OS==='android'){
+    await Notifications.scheduleNotificationAsync({
+      content,
+      trigger:{type:Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,seconds:1,repeats:false,channelId:DKD_PUSH_CHANNEL_ID},
+    });
+  }else{
+    await Notifications.scheduleNotificationAsync({content,trigger:null});
+  }
 }
 
 export function startForegroundReportNotifications():PushSubscription{
   let active=true;
-  let channel:any=null;
+  let channel:ReturnType<typeof supabase.channel>|null=null;
   void currentUser().then(user=>{
     if(!active||!user)return;
-    channel=supabase.channel(`drabornpark-report-alerts-${user.id}`).on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_reports',filter:`owner_user_id=eq.${user.id}`},payload=>{void presentRealtimeFallback((payload as any).new);}).subscribe();
-  }).catch(error=>console.warn('[DraBornPark bildirim] canlı bildirim yedeği başlatılamadı',String((error as any)?.message||error)));
+    channel=supabase
+      .channel(`drabornpark-live-message-alerts-${user.id}-${Date.now()}`)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_messages'},payload=>{
+        void presentLocalVisitorMessage((payload as any).new);
+      })
+      .subscribe();
+  }).catch(error=>console.warn('[DraBornPark bildirim] canlı mesaj bildirimi başlatılamadı',String((error as any)?.message||error)));
   return {remove:()=>{active=false;if(channel)void supabase.removeChannel(channel);}};
 }
 
 export function startPushTokenRefresh():PushSubscription{
   let active=true;
   let subscription:PushSubscription|null=null;
-  if(isExpoGoClient()||Platform.OS==='web')return {remove:()=>{active=false}};
-  void loadNotifications().then(Notifications=>{if(!active||!Notifications)return;subscription=Notifications.addPushTokenListener(()=>{void syncPushRegistration();});});
+  if(isExpoGoClient()||Platform.OS==='web')return {remove:()=>{active=false;}};
+  void loadNotifications().then(Notifications=>{
+    if(!active||!Notifications)return;
+    subscription=Notifications.addPushTokenListener(()=>{void syncPushRegistration();});
+  });
   return {remove:()=>{active=false;subscription?.remove();}};
 }
