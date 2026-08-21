@@ -63,7 +63,7 @@ const park=read('app/park.tsx');
 if(!park.includes('Konumunu neden istiyoruz?')||!park.includes('requestForegroundPermissionsAsync'))fail.push('Park location disclosure is missing.');
 
 const readme=read('README.md');
-for(const marker of ['Aktif sürüm — v0.5.3','Android `versionCode`: `19`','npx expo start --dev-client --clear','camera-only','20260821143000_dkd_drabornpark_v053_evidence_photo.sql'])if(!readme.includes(marker))fail.push(`README v0.5.3 release marker missing: ${marker}`);
+for(const marker of ['Aktif sürüm — v0.5.3','Android `versionCode`: `19`','npx expo start --dev-client --clear','Galeriden seçim yapılmaz.','20260821143000_dkd_drabornpark_v053_evidence_photo.sql'])if(!readme.includes(marker))fail.push(`README v0.5.3 release marker missing: ${marker}`);
 if(readme.includes('Aktif sürüm: **v0.5.0**')||readme.includes('## Demo ve Test1'))fail.push('README still contains retired v0.5.0/demo release state.');
 
 const ci=read('.github/workflows/ci.yml');
