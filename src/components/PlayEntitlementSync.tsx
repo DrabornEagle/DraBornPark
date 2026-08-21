@@ -5,6 +5,7 @@ import { DKD_PLUS_PRODUCT_IDS, verifyGooglePlaySubscription } from '@/src/lib/v0
 import { supabase } from '@/src/lib/supabase';
 
 const dkdUseIAP:any=(ExpoIAP as any).useIAP;
+async function dkdReconcile(){const {error:dkdError}=await supabase.rpc('drabornpark_reconcile_entitlement_dkd');if(dkdError)throw dkdError;}
 
 export function DkdPlayEntitlementSync(){
   const [dkdUserId,setDkdUserId]=useState<string|null>(null);
@@ -19,8 +20,9 @@ export function DkdPlayEntitlementSync(){
   },[]);
 
   useEffect(()=>{
-    if(Platform.OS!=='android'||!dkdUserId||!dkdIap?.connected||!dkdIap?.getAvailablePurchases)return;
-    void Promise.resolve(dkdIap.getAvailablePurchases()).catch(()=>{});
+    if(!dkdUserId)return;
+    void dkdReconcile().catch(dkdError=>console.warn('[DraBornPark entitlement reconcile]',String((dkdError as any)?.message||dkdError)));
+    if(Platform.OS==='android'&&dkdIap?.connected&&dkdIap?.getAvailablePurchases)void Promise.resolve(dkdIap.getAvailablePurchases()).catch(()=>{});
   },[dkdIap?.connected,dkdUserId]);
 
   useEffect(()=>{
@@ -34,6 +36,7 @@ export function DkdPlayEntitlementSync(){
       void (async()=>{
         try{
           await verifyGooglePlaySubscription({productId:dkdProductId,purchaseToken:dkdToken});
+          await dkdReconcile();
           if(dkdIap?.finishTransaction)await dkdIap.finishTransaction({purchase:dkdPurchase,isConsumable:false});
         }catch(dkdError:any){
           console.warn('[DraBornPark Play sync]',String(dkdError?.message||dkdError));
