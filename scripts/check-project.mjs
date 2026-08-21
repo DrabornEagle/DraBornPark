@@ -36,7 +36,7 @@ for(const marker of ['visibleCount','Daha Fazla','Anonim mesajlaşma','Kısa bir
 if(!exists('src/components/EvidencePhoto.tsx'))fail.push('Secure full-screen evidence viewer is missing.');
 else{
   const evidence=read('src/components/EvidencePhoto.tsx');
-  for(const marker of ['createSignedUrl','Modal','resizeMode="contain"','Kanıt fotoğrafı'])if(!evidence.includes(marker))fail.push(`v0.5.3 evidence viewer marker missing: ${marker}`);
+  for(const marker of ['getEvidenceSignedUrl','Modal','resizeMode="contain"','Kanıt fotoğrafı'])if(!evidence.includes(marker))fail.push(`v0.5.3 evidence viewer marker missing: ${marker}`);
 }
 if(!exists('src/lib/contactThreads.ts'))fail.push('Live contact thread helper is missing.');
 else{
