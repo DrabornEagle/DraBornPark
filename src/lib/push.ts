@@ -10,6 +10,8 @@ type PushSubscription={remove:()=>void};
 let notificationsPromise:Promise<NotificationsModule|null>|null=null;
 let handlerConfigured=false;
 let remotePushReady=false;
+const recentAlertBodies=new Map<string,number>();
+const ALERT_DEDUPE_MS=6000;
 
 export function isExpoGoClient(){
   const ownership=(Constants as any).appOwnership;
@@ -57,6 +59,20 @@ async function ensurePermission(Notifications:NotificationsModule){
   return status==='granted';
 }
 
+function normalizeAlertBody(value:unknown){
+  return String(value??'').trim().replace(/\s+/g,' ').toLocaleLowerCase('tr-TR').slice(0,500);
+}
+
+function rememberAlertBody(value:unknown){
+  const now=Date.now();
+  for(const [key,time] of recentAlertBodies){if(now-time>ALERT_DEDUPE_MS)recentAlertBodies.delete(key);}
+  const key=normalizeAlertBody(value);
+  if(!key)return false;
+  const previous=recentAlertBodies.get(key)??0;
+  recentAlertBodies.set(key,now);
+  return now-previous<ALERT_DEDUPE_MS;
+}
+
 export type PushRegistrationResult={ok:boolean;token?:string;reason?:string;projectId?:string|null};
 
 async function currentUser(){
@@ -77,7 +93,7 @@ export async function syncPushRegistration():Promise<PushRegistrationResult>{
   const user=await currentUser();
   if(!user)return {ok:false,reason:'Oturum bulunamadı.'};
   const projectId=(Constants.expoConfig?.extra as any)?.eas?.projectId??(Constants as any).easConfig?.projectId??null;
-  if(!projectId)return {ok:false,reason:'Expo push projectId yapılandırılmadı. Uygulama açıkken canlı yerel sistem bildirimi çalışır.',projectId};
+  if(!projectId)return {ok:false,reason:'Expo push projectId yapılandırılmadı. Uygulama açıkken canlı Android sistem bildirimi çalışır.',projectId};
   try{
     const result=await Notifications.getExpoPushTokenAsync({projectId});
     const token=result.data;
@@ -93,26 +109,46 @@ export async function syncPushRegistration():Promise<PushRegistrationResult>{
   }
 }
 
-async function presentLocalVisitorMessage(message:any){
-  if(remotePushReady||String(message?.sender_role)!=='visitor')return;
+async function presentSystemNotification(input:{title:string;body:string;data:Record<string,unknown>}){
   const Notifications=await loadNotifications(true);
   if(!Notifications)return;
   await ensureAndroidChannel(Notifications);
   if(!await ensurePermission(Notifications))return;
+  const content={title:input.title,body:input.body,data:input.data};
+  try{
+    if(Platform.OS==='android'){
+      await Notifications.scheduleNotificationAsync({
+        content,
+        trigger:{type:Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,seconds:1,repeats:false,channelId:DKD_PUSH_CHANNEL_ID},
+      });
+    }else{
+      await Notifications.scheduleNotificationAsync({content,trigger:null});
+    }
+  }catch(error){
+    console.warn('[DraBornPark bildirim] sistem bildirimi gösterilemedi',String((error as any)?.message||error));
+  }
+}
+
+async function presentLocalReport(report:any){
+  const body=String(report?.message_safe||'Aracınız için yeni bir bildirim geldi.');
+  if(rememberAlertBody(body))return;
+  const emergency=String(report?.priority)==='emergency';
+  await presentSystemNotification({
+    title:emergency?'DraBornPark • ACİL ARAÇ BİLDİRİMİ':'DraBornPark • Yeni araç bildirimi',
+    body,
+    data:{type:'drabornpark_report',reportId:report?.id,source:'realtime-local-report'},
+  });
+}
+
+async function presentLocalVisitorMessage(message:any){
+  if(String(message?.sender_role)!=='visitor')return;
   const body=String(message?.body_safe||'Yeni anonim araç mesajı geldi.');
-  const content={
+  if(rememberAlertBody(body))return;
+  await presentSystemNotification({
     title:'DraBornPark • Yeni anonim mesaj',
     body,
-    data:{type:'drabornpark_chat',messageId:message?.id,sessionId:message?.session_id,source:'realtime-local'},
-  };
-  if(Platform.OS==='android'){
-    await Notifications.scheduleNotificationAsync({
-      content,
-      trigger:{type:Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,seconds:1,repeats:false,channelId:DKD_PUSH_CHANNEL_ID},
-    });
-  }else{
-    await Notifications.scheduleNotificationAsync({content,trigger:null});
-  }
+    data:{type:'drabornpark_chat',messageId:message?.id,sessionId:message?.session_id,source:'realtime-local-message'},
+  });
 }
 
 export function startForegroundReportNotifications():PushSubscription{
@@ -121,12 +157,17 @@ export function startForegroundReportNotifications():PushSubscription{
   void currentUser().then(user=>{
     if(!active||!user)return;
     channel=supabase
-      .channel(`drabornpark-live-message-alerts-${user.id}-${Date.now()}`)
+      .channel(`drabornpark-live-alerts-${user.id}-${Date.now()}`)
+      .on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_reports',filter:`owner_user_id=eq.${user.id}`},payload=>{
+        void presentLocalReport((payload as any).new);
+      })
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_messages'},payload=>{
         void presentLocalVisitorMessage((payload as any).new);
       })
-      .subscribe();
-  }).catch(error=>console.warn('[DraBornPark bildirim] canlı mesaj bildirimi başlatılamadı',String((error as any)?.message||error)));
+      .subscribe(status=>{
+        if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('[DraBornPark bildirim] canlı bildirim kanalı yeniden bağlantı bekliyor',status);
+      });
+  }).catch(error=>console.warn('[DraBornPark bildirim] canlı sistem bildirimi başlatılamadı',String((error as any)?.message||error)));
   return {remove:()=>{active=false;if(channel)void supabase.removeChannel(channel);}};
 }
 
