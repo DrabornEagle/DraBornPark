@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { DkdPlayEntitlementSync } from '@/src/components/PlayEntitlementSync';
 import { startAdminSupportNotifications } from '@/src/lib/adminSupportNotifications';
 import { startNotificationRouting } from '@/src/lib/notificationRouting';
 import { initializeNotificationPresentation, startForegroundReportNotifications, startPushTokenRefresh, syncPushRegistration } from '@/src/lib/push';
@@ -26,4 +27,4 @@ function LivePushRegistration(){
   return null;
 }
 
-export default function RootLayout(){return <SafeAreaProvider><LivePushRegistration/><StatusBar style="light"/>{Platform.OS==='android'?<NavigationBar style="dark" hidden={false}/>:null}<Stack screenOptions={{headerShown:false,contentStyle:{backgroundColor:palette.bg},animation:'fade_from_bottom',animationDuration:220,gestureEnabled:true,fullScreenGestureEnabled:true}}/></SafeAreaProvider>}
+export default function RootLayout(){return <SafeAreaProvider><LivePushRegistration/><DkdPlayEntitlementSync/><StatusBar style="light"/>{Platform.OS==='android'?<NavigationBar style="dark" hidden={false}/>:null}<Stack screenOptions={{headerShown:false,contentStyle:{backgroundColor:palette.bg},animation:'fade_from_bottom',animationDuration:220,gestureEnabled:true,fullScreenGestureEnabled:true}}/></SafeAreaProvider>}
