@@ -62,8 +62,12 @@ if(!home.includes('title="Merkezim"'))fail.push('Home must expose Merkezim.');
 const park=read('app/park.tsx');
 if(!park.includes('Konumunu neden istiyoruz?')||!park.includes('requestForegroundPermissionsAsync'))fail.push('Park location disclosure is missing.');
 
+const readme=read('README.md');
+for(const marker of ['Aktif sürüm — v0.5.3','Android `versionCode`: `19`','npx expo start --dev-client --clear','camera-only','20260821143000_dkd_drabornpark_v053_evidence_photo.sql'])if(!readme.includes(marker))fail.push(`README v0.5.3 release marker missing: ${marker}`);
+if(readme.includes('Aktif sürüm: **v0.5.0**')||readme.includes('## Demo ve Test1'))fail.push('README still contains retired v0.5.0/demo release state.');
+
 const ci=read('.github/workflows/ci.yml');
 if(!ci.includes('vc19-developer-debug')||!ci.includes('DraBornPark-v0.5.3')||!ci.includes('assembleDebug')||!ci.includes('expo start --dev-client --clear')||!ci.includes('drabornpark-alerts-v3'))fail.push('v0.5.3 Developer APK CI pipeline is incomplete.');
 
 if(fail.length){console.error('\nDraBornPark integrity check failed:\n- '+fail.join('\n- '));process.exit(1)}
-console.log(`DraBornPark integrity OK • v${expected} • Android vc${app.expo.android.versionCode} • ${routeFiles.length} routes • camera-only timestamped evidence • secure full-screen owner viewer • Realtime chat • Developer APK pipeline verified.`);
+console.log(`DraBornPark integrity OK • v${expected} • Android vc${app.expo.android.versionCode} • ${routeFiles.length} routes • camera-only timestamped evidence • secure full-screen owner viewer • Realtime chat • Developer APK pipeline verified • README release docs verified.`);
