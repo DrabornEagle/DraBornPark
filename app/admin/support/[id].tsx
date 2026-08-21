@@ -1,0 +1,28 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { AuroraBackground, ScreenHeader, SectionHeading } from '@/src/components/AppChrome';
+import { loadAdminSupportRequest, markAdminSupportNotificationRead, setSupportRequestStatus } from '@/src/lib/v060';
+import { palette, radius, type } from '@/src/theme';
+
+export default function AdminSupportDetail(){
+  const {id}=useLocalSearchParams<{id?:string}>();const ticketId=String(id||'');const [ticket,setTicket]=useState<any>(null);const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);
+  async function load(){try{const row=await loadAdminSupportRequest(ticketId);setTicket(row);await markAdminSupportNotificationRead(ticketId).catch(()=>{});}catch(error:any){Alert.alert('Destek kaydı açılamadı',error?.message||'Bu ekran yalnızca DraBornPark yöneticisine açıktır.',[{text:'Tamam',onPress:()=>router.replace('/')}]);}finally{setLoading(false)}}
+  useEffect(()=>{if(ticketId)void load()},[ticketId]);
+  async function status(next:'open'|'in_progress'|'resolved'){setBusy(true);try{await setSupportRequestStatus(ticketId,next);await load();}catch(error:any){Alert.alert('Durum güncellenemedi',error?.message||'İşlem başarısız.')}finally{setBusy(false)}}
+  if(loading||!ticket)return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.blue}/><View style={s.loading}><ActivityIndicator color={palette.blue}/><Text style={s.loadingText}>Destek kaydı açılıyor…</Text></View></SafeAreaView>;
+  return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.blue} secondary={palette.purple}/><ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+    <ScreenHeader title="Destek Kaydı" eyebrow="YÖNETİCİ MERKEZİ" accent={palette.blue} subtitle="Kullanıcı tarafından gönderilen güvenli destek kaydının ayrıntıları"/>
+    <View style={s.hero}><View style={s.heroIcon}><MaterialCommunityIcons name="lifebuoy" size={35} color={palette.blue}/></View><View style={{flex:1}}><Text style={s.heroKicker}>{String(ticket.status||'open').toUpperCase()}</Text><Text style={s.heroTitle}>{ticket.subject}</Text><Text style={s.heroDate}>{ticket.createdAt?new Date(ticket.createdAt).toLocaleString('tr-TR'):''}</Text></View></View>
+    <SectionHeading title="Kullanıcı" subtitle="Destek kaydına bağlı hesap özeti" color={palette.cyan}/>
+    <View style={s.user}><MaterialCommunityIcons name="account-circle-outline" size={38} color={palette.cyan}/><View style={{flex:1}}><Text style={s.userName}>{ticket.username||ticket.displayName||'DraBornPark kullanıcısı'}</Text><Text style={s.userMeta}>{ticket.phone||'Telefon eklenmemiş'}</Text></View></View>
+    <SectionHeading title="Açıklama" subtitle="Kullanıcının gönderdiği destek içeriği" color={palette.purple}/>
+    <View style={s.bodyCard}><Text style={s.body}>{ticket.body}</Text></View>
+    <SectionHeading title="Kayıt durumu" subtitle="Destek iş akışını güncelle" color={palette.green}/>
+    <View style={s.actions}><StatusButton title="AÇIK" color={palette.orange} active={ticket.status==='open'} busy={busy} onPress={()=>status('open')}/><StatusButton title="İŞLEMDE" color={palette.cyan} active={ticket.status==='in_progress'} busy={busy} onPress={()=>status('in_progress')}/><StatusButton title="ÇÖZÜLDÜ" color={palette.green} active={ticket.status==='resolved'} busy={busy} onPress={()=>status('resolved')}/></View>
+  </ScrollView></SafeAreaView>;
+}
+function StatusButton({title,color,active,busy,onPress}:{title:string;color:string;active:boolean;busy:boolean;onPress:()=>void}){return <Pressable disabled={busy} onPress={onPress} style={[s.statusButton,{borderColor:`${color}60`,backgroundColor:active?`${color}25`:`${color}0A`}]}>{active?<MaterialCommunityIcons name="check-circle" size={20} color={color}/>:null}<Text style={[s.statusText,{color}]}>{title}</Text></Pressable>}
+const s=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},scroll:{padding:20,paddingBottom:60},loading:{flex:1,alignItems:'center',justifyContent:'center',gap:12},loadingText:{color:palette.muted,fontSize:type.body},hero:{minHeight:150,borderRadius:radius.xl,borderWidth:1,borderColor:`${palette.blue}50`,backgroundColor:`${palette.blue}0E`,padding:18,flexDirection:'row',alignItems:'center',gap:14},heroIcon:{width:68,height:68,borderRadius:23,backgroundColor:`${palette.blue}18`,alignItems:'center',justifyContent:'center'},heroKicker:{color:palette.blue,fontSize:type.micro,fontWeight:'900',letterSpacing:1},heroTitle:{color:palette.text,fontSize:22,fontWeight:'900',lineHeight:27,marginTop:4},heroDate:{color:palette.muted,fontSize:type.caption,marginTop:6},user:{minHeight:88,borderRadius:radius.md,borderWidth:1,borderColor:`${palette.cyan}40`,backgroundColor:`${palette.cyan}0A`,padding:15,flexDirection:'row',alignItems:'center',gap:12},userName:{color:palette.text,fontSize:type.bodyStrong,fontWeight:'900'},userMeta:{color:palette.muted,fontSize:type.caption,marginTop:4},bodyCard:{borderRadius:radius.lg,borderWidth:1,borderColor:`${palette.purple}40`,backgroundColor:`${palette.purple}0A`,padding:18},body:{color:palette.text,fontSize:type.body,lineHeight:24},actions:{gap:9},statusButton:{minHeight:58,borderRadius:18,borderWidth:1,paddingHorizontal:16,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8},statusText:{fontSize:type.bodyStrong,fontWeight:'900'}});
