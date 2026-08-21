@@ -1,17 +1,45 @@
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+import { AppState, Platform } from 'react-native';
 import { supabase } from '@/src/lib/supabase';
 
-export const DKD_PUSH_CHANNEL_ID='drabornpark-alerts-v2';
+export const DKD_PUSH_CHANNEL_ID='drabornpark-alerts-v3';
 
 type NotificationsModule=typeof import('expo-notifications');
 type PushSubscription={remove:()=>void};
+type SessionMeta={reportId:string|null;category:string;priority:string;title:string;initialMessageId:string|null};
+
 let notificationsPromise:Promise<NotificationsModule|null>|null=null;
 let handlerConfigured=false;
 let remotePushReady=false;
-const recentAlertBodies=new Map<string,number>();
-const ALERT_DEDUPE_MS=6000;
+const recentNotificationKeys=new Map<string,number>();
+const sessionMetaCache=new Map<string,{value:SessionMeta;expiresAt:number}>();
+const ALERT_DEDUPE_MS=12000;
+
+const CATEGORY_TITLES:Record<string,string>={
+  blocked_exit:'Aracınızı hareket ettirmeniz isteniyor',
+  blocking_exit:'Aracınızı hareket ettirmeniz isteniyor',
+  move_vehicle:'Aracınızı hareket ettirebilir misiniz?',
+  lights_on:'Farlarınız açık olabilir',
+  window_open:'Camınız açık olabilir',
+  door_open:'Kapınız açık olabilir',
+  trunk_open:'Bagajınız açık olabilir',
+  damage:'Aracınızda hasar fark edilmiş olabilir',
+  suspicious:'Şüpheli durum bildirimi',
+  towing:'Aracınız çekiliyor olabilir',
+  animal:'Araçta hayvan var',
+  child:'Araçta çocuk var',
+  fire:'Duman / yangın şüphesi',
+  forgotten_item:'Eşya veya anahtar unutulmuş olabilir',
+  witness:'Bir olaya şahit olundu',
+  emergency:'Acil durum bildirimi',
+  other:'Yeni araç bildirimi',
+};
+
+function categoryTitle(category:unknown){
+  const key=String(category||'other');
+  return CATEGORY_TITLES[key]||CATEGORY_TITLES.other;
+}
 
 export function isExpoGoClient(){
   const ownership=(Constants as any).appOwnership;
@@ -49,8 +77,8 @@ async function ensureAndroidChannel(Notifications:NotificationsModule){
     vibrationPattern:[0,250,150,250],
     lightColor:'#FF5CBD',
     enableVibrate:true,
+    enableLights:true,
     showBadge:true,
-    sound:'default',
   });
 }
 
@@ -70,17 +98,13 @@ export function initializeNotificationPresentation(){
   }).catch(error=>console.warn('[DraBornPark bildirim] foreground hazırlığı başarısız',String((error as any)?.message||error)));
 }
 
-function normalizeAlertBody(value:unknown){
-  return String(value??'').trim().replace(/\s+/g,' ').toLocaleLowerCase('tr-TR').slice(0,500);
-}
-
-function rememberAlertBody(value:unknown){
+function rememberNotification(key:unknown){
   const now=Date.now();
-  for(const [key,time] of recentAlertBodies){if(now-time>ALERT_DEDUPE_MS)recentAlertBodies.delete(key);}
-  const key=normalizeAlertBody(value);
-  if(!key)return false;
-  const previous=recentAlertBodies.get(key)??0;
-  recentAlertBodies.set(key,now);
+  for(const [savedKey,time] of recentNotificationKeys){if(now-time>ALERT_DEDUPE_MS)recentNotificationKeys.delete(savedKey);}
+  const normalized=String(key||'').trim();
+  if(!normalized)return false;
+  const previous=recentNotificationKeys.get(normalized)??0;
+  recentNotificationKeys.set(normalized,now);
   return now-previous<ALERT_DEDUPE_MS;
 }
 
@@ -125,7 +149,7 @@ async function presentSystemNotification(input:{title:string;body:string;data:Re
   if(!Notifications)return;
   await ensureAndroidChannel(Notifications);
   if(!await ensurePermission(Notifications))return;
-  const content={title:input.title,body:input.body,data:input.data,sound:'default' as const};
+  const content={title:input.title,body:input.body,data:input.data};
   try{
     await Notifications.scheduleNotificationAsync({
       content,
@@ -136,57 +160,120 @@ async function presentSystemNotification(input:{title:string;body:string;data:Re
   }
 }
 
+async function resolveSessionMeta(sessionId:unknown):Promise<SessionMeta>{
+  const id=String(sessionId||'');
+  const fallback:SessionMeta={reportId:null,category:'other',priority:'normal',title:CATEGORY_TITLES.other,initialMessageId:null};
+  if(!id)return fallback;
+  const cached=sessionMetaCache.get(id);
+  if(cached&&cached.expiresAt>Date.now())return cached.value;
+  try{
+    const {data:session,error:sessionError}=await supabase.from('drabornpark_contact_sessions').select('report_id').eq('id',id).maybeSingle();
+    if(sessionError)throw sessionError;
+    const reportId=String(session?.report_id||'')||null;
+    let category='other';
+    let priority='normal';
+    if(reportId){
+      const {data:report,error:reportError}=await supabase.from('drabornpark_reports').select('category,priority').eq('id',reportId).maybeSingle();
+      if(reportError)throw reportError;
+      category=String(report?.category||'other');
+      priority=String(report?.priority||'normal');
+    }
+    const {data:firstMessage}=await supabase.from('drabornpark_messages').select('id').eq('session_id',id).order('created_at',{ascending:true}).limit(1).maybeSingle();
+    const value:SessionMeta={reportId,category,priority,title:categoryTitle(category),initialMessageId:String(firstMessage?.id||'')||null};
+    sessionMetaCache.set(id,{value,expiresAt:Date.now()+60000});
+    return value;
+  }catch{
+    return fallback;
+  }
+}
+
 async function presentLocalReport(report:any){
+  const reportId=String(report?.id||'');
+  const key=reportId?`report:${reportId}`:`report:${String(report?.created_at||'')}:${String(report?.category||'')}`;
+  if(rememberNotification(key))return;
   const body=String(report?.message_safe||'Aracınız için yeni bir bildirim geldi.');
-  if(rememberAlertBody(body))return;
-  const emergency=String(report?.priority)==='emergency';
+  const category=String(report?.category||'other');
   await presentSystemNotification({
-    title:emergency?'DraBornPark • ACİL ARAÇ BİLDİRİMİ':'DraBornPark • Yeni araç bildirimi',
+    title:categoryTitle(category),
     body,
-    data:{type:'drabornpark_report',reportId:report?.id,source:'realtime-local-report'},
+    data:{type:'drabornpark_report',reportId:report?.id,category,source:'realtime-local-report'},
   });
 }
 
 async function presentLocalVisitorMessage(message:any){
   if(String(message?.sender_role)!=='visitor')return;
+  const meta=await resolveSessionMeta(message?.session_id);
+  const messageId=String(message?.id||'');
+  const key=messageId&&meta.initialMessageId===messageId&&meta.reportId?`report:${meta.reportId}`:messageId?`message:${messageId}`:`message:${String(message?.created_at||'')}:${String(message?.body_safe||'')}`;
+  if(rememberNotification(key))return;
   const body=String(message?.body_safe||'Yeni anonim araç mesajı geldi.');
-  if(rememberAlertBody(body))return;
   await presentSystemNotification({
-    title:'DraBornPark • Yeni anonim mesaj',
+    title:meta.title,
     body,
-    data:{type:'drabornpark_chat',messageId:message?.id,sessionId:message?.session_id,source:'realtime-local-message'},
+    data:{type:'drabornpark_chat',messageId:message?.id,sessionId:message?.session_id,reportId:meta.reportId,category:meta.category,source:'live-local-message'},
   });
 }
 
 export function startForegroundReportNotifications():PushSubscription{
   let active=true;
   let channel:ReturnType<typeof supabase.channel>|null=null;
-  void supabase.auth.getSession().then(async({data,error})=>{
-    if(error)throw error;
-    const session=data.session;
-    const user=session?.user;
-    if(!active||!session||!user)return;
-    await supabase.realtime.setAuth(session.access_token);
-    if(!active)return;
+  let pollTimer:ReturnType<typeof setInterval>|null=null;
+  let pollBusy=false;
+  let lastPollAt=Date.now();
+
+  const pollMessages=async(userId:string)=>{
+    if(!active||pollBusy||AppState.currentState!=='active')return;
+    pollBusy=true;
+    const pollStarted=Date.now();
+    try{
+      const {data:sessions,error:sessionError}=await supabase
+        .from('drabornpark_contact_sessions')
+        .select('id')
+        .eq('owner_user_id',userId)
+        .order('created_at',{ascending:false})
+        .limit(30);
+      if(sessionError)throw sessionError;
+      const sessionIds=(sessions??[]).map((row:any)=>String(row.id)).filter(Boolean);
+      if(sessionIds.length){
+        const since=new Date(Math.max(lastPollAt-2500,Date.now()-30000)).toISOString();
+        const {data:messages,error:messageError}=await supabase
+          .from('drabornpark_messages')
+          .select('id,session_id,sender_role,body_safe,created_at')
+          .in('session_id',sessionIds)
+          .eq('sender_role','visitor')
+          .gt('created_at',since)
+          .order('created_at',{ascending:true})
+          .limit(60);
+        if(messageError)throw messageError;
+        for(const message of messages??[])await presentLocalVisitorMessage(message);
+      }
+      lastPollAt=pollStarted;
+    }catch{
+      // Realtime koparsa bu yedek döngü bir sonraki turda sessizce yeniden dener.
+    }finally{
+      pollBusy=false;
+    }
+  };
+
+  void currentUser().then(user=>{
+    if(!active||!user)return;
     channel=supabase
-      .channel(`drabornpark-owner:${user.id}`,{config:{private:true}})
-      .on('broadcast',{event:'report'},event=>{
-        void presentLocalReport((event as any).payload);
-      })
-      .on('broadcast',{event:'message'},event=>{
-        void presentLocalVisitorMessage((event as any).payload);
-      })
+      .channel(`drabornpark-live-v052-${user.id}-${Date.now()}`)
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_reports',filter:`owner_user_id=eq.${user.id}`},payload=>{
         void presentLocalReport((payload as any).new);
       })
       .on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_messages'},payload=>{
         void presentLocalVisitorMessage((payload as any).new);
       })
-      .subscribe((status,errorInfo)=>{
-        if(status==='CHANNEL_ERROR'||status==='TIMED_OUT')console.warn('[DraBornPark bildirim] canlı bildirim kanalı bağlantı sorunu',status,String((errorInfo as any)?.message||errorInfo||''));
-      });
+      .subscribe();
+    pollTimer=setInterval(()=>{void pollMessages(user.id);},2000);
   }).catch(error=>console.warn('[DraBornPark bildirim] canlı sistem bildirimi başlatılamadı',String((error as any)?.message||error)));
-  return {remove:()=>{active=false;if(channel)void supabase.removeChannel(channel);}};
+
+  return {remove:()=>{
+    active=false;
+    if(pollTimer)clearInterval(pollTimer);
+    if(channel)void supabase.removeChannel(channel);
+  }};
 }
 
 export function startPushTokenRefresh():PushSubscription{
