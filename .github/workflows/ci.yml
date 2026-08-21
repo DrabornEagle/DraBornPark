@@ -3,7 +3,7 @@ name: DraBornPark CI
 on:
   workflow_dispatch:
   push:
-    branches: [main, feature/**, build/**, fix/**]
+    branches: [main, feature/**, feat/**, build/**, fix/**]
   pull_request:
     branches: [main]
 
@@ -92,14 +92,14 @@ jobs:
       - name: Prepare Developer APK artifact
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.1-vc17-developer-debug.apk
-          sha256sum artifacts/DraBornPark-v0.5.1-vc17-developer-debug.apk > artifacts/SHA256.txt
-          printf 'DraBornPark v0.5.1\nAndroid versionCode: 17\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear\nNotification channel: drabornpark-alerts-v2\nWorklets native/JS version: 0.10.1\nLive anonymous chat: enabled\nInbox pagination: 5 + 5\nNative dependency/config changes require rebuilding this APK.\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.2-vc18-developer-debug.apk
+          sha256sum artifacts/DraBornPark-v0.5.2-vc18-developer-debug.apk > artifacts/SHA256.txt
+          printf 'DraBornPark v0.5.2\nAndroid versionCode: 18\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear\nNotification channel: drabornpark-alerts-v2\nWorklets native/JS version: 0.10.1\nRealtime Broadcast anonymous chat: enabled\nForeground Android system notifications: enabled\nInbox pagination: 5 + 5\nNative dependency/config changes require rebuilding this APK.\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
 
       - name: Upload Developer APK
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v0.5.1-vc17-developer-apk
+          name: DraBornPark-v0.5.2-vc18-developer-apk
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
