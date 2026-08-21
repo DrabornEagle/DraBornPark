@@ -32,7 +32,7 @@ const allSource=[...routeFiles,...walk(path.join(root,'src')).filter(file=>/\.(t
 if(allSource.includes('ImagePicker.MediaTypeOptions'))fail.push('Deprecated ImagePicker.MediaTypeOptions remains in source.');
 
 const inbox=read('app/notifications.tsx');
-for(const marker of ['visibleCount','Daha Fazla','Anonim mesajlaşma','Kısa bir mesaj yaz','subscribeInboxChanges','EvidencePhoto','attachment_path'])if(!inbox.includes(marker))fail.push(`v0.5.3 inbox marker missing: ${marker}`);
+for(const marker of ['visibleCount','Daha Fazla','MESAJLAŞMA','Kısa bir mesaj yaz','subscribeInboxChanges','EvidencePhoto','attachment_path','Acil Arama Talebi','ONAYLA • NUMARAMI PAYLAŞ','respondCallRequest'])if(!inbox.includes(marker))fail.push(`v0.5.3 inbox marker missing: ${marker}`);
 if(!exists('src/components/EvidencePhoto.tsx'))fail.push('Secure full-screen evidence viewer is missing.');
 else{
   const evidence=read('src/components/EvidencePhoto.tsx');
@@ -43,6 +43,13 @@ else{
   const threads=read('src/lib/contactThreads.ts');
   for(const marker of ['drabornpark_contact_sessions','drabornpark_messages','postgres_changes','attachment_kind','attachment_path','attachment_captured_at','createSignedUrl'])if(!threads.includes(marker))fail.push(`v0.5.3 live thread helper marker missing: ${marker}`);
 }
+if(!exists('src/lib/callRequests.ts'))fail.push('Secure call request helper is missing.');
+else{
+  const calls=read('src/lib/callRequests.ts');
+  for(const marker of ['drabornpark_call_requests','dkd_drabornpark_respond_call_request_v053','approved','rejected'])if(!calls.includes(marker))fail.push(`v0.5.3 call request helper marker missing: ${marker}`);
+}
+const account=read('app/account.tsx');
+for(const marker of ['Telefon Numaram','phone_e164','TELEFON NUMARAMI KAYDET'])if(!account.includes(marker))fail.push(`v0.5.3 phone privacy marker missing: ${marker}`);
 
 const push=read('src/lib/push.ts');
 if(/import\s+.*from\s+['\"]expo-notifications['\"]/.test(push))fail.push('expo-notifications must remain dynamically imported.');
@@ -53,9 +60,16 @@ if(!layout.includes('startForegroundReportNotifications')||!layout.includes('syn
 
 const publicContact=read('supabase/functions/drabornpark-public-contact/index.ts');
 for(const marker of ['VERSION="0.5.3"','initialMessage','drabornpark_messages','category.title','drabornpark-alerts-v3','limit(100)','parseEvidence','uploadEvidence','attachment_captured_at','drabornpark-private'])if(!publicContact.includes(marker))fail.push(`Public contact v0.5.3 marker missing: ${marker}`);
-for(const migration of ['supabase/migrations/20260821083000_drabornpark_v051_live_chat_realtime.sql','supabase/migrations/20260821131500_dkd_drabornpark_v052_realtime_broadcast.sql','supabase/migrations/20260821143000_dkd_drabornpark_v053_evidence_photo.sql'])if(!exists(migration))fail.push(`Migration missing: ${migration}`);
+for(const migration of ['supabase/migrations/20260821083000_drabornpark_v051_live_chat_realtime.sql','supabase/migrations/20260821131500_dkd_drabornpark_v052_realtime_broadcast.sql','supabase/migrations/20260821143000_dkd_drabornpark_v053_evidence_photo.sql','supabase/migrations/20260821172000_dkd_drabornpark_call_requests_v053.sql'])if(!exists(migration))fail.push(`Migration missing: ${migration}`);
 const evidenceMigration=read('supabase/migrations/20260821143000_dkd_drabornpark_v053_evidence_photo.sql');
 for(const marker of ['attachment_kind','attachment_path','attachment_captured_at','dkd_drabornpark_broadcast_message_v053','realtime.send'])if(!evidenceMigration.includes(marker))fail.push(`v0.5.3 evidence migration marker missing: ${marker}`);
+const callMigration=read('supabase/migrations/20260821172000_dkd_drabornpark_call_requests_v053.sql');
+for(const marker of ['drabornpark_call_requests','dkd_drabornpark_respond_call_request_v053','phone_e164','pending','approved','rejected','expired'])if(!callMigration.includes(marker))fail.push(`v0.5.3 call request migration marker missing: ${marker}`);
+if(!exists('supabase/functions/drabornpark-call-request/index.ts'))fail.push('Call request Edge Function source is missing.');
+else{
+  const callEdge=read('supabase/functions/drabornpark-call-request/index.ts');
+  for(const marker of ['evidence_required','drabornpark-call-request','Acil Arama Talebi','phone_e164','sessionToken'])if(!callEdge.includes(marker))fail.push(`v0.5.3 call request Edge marker missing: ${marker}`);
+}
 
 const home=read('app/index.tsx');
 if(!home.includes('title="Merkezim"'))fail.push('Home must expose Merkezim.');
@@ -70,4 +84,4 @@ const ci=read('.github/workflows/ci.yml');
 if(!ci.includes('vc19-developer-debug')||!ci.includes('DraBornPark-v0.5.3')||!ci.includes('assembleDebug')||!ci.includes('expo start --dev-client --clear')||!ci.includes('drabornpark-alerts-v3'))fail.push('v0.5.3 Developer APK CI pipeline is incomplete.');
 
 if(fail.length){console.error('\nDraBornPark integrity check failed:\n- '+fail.join('\n- '));process.exit(1)}
-console.log(`DraBornPark integrity OK • v${expected} • Android vc${app.expo.android.versionCode} • ${routeFiles.length} routes • camera-only timestamped evidence • secure full-screen owner viewer • Realtime chat • Developer APK pipeline verified • README release docs verified.`);
+console.log(`DraBornPark integrity OK • v${expected} • Android vc${app.expo.android.versionCode} • ${routeFiles.length} routes • camera-only timestamped evidence • secure call request approval • Realtime chat • Developer APK pipeline verified.`);
