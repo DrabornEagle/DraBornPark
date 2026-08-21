@@ -6,6 +6,10 @@ export type ContactMessage = {
   sender_role: 'owner' | 'visitor' | 'system' | string;
   body_safe: string;
   created_at: string;
+  attachment_kind?: 'evidence_photo' | null;
+  attachment_path?: string | null;
+  attachment_captured_at?: string | null;
+  attachment_mime?: string | null;
 };
 
 export type ContactSession = {
@@ -44,7 +48,7 @@ export async function loadContactThreads(reportIds: string[]): Promise<ContactTh
 
   const { data: messages, error: messageError } = await supabase
     .from('drabornpark_messages')
-    .select('id,session_id,sender_role,body_safe,created_at')
+    .select('id,session_id,sender_role,body_safe,created_at,attachment_kind,attachment_path,attachment_captured_at,attachment_mime')
     .in('session_id', sessionIds)
     .order('created_at', { ascending: true });
   if (messageError) throw messageError;
@@ -58,6 +62,15 @@ export async function loadContactThreads(reportIds: string[]): Promise<ContactTh
   return { sessionsByReport, messagesByReport };
 }
 
+export async function getEvidenceSignedUrl(path: string) {
+  const clean = String(path || '').trim();
+  if (!clean) throw new Error('Kanıt fotoğrafı yolu bulunamadı.');
+  const { data, error } = await supabase.storage.from('drabornpark-private').createSignedUrl(clean, 600);
+  if (error) throw error;
+  if (!data?.signedUrl) throw new Error('Kanıt fotoğrafı açılamadı.');
+  return data.signedUrl;
+}
+
 export function subscribeInboxChanges(onChange: () => void) {
   let active = true;
   let channel: ReturnType<typeof supabase.channel> | null = null;
@@ -69,7 +82,7 @@ export function subscribeInboxChanges(onChange: () => void) {
     if (!active || !userId) return;
 
     channel = supabase
-      .channel(`drabornpark-inbox-v052-${userId}-${Date.now()}`)
+      .channel(`drabornpark-inbox-v053-${userId}-${Date.now()}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
