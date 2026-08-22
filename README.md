@@ -4,11 +4,11 @@
 
 DraBornPark; araç ön camındaki NFC + QR etiketini gizlilik odaklı araç iletişimi, park hafızası, güvenlik, araç geçmişi, aile paylaşımı ve premium dijital servislerle birleştiren kişisel araç ağıdır.
 
-## Aktif sürüm — v0.5.3
+## Aktif sürüm — v0.5.4
 
 - Expo SDK 57 / React Native 0.86 / Expo Router
 - Android paket adı: `com.draborneagle.drabornpark`
-- Android `versionCode`: `19`
+- Android `versionCode`: `20`
 - Özel URI scheme: `drabornpark`
 - Expo Developer APK + Metro geliştirme akışı
 - Supabase Postgres + RLS + private Storage + Edge Functions
@@ -124,3 +124,14 @@ npm run typecheck
 - Yeni backend tanımları `drabornpark_*` / `dkd_drabornpark_*` adlandırmasını korur.
 
 **Aktif sürüm: v0.5.3 — Android vc19**
+
+## v0.5.4 — destek, izinler ve DraBornPark+
+
+- Kayıtta zorunlu telefon numarası, kullanıcı adı ve opsiyonel profil resmi.
+- Araç ekleme, konum/bildirim izinleri ve etiket Premium ödülü için renkli animasyonlu uygulama popup’ları.
+- Alt menü: Ana Sayfa / Park Alanı / Bildirimler / Merkezim.
+- Destek Merkezi aynı uygulama içinde; admin yeni kayıt bildirimi ve detay ekranı.
+- Yeni etiket aktivasyonu 14 günlük DraBornPark+ ödülü verir.
+- Google Play ürünü `drabornpark_plus`; base plan kimlikleri `monthly` ve `yearly`. Fiyatlar Play Store’dan yerel para birimiyle okunur.
+- Satın alma tokenı Edge Function tarafından Google Play Developer API ile doğrulanmadan Premium hakkı açılmaz ve token veritabanında yalnızca SHA-256 hash olarak saklanır.
+- Gerçek Play testi Developer/Internal Test build ve Play Console servis hesabı gerektirir. Supabase secret adı: `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON`.

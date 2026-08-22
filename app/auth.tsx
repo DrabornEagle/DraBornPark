@@ -19,6 +19,7 @@ export default function AuthScreen(){
   const [username,setUsername]=useState('');
   const [email,setEmail]=useState('');
   const [password,setPassword]=useState('');
+  const [phone,setPhone]=useState('');
   const [busy,setBusy]=useState(false);
   const [avatarAsset,setAvatarAsset]=useState<any>(null);
 
@@ -58,11 +59,14 @@ export default function AuthScreen(){
           return;
         }
         if(!(await isUsernameAvailable(normalized))){Alert.alert('Kullanıcı adı kullanımda','Başka bir kullanıcı adı seç.');return;}
+        const digits=phone.replace(/\D/g,'');
+        const normalizedPhone=phone.trim().startsWith('+')?'+'+digits:digits.startsWith('90')?'+'+digits:digits.startsWith('0')&&digits.length===11?'+90'+digits.slice(1):digits.length===10?'+90'+digits:'+'+digits;
+        if(!/^\+[1-9]\d{7,14}$/.test(normalizedPhone)){Alert.alert('Telefon numarasını kontrol et','Telefon numaranı ülke koduyla gir. Türkiye için 05xx... veya +905xx... yazabilirsin.');return;}
         if(avatarAsset)await AsyncStorage.setItem(PENDING_AVATAR_KEY,JSON.stringify({uri:avatarAsset.uri,mimeType:avatarAsset.mimeType,fileName:avatarAsset.fileName}));
-        const {data,error}=await supabase.auth.signUp({email:email.trim().toLowerCase(),password,options:{data:{display_name:normalized,username:normalized}}});
+        const {data,error}=await supabase.auth.signUp({email:email.trim().toLowerCase(),password,options:{data:{display_name:normalized,username:normalized,phone_e164:normalizedPhone}}});
         if(error)throw error;
         if(data.session){
-          await bootstrapProfile(normalized,normalized);
+          await bootstrapProfile(normalized,normalized,undefined,normalizedPhone);
           await uploadPendingAvatar(avatarAsset);
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
           router.replace('/');
@@ -84,12 +88,13 @@ export default function AuthScreen(){
       {mode==='signup'?<>
         <Pressable onPress={pickAvatar} style={s.avatarPicker}><View style={s.avatarPreview}>{avatarAsset?<Image source={{uri:avatarAsset.uri}} style={s.avatarImage}/>:<MaterialCommunityIcons name="account-circle-outline" size={37} color={palette.purple}/>}<View style={s.avatarEdit}><MaterialCommunityIcons name="camera-plus-outline" size={14} color={palette.ink}/></View></View><View style={{flex:1}}><Text style={s.avatarTitle}>Profil resmi ekle</Text><Text style={s.avatarBody}>Opsiyonel • daha sonra değiştirebilirsin</Text></View><MaterialCommunityIcons name="image-edit-outline" size={23} color={palette.purple}/></Pressable>
         <Field label="KULLANICI ADI *" value={username} set={setUsername} placeholder="draborneagle" icon="account-outline"/>
+        <Field label="TELEFON NUMARASI *" value={phone} set={setPhone} placeholder="0555 111 22 33" icon="phone-outline" keyboard="phone-pad"/>
       </>:null}
       <Field label="E-POSTA" value={email} set={setEmail} placeholder="ornek@mail.com" icon="email-outline" keyboard="email-address"/>
       <Field label="PAROLA" value={password} set={setPassword} placeholder="En az 6 karakter" icon="lock-outline" secure/>
       <Pressable disabled={busy} onPress={submit} style={[s.cta,busy&&{opacity:.6}]}>{busy?<ActivityIndicator color={palette.ink}/>:<><MaterialCommunityIcons name="shield-check" size={24} color={palette.ink}/><View style={{flex:1}}><Text style={s.ctaTitle}>{mode==='login'?'GÜVENLİ GİRİŞ YAP':'HESABIMI OLUŞTUR'}</Text><Text style={s.ctaSub}>{mode==='login'?'Araç merkezine devam et':'DraBornPark profilini başlat'}</Text></View><MaterialCommunityIcons name="arrow-right" size={22} color={palette.ink}/></>}</Pressable>
     </View>
-    {mode==='signup'?<View style={s.trial}><View style={s.trialIcon}><MaterialCommunityIcons name="crown" size={27} color={palette.yellow}/></View><View style={{flex:1}}><Text style={s.trialTitle}>14 Gün DraBornPark+ Hediye</Text><Text style={s.trialBody}>Yeni kullanıcı deneme süresinde Aile, Vale/Servis, Zaman Kuralları ve gelişmiş araç özelliklerini deneyebilir. Basic etiket işlevleri deneme bitince kapanmaz.</Text></View></View>:null}
+    {mode==='signup'?<View style={s.trial}><View style={s.trialIcon}><MaterialCommunityIcons name="crown" size={27} color={palette.yellow}/></View><View style={{flex:1}}><Text style={s.trialTitle}>Yeni Etiketine 14 Gün DraBornPark+</Text><Text style={s.trialBody}>Hesabın Basic olarak açılır. Yeni DraBornPark etiketini aktive ettiğinde 14 günlük Premium ödül başlar; süre sonunda aylık veya yıllık Google Play planıyla uygun fiyatla devam edebilirsin.</Text></View></View>:null}
     <View style={s.privacy}><MaterialCommunityIcons name="shield-lock-outline" size={23} color={palette.green}/><Text style={s.privacyText}>Telefon, e-posta, tam ad ve park geçmişin QR/NFC ziyaretçisine gösterilmez.</Text></View>
   </ScrollView></KeyboardAvoidingView></SafeAreaView>;
 }

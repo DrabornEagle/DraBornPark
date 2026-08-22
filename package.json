@@ -1,6 +1,6 @@
 {
   "name": "drabornpark",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -36,7 +36,10 @@
     "react-native-screens": "~4.26.0",
     "react-native-url-polyfill": "^4.0.0",
     "react-native-web": "~0.21.0",
-    "react-native-worklets": "0.10.1"
+    "react-native-worklets": "0.10.1",
+    "expo-iap": "5.3.2",
+    "expo-build-properties": "~57.0.8",
+    "react-native-reanimated": "4.5.1"
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
@@ -45,6 +48,7 @@
   "overrides": {
     "@expo/cli": "57.0.9",
     "@expo/metro-runtime": "57.0.9",
-    "react-native-worklets": "0.10.1"
+    "react-native-worklets": "0.10.1",
+    "react-native-reanimated": "4.5.1"
   }
 }

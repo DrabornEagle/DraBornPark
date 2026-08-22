@@ -6,6 +6,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Easing, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuroraBackground, BottomDock } from '@/src/components/AppChrome';
+import { ColorPopup } from '@/src/components/ColorPopup';
 import { Pill, SafeIcon } from '@/src/components/Primitives';
 import { useDemo } from '@/src/demo/DemoContext';
 import { attachParkTicket } from '@/src/lib/extras';
@@ -31,6 +32,7 @@ export default function ParkScreen(){
   const [busy,setBusy]=useState(false);
   const [locating,setLocating]=useState(false);
   const [coords,setCoords]=useState<{lat:number;lon:number;accuracy:number|null}|null>(null);
+  const [locationInfoOpen,setLocationInfoOpen]=useState(false);
   const enter=useRef(new Animated.Value(0)).current;
   const locationPulse=useRef(new Animated.Value(0)).current;
   const locationSweep=useRef(new Animated.Value(0)).current;
@@ -47,13 +49,7 @@ export default function ParkScreen(){
     lp.start();ls.start();sp.start();ss.start();return()=>{lp.stop();ls.stop();sp.stop();ss.stop()};
   },[locationPulse,locationSweep,savePulse,saveSweep]);
 
-  function locate(){
-    if(demo.active){setCoords({lat:39.9357,lon:32.8063,accuracy:8});Haptics.selectionAsync();return;}
-    Alert.alert('Konumunu neden istiyoruz?','DraBornPark yalnızca bu park kaydında bulunduğun noktayı kaydetmek ve Aracıma Git yönlendirmesini oluşturmak için konumuna erişir. Arka planda sürekli konum takibi yapılmaz ve konum QR/NFC ziyaretçilerine gösterilmez.',[
-      {text:'Vazgeç',style:'cancel'},
-      {text:'Devam Et',onPress:locateNow},
-    ]);
-  }
+  function locate(){if(demo.active){setCoords({lat:39.9357,lon:32.8063,accuracy:8});Haptics.selectionAsync();return;}setLocationInfoOpen(true);}
   async function locateNow(){setLocating(true);try{const permission=await Location.requestForegroundPermissionsAsync();if(permission.status!=='granted'){Alert.alert('Konum izni verilmedi','Konumu kullanmadan da kat, bölüm ve park numarasını elle kaydedebilirsin.');return;}const current=await Location.getCurrentPositionAsync({accuracy:Location.Accuracy.High});setCoords({lat:current.coords.latitude,lon:current.coords.longitude,accuracy:current.coords.accuracy});Haptics.selectionAsync();}catch(e:any){Alert.alert('Konum alınamadı',e?.message||'Konum servisini kontrol et.');}finally{setLocating(false)}}
   async function capture(kind:'park'|'ticket'){try{const permission=await ImagePicker.requestCameraPermissionsAsync();if(!permission.granted){Alert.alert('Kamera izni verilmedi','Fotoğraf eklemek isteğe bağlıdır. Park kaydını fotoğraf olmadan da oluşturabilirsin.');return;}const result=await ImagePicker.launchCameraAsync({mediaTypes:['images'] as ImagePicker.MediaType[],quality:.8,allowsEditing:false});const asset=result.assets?.[0];if(!result.canceled&&asset){kind==='park'?setPhoto(asset.uri):setTicket(asset.uri)}}catch(e:any){Alert.alert('Kamera açılamadı',e?.message||'Kamera erişimini kontrol et.')}}
   async function scheduleReminder(parkId?:string){if(reminder<=0)return;try{const Notifications=await import('expo-notifications');const permission=await Notifications.requestPermissionsAsync();if(!permission.granted)return;await Notifications.scheduleNotificationAsync({content:{title:'DraBornPark • Park süresi',body:'Park sürenizin bitmesine 15 dakika kaldı.',data:{parkId}},trigger:{type:Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,seconds:Math.max(5,(reminder-15)*60)}});}catch{}}
@@ -109,7 +105,7 @@ export default function ParkScreen(){
     </Pressable></Animated.View>
     <View style={s.bottomPrivacy}><SafeIcon name="shield-check-outline" size={24} color={palette.green}/><Text style={s.bottomPrivacyText}>Park geçmişin kamusal değildir. Aile paylaşımı yalnızca sen açıkça izin verdiğinde çalışır.</Text></View>
     <BottomDock active="park"/>
-  </ScrollView></Animated.View></SafeAreaView>;
+  </ScrollView><ColorPopup visible={locationInfoOpen} icon="map-marker-radius-outline" eyebrow="KONUM İZNİ" title="Park yerini hatırlayalım" body="DraBornPark konumunu yalnızca bu park kaydındaki noktayı kaydetmek ve Aracıma Git yönlendirmesini oluşturmak için kullanır. Arka planda sürekli takip yapmaz; konum QR/NFC ziyaretçilerine gösterilmez." accent={palette.green} secondary={palette.cyan} primaryLabel="KONUMA İZİN VER" onPrimary={()=>{setLocationInfoOpen(false);void locateNow()}} secondaryLabel="ELLE GİRECEĞİM" onSecondary={()=>setLocationInfoOpen(false)} chips={['TEK SEFERLİK','ARKA PLAN TAKİBİ YOK','ÖZEL']}/></Animated.View></SafeAreaView>;
 }
 
 function MiniChip({icon,text,color}:{icon:string;text:string;color:string}){return <View style={[s.miniChip,{borderColor:`${color}58`,backgroundColor:`${color}14`}]}><SafeIcon name={icon} size={15} color={color}/><Text style={[s.miniChipText,{color}]}>{text}</Text></View>}

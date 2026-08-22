@@ -32,14 +32,11 @@ async function currentUserId() {
 
 export function hasPlusEntitlement(profile: any | null, subscription: any | null) {
   if (!profile) return false;
-  if (['PLUS', 'PLUS_ACTIVE', 'ACTIVE'].includes(profile.subscription_status)) return true;
-  if (profile.subscription_status === 'PLUS_TRIAL' && profile.plus_trial_until) {
-    if (new Date(profile.plus_trial_until).getTime() > Date.now()) return true;
-  }
-  if (subscription && ['active', 'trialing', 'grace_period'].includes(String(subscription.status).toLowerCase())) {
-    return !subscription.expires_at || new Date(subscription.expires_at).getTime() > Date.now();
-  }
-  return false;
+  if (profile.plus_trial_until && new Date(profile.plus_trial_until).getTime() > Date.now()) return true;
+  const profileStatus=String(profile.subscription_status||'').toUpperCase();
+  const subscriptionStatus=String(subscription?.status||'').toUpperCase();
+  if (['PLUS_ACTIVE','PLUS_GRACE_PERIOD','PLUS_CANCELLED'].includes(subscriptionStatus)) return !subscription?.expires_at || new Date(subscription.expires_at).getTime()>Date.now();
+  return ['PLUS_ACTIVE','PLUS_GRACE_PERIOD'].includes(profileStatus);
 }
 
 export async function isUsernameAvailable(username: string) {
@@ -51,24 +48,13 @@ export async function isUsernameAvailable(username: string) {
   return Boolean(data);
 }
 
-export async function bootstrapProfile(displayName?: string, username?: string, avatarUrl?: string) {
+export async function bootstrapProfile(displayName?: string, username?: string, avatarUrl?: string, phoneE164?: string) {
   const { data: userData } = await supabase.auth.getUser();
   const user = userData.user;
   const meta = user?.user_metadata ?? {};
-  const resolvedUsername = (
-    username ??
-    meta.username ??
-    displayName ??
-    meta.display_name ??
-    user?.email?.split('@')[0] ??
-    ''
-  ).trim().toLowerCase() || null;
+  const resolvedUsername = (username ?? meta.username ?? displayName ?? meta.display_name ?? user?.email?.split('@')[0] ?? '').trim().toLowerCase() || null;
   const resolvedDisplay = displayName ?? meta.display_name ?? resolvedUsername ?? undefined;
-  const { data, error } = await supabase.rpc('drabornpark_bootstrap_user', {
-    drabornpark_display_name: resolvedDisplay ?? null,
-    drabornpark_username: resolvedUsername,
-    drabornpark_avatar_url: avatarUrl ?? meta.avatar_url ?? null,
-  });
+  const { data, error } = await supabase.rpc('dkd_drabornpark_bootstrap_user_v054', {dkd_display_name:resolvedDisplay??null,dkd_username:resolvedUsername,dkd_avatar_url:avatarUrl??meta.avatar_url??null,dkd_phone_e164:phoneE164??meta.phone_e164??null});
   if (error) throw error;
   return data;
 }
@@ -250,11 +236,7 @@ export async function quickReply(reportId: string, message: string) {
 }
 
 export async function activateTag(tagCode: string, pin: string, vehicleId: string) {
-  const { data, error } = await supabase.rpc('drabornpark_activate_tag', {
-    drabornpark_tag_code: tagCode.trim().toUpperCase(),
-    drabornpark_pin: pin.trim(),
-    drabornpark_vehicle_id: vehicleId,
-  });
+  const { data, error } = await supabase.rpc('dkd_drabornpark_activate_tag_v054', {dkd_tag_code:tagCode.trim().toUpperCase(),dkd_pin:pin.trim(),dkd_vehicle_id:vehicleId});
   if (error) throw error;
   return data;
 }
@@ -440,12 +422,8 @@ export async function deleteEmergencyContact(contactId: string) {
 
 export async function createSupportRequest(subject: string, body: string) {
   const ownerUserId = await currentUserId();
-  const { data, error } = await supabase.from('drabornpark_support_requests').insert({
-    owner_user_id: ownerUserId,
-    subject: subject.trim(),
-    body: body.trim(),
-    status: 'open',
-  }).select('*').single();
+  const { data, error } = await supabase.from('drabornpark_support_requests').insert({owner_user_id:ownerUserId,subject:subject.trim(),body:body.trim(),status:'open'}).select('*').single();
   if (error) throw error;
+  void supabase.functions.invoke('dkd-drabornpark-admin-support-push',{body:{supportId:data.id}}).catch(()=>{});
   return data;
 }

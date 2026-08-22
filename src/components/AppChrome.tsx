@@ -67,9 +67,9 @@ export function BottomDock({active='home',onHub,transparent=false,floating=false
   const visibility=useRef(new Animated.Value(transparent?0:1)).current;
   useEffect(()=>{Animated.timing(visibility,{toValue:transparent?0:1,duration:220,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start()},[transparent,visibility]);
   const items=[
-    {key:'home' as const,icon:'home-variant-outline',label:'Ana',color:palette.cyan,action:()=>router.replace('/')},
-    {key:'park' as const,icon:'map-marker-radius-outline',label:'Park',color:palette.orange,action:()=>router.push('/park')},
-    {key:'inbox' as const,icon:'bell-outline',label:'Bildirim',color:palette.pink,action:()=>router.push('/notifications')},
+    {key:'home' as const,icon:'home-variant-outline',label:'Ana Sayfa',color:palette.cyan,action:()=>router.replace('/')},
+    {key:'park' as const,icon:'map-marker-radius-outline',label:'Park Alanı',color:palette.orange,action:()=>router.push('/park')},
+    {key:'inbox' as const,icon:'bell-outline',label:'Bildirimler',color:palette.pink,action:()=>router.push('/notifications')},
     {key:'hub' as const,icon:'view-grid-outline',label:'Merkezim',color:palette.purple,action:()=>onHub?onHub():router.push('/hub')},
   ];
   return <Animated.View pointerEvents={transparent?'none':'box-none'} style={[s.dockWrap,floating&&s.dockFloating,{opacity:visibility,transform:[{translateY:visibility.interpolate({inputRange:[0,1],outputRange:[118,0]})}]}]}><View style={s.dock}><Spectrum/>{items.map(item=>{const selected=active===item.key;return <Pressable key={item.key} onPress={item.action} style={({pressed})=>[s.dockItem,selected&&{backgroundColor:`${item.color}20`,borderColor:`${item.color}62`},pressed&&{opacity:.72,transform:[{scale:.97}]}]}><View style={[s.dockIcon,selected&&{borderColor:`${item.color}88`,backgroundColor:`${item.color}30`}]}><SafeIcon name={item.icon} size={24} color={selected?item.color:palette.muted2}/>{selected?<View style={[s.activeDot,{backgroundColor:item.color}]}/>:null}</View><Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} style={[s.dockLabel,selected&&{color:palette.text}]}>{item.label}</Text></Pressable>})}</View></Animated.View>;

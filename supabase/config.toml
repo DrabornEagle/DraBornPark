@@ -2,3 +2,9 @@ project_id = "xpdiwyxnnrmyvpcqwuyb"
 
 [functions.drabornpark-public-contact]
 verify_jwt = false
+
+[functions.dkd-drabornpark-admin-support-push]
+verify_jwt = true
+
+[functions.dkd-drabornpark-google-play]
+verify_jwt = true
