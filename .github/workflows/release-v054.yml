@@ -153,7 +153,7 @@ jobs:
             mkdir -p artifacts &&
             cp "$APK" artifacts/DraBornPark-v0.5.4-vc20-developer-debug.apk &&
             sha256sum artifacts/DraBornPark-v0.5.4-vc20-developer-debug.apk > artifacts/SHA256.txt &&
-            printf 'DraBornPark v0.5.4\nAndroid versionCode: 20\nBuild type: Expo Developer APK / debug\nMetro: npx expo start --dev-client --clear\nNative modules: expo-iap + expo-notifications\nGoogle Play product: drabornpark_plus\nBase plans: monthly / yearly\nWorklets: 0.12.1\n' > artifacts/BUILD_INFO.txt
+            printf 'DraBornPark v0.5.4\nAndroid versionCode: 20\nBuild type: Expo Developer APK / debug\nMetro: npx expo start --dev-client --clear\nNative modules: expo-iap + expo-notifications\nGoogle Play product: drabornpark_plus\nBase plans: monthly / yearly\nReanimated: 4.5.1\nWorklets: 0.10.1\n' > artifacts/BUILD_INFO.txt
           } 2>&1 | tee /tmp/v054-android.log
           code=${PIPESTATUS[0]}
           echo "code=$code" >> "$GITHUB_OUTPUT"
