@@ -1,0 +1,102 @@
+name: DraBornPark v0.5.5 Finalize
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/finalize-v055.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  CI: '1'
+
+jobs:
+  finalize:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Apply guarded v0.5.5 source patch
+        run: |
+          node --check scripts/apply-v055.mjs
+          node scripts/fix-v055-stage.mjs
+          node --check scripts/apply-v055.mjs
+          node scripts/apply-v055.mjs
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Project integrity
+        run: npm run check
+
+      - name: Expo dependency compatibility
+        run: npx expo install --check
+
+      - name: TypeScript
+        run: npm run typecheck
+
+      - name: Web export
+        run: npx expo export --platform web
+
+      - name: Android prebuild
+        run: npx expo prebuild --platform android --clean --no-install
+
+      - name: Build Developer APK
+        working-directory: android
+        run: ./gradlew :app:assembleDebug --no-daemon
+
+      - name: Verify and prepare v0.5.5 APK
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
+          AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
+          "$AAPT" dump badging "$APK" | tee /tmp/badging.txt
+          grep "package: name='com.draborneagle.drabornpark' versionCode='21' versionName='0.5.5'" /tmp/badging.txt
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          "$APKSIGNER" verify --verbose "$APK"
+          mkdir -p artifacts
+          cp "$APK" artifacts/DraBornPark-v0.5.5-vc21-developer-debug.apk
+          sha256sum artifacts/DraBornPark-v0.5.5-vc21-developer-debug.apk > artifacts/SHA256.txt
+          printf 'DraBornPark v0.5.5\nAndroid versionCode: 21\nBuild: Developer APK / debug\nTag transfer pgcrypto fix: enabled\nPremium popup and pricing: enabled\nPublic inline messaging + camera photo: enabled\nMarketplace sample links: enabled\n' > artifacts/BUILD_INFO.txt
+
+      - name: Commit validated source only
+        run: |
+          rm -rf android dist
+          rm -f scripts/apply-v055.mjs scripts/fix-v055-stage.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git reset -- artifacts || true
+          git commit -m "DraBornPark v0.5.5: premium refresh, tag transfer and secure messaging"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Upload validated Developer APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DraBornPark-v0.5.5-vc21-developer-apk
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14
