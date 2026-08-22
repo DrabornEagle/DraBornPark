@@ -2,8 +2,6 @@ name: DraBornPark v0.5.5 Requested Web Home Fix
 
 on:
   push:
-    paths:
-      - '.github/workflows/source-fix-v055-requested-v2.yml'
 
 permissions:
   contents: write
