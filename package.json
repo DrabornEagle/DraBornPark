@@ -1,6 +1,6 @@
 {
   "name": "drabornpark",
-  "version": "0.5.3",
+  "version": "0.5.4",
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
@@ -22,6 +22,7 @@
     "expo-device": "~57.0.1",
     "expo-file-system": "~57.0.1",
     "expo-haptics": "~57.0.1",
+    "expo-iap": "5.3.1",
     "expo-image-picker": "~57.0.6",
     "expo-linking": "~57.0.4",
     "expo-location": "~57.0.6",
