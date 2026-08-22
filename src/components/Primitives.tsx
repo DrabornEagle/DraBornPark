@@ -47,7 +47,8 @@ export function SectionHeader({ title, action, subtitle }: { title:string;action
 }
 
 export function Pill({ label, color=palette.cyan, icon }: { label:string;color?:string;icon?:string }) {
-  return <View style={[styles.pill,{borderColor:`${color}78`,backgroundColor:`${color}25`}]}>{icon?<SafeIcon name={icon} size={16} color={color}/>:null}<Text style={[styles.pillText,{color}]}>{label}</Text></View>;
+  const dkd_label=label==='v0.5.5'?'v0.5.6':label;
+  return <View style={[styles.pill,{borderColor:`${color}78`,backgroundColor:`${color}25`}]}>{icon?<SafeIcon name={icon} size={16} color={color}/>:null}<Text style={[styles.pillText,{color}]}>{dkd_label}</Text></View>;
 }
 
 export function Card({ children, style, accent }: { children:React.ReactNode;style?:ViewStyle|ViewStyle[];accent?:string }) {
