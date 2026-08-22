@@ -153,7 +153,7 @@ jobs:
             mkdir -p artifacts &&
             cp "$APK" artifacts/DraBornPark-v0.5.4-vc20-developer-debug.apk &&
             sha256sum artifacts/DraBornPark-v0.5.4-vc20-developer-debug.apk > artifacts/SHA256.txt &&
-            printf 'DraBornPark v0.5.4\nAndroid versionCode: 20\nBuild type: Expo Developer APK / debug\nMetro: npx expo start --dev-client --clear\nNative modules: expo-iap + expo-notifications\nGoogle Play product: drabornpark_plus\nBase plans: monthly / yearly\n' > artifacts/BUILD_INFO.txt
+            printf 'DraBornPark v0.5.4\nAndroid versionCode: 20\nBuild type: Expo Developer APK / debug\nMetro: npx expo start --dev-client --clear\nNative modules: expo-iap + expo-notifications\nGoogle Play product: drabornpark_plus\nBase plans: monthly / yearly\nWorklets: 0.12.1\n' > artifacts/BUILD_INFO.txt
           } 2>&1 | tee /tmp/v054-android.log
           code=${PIPESTATUS[0]}
           echo "code=$code" >> "$GITHUB_OUTPUT"
@@ -169,7 +169,7 @@ jobs:
         run: |
           git pull --rebase origin main
           git push origin HEAD:main
-      - name: Upload v0.5.4 Developer APK
+      - name: Upload v0.5.4 Developer APK artifact
         if: steps.android.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
@@ -177,6 +177,24 @@ jobs:
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
+      - name: Publish v0.5.4 Developer APK release asset
+        if: steps.android.outcome == 'success' && steps.publish.outcome == 'success'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -e
+          TAG="v0.5.4-dev"
+          APK="artifacts/DraBornPark-v0.5.4-vc20-developer-debug.apk"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "$APK" artifacts/SHA256.txt artifacts/BUILD_INFO.txt --clobber
+          else
+            gh release create "$TAG" "$APK" artifacts/SHA256.txt artifacts/BUILD_INFO.txt \
+              --target main \
+              --title "DraBornPark v0.5.4 Developer APK" \
+              --notes "Doğrulanmış DraBornPark v0.5.4 Expo Developer APK. Android versionCode 20. TypeScript, Expo dependency check, web export, Android Gradle build, package adı ve APK imzası release workflow içinde doğrulanmıştır." \
+              --prerelease
+          fi
       - name: Publish failure diagnostic
         if: steps.apply.outcome != 'success' || steps.install.outcome == 'failure' || steps.integrity.outcome == 'failure' || steps.expo.outcome == 'failure' || steps.types.outcome == 'failure' || steps.web.outcome == 'failure' || steps.source_commit.outcome == 'failure' || steps.android.outcome == 'failure' || steps.publish.outcome == 'failure'
         shell: bash
