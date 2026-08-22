@@ -1,3 +1,0 @@
-Scanned failed/cancelled: 346
-Deleted: 346
-Current cleanup run: 32573403820
