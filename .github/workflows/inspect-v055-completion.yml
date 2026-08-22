@@ -1,0 +1,30 @@
+name: Inspect v0.5.5 Completion
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/inspect-v055-completion.yml'
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Read latest completion run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api 'repos/${{ github.repository }}/actions/workflows/complete-v055-audit.yml/runs?per_page=1' --jq '.workflow_runs[0] | "run_id=\(.id)\nstatus=\(.status)\nconclusion=\(.conclusion // "")\nhead_sha=\(.head_sha)"' > .github/V055_COMPLETION_INSPECT.txt
+          cat .github/V055_COMPLETION_INSPECT.txt
+          git config user.name 'DraBornPark Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add .github/V055_COMPLETION_INSPECT.txt
+          git commit -m 'ci(v0.5.5): snapshot completion audit'
+          git push origin HEAD:main
