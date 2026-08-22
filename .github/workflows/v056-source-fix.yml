@@ -1,0 +1,65 @@
+name: DraBornPark v0.5.6 Source Fix
+
+on:
+  push:
+
+permissions:
+  contents: write
+
+env:
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Patch v0.5.6 source
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const p='app/index.tsx';
+          let s=fs.readFileSync(p,'utf8');
+          const old=`    const dkd_channel=supabase.channel(\`dkd_home_sync_\${dkd_user_id}\`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'drabornpark_vehicles',filter:\`owner_user_id=eq.\${dkd_user_id}\`},()=>{void load(session,true)})
+      .on('postgres_changes',{event:'*',schema:'public',table:'drabornpark_tags',filter:\`owner_user_id=eq.\${dkd_user_id}\`},()=>{void load(session,true)})
+      .subscribe();
+    return()=>{void supabase.removeChannel(dkd_channel)};`;
+          const next=`    const dkd_sync_id=\`\${Date.now()}_\${Math.random().toString(36).slice(2,8)}\`;
+    const dkd_vehicle_channel=supabase.channel(\`dkd_home_vehicle_sync_\${dkd_user_id}_\${dkd_sync_id}\`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'drabornpark_vehicles',filter:\`owner_user_id=eq.\${dkd_user_id}\`},()=>{void load(session,true)})
+      .subscribe();
+    const dkd_tag_channel=supabase.channel(\`dkd_home_tag_sync_\${dkd_user_id}_\${dkd_sync_id}\`)
+      .on('postgres_changes',{event:'*',schema:'public',table:'drabornpark_tags',filter:\`owner_user_id=eq.\${dkd_user_id}\`},()=>{void load(session,true)})
+      .subscribe();
+    return()=>{void supabase.removeChannel(dkd_vehicle_channel);void supabase.removeChannel(dkd_tag_channel)};`;
+          if(s.includes(old))s=s.replace(old,next);
+          else if(!s.includes('dkd_home_vehicle_sync_'))throw new Error('Realtime source marker not found');
+          s=s.replace(/v0\.5\.5/g,'v0.5.6');
+          fs.writeFileSync(p,s);
+          NODE
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Web export
+        run: npx expo export --platform web
+      - name: Commit source fix
+        run: |
+          if git diff --quiet -- app/index.tsx; then
+            echo 'No source changes needed.'
+            exit 0
+          fi
+          git config user.name 'DraBornPark Source Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add app/index.tsx
+          git commit -m 'DraBornPark v0.5.6: isolate realtime channels'
+          git pull --rebase origin main
+          git push origin HEAD:main
