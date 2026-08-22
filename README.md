@@ -69,7 +69,7 @@ Etiket transferinde `extensions.gen_random_bytes` ve `extensions.digest` şema n
 
 ## Termux — GitHub ile birebir kurulum/eşitleme
 
-Aşağıdaki komut `~/projects/DraBornPark` klasörünü GitHub `main` ile **birebir** yapar. Lokal commit edilmemiş değişiklikler ve GitHub’da bulunmayan lokal dosyalar silinir.
+Aşağıdaki komut `~/projects/DraBornPark` klasöründeki takip edilen kaynakları GitHub `main` ile **birebir** yapar. Lokal commit edilmemiş kaynak değişiklikleri ve GitHub’da bulunmayan takip edilmeyen dosyalar silinir; `.env` gibi gitignore içindeki yerel secret dosyaları korunur.
 
 ```bash
 pkg update -y && pkg upgrade -y && \
@@ -83,7 +83,7 @@ cd ~/projects/DraBornPark && \
 git fetch --prune origin && \
 git checkout main && \
 git reset --hard origin/main && \
-git clean -fdx && \
+git clean -fd && \
 npm install --no-audit --no-fund && \
 npm run check && \
 npx expo install --check && \
