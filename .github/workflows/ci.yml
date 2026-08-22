@@ -77,13 +77,13 @@ jobs:
       - name: Prepare Developer APK artifact
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.3-vc19-developer-debug.apk
-          sha256sum artifacts/DraBornPark-v0.5.3-vc19-developer-debug.apk > artifacts/SHA256.txt
-          printf 'DraBornPark v0.5.3\nAndroid versionCode: 19\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear\nNotification channel: drabornpark-alerts-v3\nWorklets native/JS version: 0.10.1\nCamera-only timestamped evidence: enabled on secure web contact\nEvidence storage: private owner-only signed URL\nFull-screen evidence viewer: enabled\nRealtime + polling fallback anonymous chat: enabled\nInbox pagination: 5 + 5\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.4-vc20-developer-debug.apk
+          sha256sum artifacts/DraBornPark-v0.5.4-vc20-developer-debug.apk > artifacts/SHA256.txt
+          printf 'DraBornPark v0.5.4\nAndroid versionCode: 20\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear --tunnel\nNotification channel: drabornpark-alerts-v3\nWorklets native/JS version: 0.10.1\nDraBornPark+ billing client: expo-iap\nGoogle Play product: drabornpark_plus\nGoogle Play base plans: monthly + yearly\n14-day tag activation reward: enabled\nAdmin support detail notifications: enabled\nCamera-only timestamped evidence: enabled on secure web contact\nEvidence storage: private owner-only signed URL\nFull-screen evidence viewer: enabled\nRealtime + polling fallback anonymous chat: enabled\nInbox pagination: 5 + 5\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
       - name: Upload Developer APK
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v0.5.3-vc19-developer-apk
+          name: DraBornPark-v0.5.4-vc20-developer-apk
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
