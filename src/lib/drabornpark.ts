@@ -242,16 +242,16 @@ export async function activateTag(tagCode: string, pin: string, vehicleId: strin
 }
 
 export async function startTagTransfer(tagId: string) {
-  const { data, error } = await supabase.rpc('drabornpark_start_tag_transfer', { drabornpark_tag_id: tagId });
+  const { data, error } = await supabase.rpc('dkd_drabornpark_start_tag_transfer_v055', { dkd_tag_id: tagId });
   if (error) throw error;
   return data;
 }
 
 export async function claimTagTransfer(tagCode: string, transferCode: string, vehicleId: string) {
-  const { data, error } = await supabase.rpc('drabornpark_claim_tag_transfer', {
-    drabornpark_tag_code: tagCode.trim().toUpperCase(),
-    drabornpark_transfer_code: transferCode.trim().toUpperCase(),
-    drabornpark_vehicle_id: vehicleId,
+  const { data, error } = await supabase.rpc('dkd_drabornpark_claim_tag_transfer_v055', {
+    dkd_tag_code: tagCode.trim().toUpperCase(),
+    dkd_transfer_code: transferCode.trim().toUpperCase(),
+    dkd_vehicle_id: vehicleId,
   });
   if (error) throw error;
   return data;

@@ -2,7 +2,7 @@
   "expo": {
     "name": "DraBornPark",
     "slug": "drabornpark",
-    "version": "0.5.4",
+    "version": "0.5.5",
     "orientation": "portrait",
     "scheme": "drabornpark",
     "userInterfaceStyle": "dark",
@@ -60,7 +60,7 @@
     },
     "android": {
       "package": "com.draborneagle.drabornpark",
-      "versionCode": 20,
+      "versionCode": 21,
       "backgroundColor": "#050816",
       "permissions": [
         "ACCESS_COARSE_LOCATION",

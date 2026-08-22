@@ -4,11 +4,11 @@
 
 DraBornPark; araç ön camındaki NFC + QR etiketini gizlilik odaklı araç iletişimi, park hafızası, güvenlik, araç geçmişi, aile paylaşımı ve premium dijital servislerle birleştiren kişisel araç ağıdır.
 
-## Aktif sürüm — v0.5.4
+## Aktif sürüm — v0.5.5
 
 - Expo SDK 57 / React Native 0.86 / Expo Router
 - Android paket adı: `com.draborneagle.drabornpark`
-- Android `versionCode`: `20`
+- Android `versionCode`: `21`
 - Özel URI scheme: `drabornpark`
 - Expo Developer APK + Metro geliştirme akışı
 - Supabase Postgres + RLS + private Storage + Edge Functions
@@ -107,7 +107,7 @@ npm run typecheck
 6. Android development prebuild
 7. `:app:assembleDebug`
 8. APK package ve imza doğrulaması
-9. `DraBornPark-v0.5.3-vc19-developer-apk` artifact üretimi
+9. `DraBornPark-v0.5.5-vc21-developer-apk` artifact üretimi
 
 ## Release hijyeni
 
@@ -123,7 +123,7 @@ npm run typecheck
 - Public iletişim akışı kişisel iletişim bilgisini ziyaretçiye açmaz.
 - Yeni backend tanımları `drabornpark_*` / `dkd_drabornpark_*` adlandırmasını korur.
 
-**Aktif sürüm: v0.5.3 — Android vc19**
+**Aktif sürüm: v0.5.5 — Android vc21**
 
 ## v0.5.4 — destek, izinler ve DraBornPark+
 

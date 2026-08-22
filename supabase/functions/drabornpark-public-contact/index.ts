@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const VERSION="0.5.3";
+const VERSION="0.5.5";
 const PUSH_CHANNEL="drabornpark-alerts-v3";
 const EVIDENCE_BUCKET="drabornpark-private";
 const MAX_EVIDENCE_BYTES=4*1024*1024;
