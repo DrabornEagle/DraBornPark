@@ -1,0 +1,30 @@
+name: DraBornPark v0.5.5 Direct Status
+
+on:
+  workflow_run:
+    workflows: ['DraBornPark v0.5.5 Direct Message Final']
+    types: [completed]
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Record direct finalizer result
+        run: |
+          printf 'run_id=%s\nstatus=%s\nconclusion=%s\nhead_sha=%s\n' \
+            '${{ github.event.workflow_run.id }}' \
+            '${{ github.event.workflow_run.status }}' \
+            '${{ github.event.workflow_run.conclusion }}' \
+            '${{ github.event.workflow_run.head_sha }}' > .github/V055_DIRECT_STATUS.txt
+          git config user.name 'DraBornPark Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add .github/V055_DIRECT_STATUS.txt
+          git commit -m 'ci(v0.5.5): record direct finalizer status'
+          git pull --rebase origin main
+          git push origin HEAD:main
