@@ -21,13 +21,13 @@ DraBornPark; araç ön camındaki NFC + QR etiketini gizlilik odaklı araç ilet
 - Alt menü etiketleri daha dengeli konumlandı; `GÜVENLİ OTURUM` sola kaydırıldı.
 - Aktif araç alanına ayrı `• CANLI •` göstergesi eklendi.
 - Araç kartı daha minimalist, modern, renkli ve animasyonlu hale getirildi.
-- Ana sayfa tekrar odaklandığında canlı dashboard yenilenir; yeni eklenen araç manuel refresh gerektirmeden görünür.
+- Ana sayfa tekrar odaklandığında canlı dashboard yenilenir; ayrıca araç/etiket değişiklikleri Supabase Realtime ile anında senkronlanır, yeni eklenen araç manuel refresh gerektirmeden görünür.
 - DraBornPark+ sahibi olmayan kullanıcı için modern Premium tanıtım popup’ı eklendi.
 - DraBornPark+ plan ekranında aylık hedef fiyat `₺49,99 / ay`, yıllık hedef fiyat `₺399,99 / yıl` gösterilir. Google Play gerçek yerel fiyat döndürdüğünde mağaza fiyatı esas alınır.
 - Google Play ürünü `drabornpark_plus`; base plan kimlikleri `monthly` ve `yearly`.
 - Etiket `Devret / Devral` akışı Supabase pgcrypto `extensions` şemasıyla düzeltildi ve transfer RPC’leri yalnız authenticated kullanıcıya açıldı.
 - Güvenli Araç İletişimi web ekranındaki `Mesaj Gönder` artık başka karta yönlendirme yapmaz; kendi içinde mesaj yazma alanı açar.
-- Web iletişim ekranına isteğe bağlı canlı kamera fotoğrafı eklendi; kanıt private storage alanında tutulur.
+- Web iletişim ekranına fotoğraf ekleme alanı eklendi; masaüstü web JPG/JPEG dosyası seçebilir, mobil akış kamerayı kullanır ve kanıt private storage alanında tutulur.
 - `ARAÇ SAHİBİ •` ve `NFC + QR • AKTİF` rozetleri büyütüldü.
 - Trendyol, Hepsiburada ve Amazon örnek satış bağlantıları ile ileride kullanılacak DraBornPark Mağaza alanı hazırlandı. Bunlar resmi ortaklık olarak sunulmaz.
 - Örnek satış alanlarının üstünde modern animasyonlu reklam/promosyon kartı bulunur.
