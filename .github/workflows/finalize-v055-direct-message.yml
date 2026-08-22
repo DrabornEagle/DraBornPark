@@ -37,18 +37,20 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Separate direct message from New Vehicle Notification
+      - name: Finish exact live badge and direct web message flow
         run: |
           cat > /tmp/dkd_direct_message.mjs <<'NODE'
           import fs from 'node:fs';
           const dkd_replace=(dkd_path,dkd_from,dkd_to,dkd_label)=>{const dkd_before=fs.readFileSync(dkd_path,'utf8');const dkd_after=dkd_before.replace(dkd_from,dkd_to);if(dkd_after===dkd_before)throw new Error('Missing marker: '+dkd_label);fs.writeFileSync(dkd_path,dkd_after)};
+          dkd_replace('app/index.tsx','>• CANLI •</Text>','>•CANLI•</Text>','exact live badge');
           dkd_replace('app/t/[id].tsx',"function openDirectMessage(){const fallback:Category={key:'other',title:'Araç sahibine mesaj',body:'Araçla ilgili kısa ve güvenli bir mesaj gönderin.',priority:'normal'};setSelected(categories.find(item=>item.key==='other')||fallback);setMessageOpen(true);setError('');}","function openDirectMessage(){const fallback:Category={key:'direct_message',title:'Araç sahibine mesaj',body:'Araçla ilgili kısa ve güvenli bir mesaj gönderin.',priority:'normal'};setSelected(fallback);setMessageOpen(true);setError('');}",'direct message category');
           dkd_replace('app/t/[id].tsx',"{selected.key==='other'?'Araç sahibine güvenli mesaj':selected.title}","{selected.key==='direct_message'||selected.key==='other'?'Araç sahibine güvenli mesaj':selected.title}",'direct message composer title');
           dkd_replace('supabase/functions/drabornpark-public-contact/index.ts',"other:{title:\"Yeni araç bildirimi\",body:\"DraBornPark üzerinden aracınızla ilgili yeni bir bildirim gönderildi.\",priority:\"normal\"}","direct_message:{title:\"Araç sahibine yeni mesaj\",body:\"Bir kullanıcı DraBornPark üzerinden aracınızla ilgili doğrudan güvenli mesaj gönderdi.\",priority:\"normal\"},other:{title:\"Yeni araç bildirimi\",body:\"DraBornPark üzerinden aracınızla ilgili yeni bir bildirim gönderildi.\",priority:\"normal\"}",'backend direct message category');
           dkd_replace('supabase/functions/drabornpark-public-contact/index.ts',"filter(([k])=>k!==\"blocked_exit\")","filter(([k])=>k!==\"blocked_exit\"&&k!==\"direct_message\")",'hide direct message from category grid');
           dkd_replace('scripts/check-project.mjs',"for(const m of [\"Platform.OS==='web'\",'JPG/JPEG seç','Senin aracında da DraBornPark olsun'])","for(const m of [\"Platform.OS==='web'\",'JPG/JPEG seç','Senin aracında da DraBornPark olsun',\"key:'direct_message'\"])",'direct message integrity marker');
+          dkd_replace('scripts/check-project.mjs',"if(!home.includes(m))fail.push('Home v0.5.5 completion marker missing: '+m);","if(!home.includes(m))fail.push('Home v0.5.5 completion marker missing: '+m);if(!home.includes('•CANLI•'))fail.push('Exact •CANLI• badge missing');",'exact live integrity marker');
           dkd_replace('README.md',"- Güvenli Araç İletişimi web ekranındaki `Mesaj Gönder` artık başka karta yönlendirme yapmaz; kendi içinde mesaj yazma alanı açar.","- Güvenli Araç İletişimi web ekranındaki `Mesaj Gönder` artık başka karta yönlendirme yapmaz; kendi içinde mesaj yazma alanı açar ve `direct_message` kategorisiyle Yeni Araç Bildirimi akışından tamamen ayrıdır.",'README direct message note');
-          console.log('Direct message separation applied.');
+          console.log('Exact live badge and direct message separation applied.');
           NODE
           node /tmp/dkd_direct_message.mjs
 
@@ -57,6 +59,9 @@ jobs:
 
       - name: Project integrity
         run: npm run check
+
+      - name: Expo dependency compatibility
+        run: npx expo install --check
 
       - name: TypeScript
         run: npm run typecheck
@@ -78,6 +83,7 @@ jobs:
       - name: Verify final Developer APK
         run: |
           APK="android/app/build/outputs/apk/debug/app-debug.apk"
+          test -f "$APK"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
           "$AAPT" dump badging "$APK" | grep "package: name='com.draborneagle.drabornpark'"
           "$AAPT" dump badging "$APK" | grep "versionCode='21'"
@@ -87,7 +93,7 @@ jobs:
           mkdir -p artifacts
           cp "$APK" artifacts/DraBornPark-v0.5.5-vc21-developer-debug-final.apk
           sha256sum artifacts/DraBornPark-v0.5.5-vc21-developer-debug-final.apk > artifacts/SHA256.txt
-          printf 'DraBornPark v0.5.5 final completion\nDirect message separated from New Vehicle Notification\nRealtime vehicle refresh enabled\nWeb inline composer + JPEG picker enabled\n' > artifacts/BUILD_INFO.txt
+          printf 'DraBornPark v0.5.5 final completion\nExact •CANLI• badge enabled\nDirect message separated from New Vehicle Notification\nRealtime vehicle refresh enabled\nWeb inline composer + JPEG picker enabled\n' > artifacts/BUILD_INFO.txt
 
       - name: Commit final source
         run: |
