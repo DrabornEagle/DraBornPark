@@ -63,3 +63,5 @@ jobs:
           git commit -m 'DraBornPark v0.5.6: isolate realtime channels'
           git pull --rebase origin main
           git push origin HEAD:main
+
+# v0.5.6 source-only trigger
