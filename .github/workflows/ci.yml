@@ -72,20 +72,20 @@ jobs:
           test -f "$APK"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
           "$AAPT" dump badging "$APK" | grep "package: name='com.draborneagle.drabornpark'"
-          "$AAPT" dump badging "$APK" | grep "versionCode='21'"
-          "$AAPT" dump badging "$APK" | grep "versionName='0.5.5'"
+          "$AAPT" dump badging "$APK" | grep "versionCode='22'"
+          "$AAPT" dump badging "$APK" | grep "versionName='0.5.6'"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           "$APKSIGNER" verify --verbose "$APK"
       - name: Prepare Developer APK artifact
         run: |
           mkdir -p artifacts
-          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.5-vc21-developer-debug.apk
-          sha256sum artifacts/DraBornPark-v0.5.5-vc21-developer-debug.apk > artifacts/SHA256.txt
-          printf 'DraBornPark v0.5.5\nAndroid versionCode: 21\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear\nNotification channel: drabornpark-alerts-v3\nSecure web contact: inline message composer + camera photo evidence\nEvidence storage: private owner-only signed URL\nTag transfer: pgcrypto extensions schema fix + authenticated-only RPC\nDraBornPark+: monthly/yearly Google Play subscription UI + server verification preparation\nVehicle dashboard: focus refresh enabled\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
+          cp android/app/build/outputs/apk/debug/app-debug.apk artifacts/DraBornPark-v0.5.6-vc22-developer-debug.apk
+          sha256sum artifacts/DraBornPark-v0.5.6-vc22-developer-debug.apk > artifacts/SHA256.txt
+          printf 'DraBornPark v0.5.6\nAndroid versionCode: 22\nCommit: %s\nBuild type: Expo Developer APK / debug\nMetro required: yes\nRecommended Termux command: npx expo start --dev-client --clear\nNotification channel: drabornpark-alerts-v3\nGoogle Play privacy disclosures: v0.5.6\nFactory panel: admin-only\nRealtime home sync: isolated vehicle/tag channels\n' "${GITHUB_SHA}" > artifacts/BUILD_INFO.txt
       - name: Upload Developer APK
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v0.5.5-vc21-developer-apk
+          name: DraBornPark-v0.5.6-vc22-developer-apk
           path: artifacts/
           if-no-files-found: error
           retention-days: 14
