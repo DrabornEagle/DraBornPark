@@ -1,0 +1,35 @@
+DraBornPark v0.5.4 release validation failed.
+apply=success code=0
+install=success code=0
+integrity=success code=0
+expo=success code=0
+types=failure code=2
+web=skipped code=
+
+===== /tmp/v054-apply.log =====
+DraBornPark v0.5.4 guarded release patch applied.
+
+===== /tmp/v054-install.log =====
+npm warn deprecated uuid@7.0.3: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
+
+added 605 packages in 27s
+
+===== /tmp/v054-integrity.log =====
+
+> drabornpark@0.5.4 check
+> node scripts/check-project.mjs
+
+DraBornPark integrity OK • v0.5.4 • Android vc20 • support/admin push • 14-day tag reward • Google Play billing prepared.
+
+===== /tmp/v054-expo.log =====
+Dependencies are up to date
+
+===== /tmp/v054-types.log =====
+
+> drabornpark@0.5.4 typecheck
+> node scripts/clean-generated-types.mjs && tsc --noEmit
+
+Cleared stale Expo Router generated types.
+app/support/[id].tsx(22,638): error TS2820: Type '"account-shield-outline"' is not assignable to type '"symbol" | "function" | "head" | "link" | "email" | "image" | "text" | "alert" | "menu" | "radio" | "switch" | "tab" | "timer" | "scale" | "android" | "api" | "apple" | "arrow-down" | ... 7430 more ... | undefined'. Did you mean '"account-child-outline"'?
+src/lib/push.ts(31,747): error TS2339: Property 'catch' does not exist on type 'PromiseLike<void>'.
+
