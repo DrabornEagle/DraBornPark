@@ -1,0 +1,52 @@
+name: Release DraBornPark v0.5.4
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - scripts/apply-v054.mjs
+      - .github/workflows/release-v054.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: drabornpark-v054-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply guarded v0.5.4 source changes
+        run: node scripts/apply-v054.mjs
+      - name: Install exact dependencies
+        run: npm install --no-audit --no-fund
+      - name: Integrity audit
+        run: npm run check
+      - name: Expo dependency compatibility
+        run: npx expo install --check
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Expo web export
+        run: npx expo export --platform web
+      - name: Commit validated v0.5.4
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet && exit 0
+          git commit -m "DraBornPark v0.5.4: support, permissions and Google Play Plus"
+          git push origin HEAD:main
