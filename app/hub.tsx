@@ -4,9 +4,10 @@ import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, V
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuroraBackground, BottomDock, ScreenHeader, SectionHeading } from '@/src/components/AppChrome';
 import { Pill, SafeIcon } from '@/src/components/Primitives';
+import { supabase } from '@/src/lib/supabase';
 import { palette, radius, type } from '@/src/theme';
 
-type MenuItem={title:string;subtitle:string;icon:string;color:string;route:string;badge?:string;keywords:string};
+type MenuItem={title:string;subtitle:string;icon:string;color:string;route:string;badge?:string;keywords:string;adminOnly?:boolean};
 type Group={title:string;caption:string;color:string;icon:string;items:MenuItem[]};
 const groups:Group[]=[
   {title:'Araç & Park',caption:'Günlük kullanımın başladığı yer',color:palette.cyan,icon:'car-connected',items:[
@@ -21,7 +22,7 @@ const groups:Group[]=[
     {title:'DraBornPark Aile',subtitle:'Aile park paylaşımı ve izinler',icon:'account-group-outline',color:palette.purple,route:'/family',keywords:'aile paylaşım'},
     {title:'Geçici Sürücü',subtitle:'Süreli bildirim yönlendirmesi',icon:'account-clock-outline',color:palette.green,route:'/guest',keywords:'geçici sürücü yönlendirme'},
     {title:'Acil Durum Zinciri',subtitle:'Öncelikli kişiler ve yüksek öncelik',icon:'shield-alert-outline',color:palette.red,route:'/emergency',keywords:'acil zincir kişi'},
-    {title:'Gizlilik & Veri',subtitle:'Paylaşımlar, izinler ve veri kontrolü',icon:'shield-lock-outline',color:palette.aqua,route:'/legal',keywords:'gizlilik veri güvenlik'},
+    {title:'Gizlilik & Veri',subtitle:'Google Play uyumlu veri ve hesap kontrolleri',icon:'shield-lock-outline',color:palette.aqua,route:'/legal',keywords:'gizlilik veri güvenlik google play silme'},
   ]},
   {title:'Akıllı Modlar',caption:'DraBornPark+ otomasyonları',color:palette.purple,icon:'auto-fix',items:[
     {title:'Vale / Servis',subtitle:'Araç teslimi ve servis durumları',icon:'car-key',color:palette.sky,route:'/modes',badge:'PLUS',keywords:'vale servis'},
@@ -29,27 +30,36 @@ const groups:Group[]=[
     {title:'DraBornPark+',subtitle:'Gelişmiş özellikler ve üyelik',icon:'crown-outline',color:palette.yellow,route:'/feature/plus',badge:'PLUS',keywords:'plus üyelik abonelik'},
     {title:'Bildirim Ayarları',subtitle:'Sessiz saatler ve tercihler',icon:'tune-variant',color:palette.aqua,route:'/settings',keywords:'ayar bildirim sessiz'},
   ]},
-  {title:'Hesap & Destek',caption:'Hesap, yasal alan ve üretim araçları',color:palette.blue,icon:'account-cog-outline',items:[
+  {title:'Hesap & Destek',caption:'Hesap, destek ve yönetim araçları',color:palette.blue,icon:'account-cog-outline',items:[
     {title:'Hesabım',subtitle:'Hesap, veri ve hesap silme',icon:'account-circle-outline',color:palette.blue,route:'/account',keywords:'hesap silme kullanıcı'},
-    {title:'Yasal & Gizlilik',subtitle:'Gizlilik, koşullar ve veri güvenliği',icon:'file-shield-outline',color:palette.green,route:'/legal',keywords:'yasal gizlilik koşullar veri güvenliği'},
     {title:'Destek Merkezi',subtitle:'Yardım, destek ve talepler',icon:'lifebuoy',color:palette.purple,route:'/feature/support',keywords:'destek yardım'},
-    {title:'Üretim Paneli',subtitle:'Etiket üretim ve doğrulama',icon:'factory',color:palette.orange,route:'/factory',keywords:'üretim etiket doğrulama'},
+    {title:'Üretim Paneli',subtitle:'Etiket üretim ve doğrulama',icon:'factory',color:palette.orange,route:'/factory',keywords:'üretim etiket doğrulama admin',adminOnly:true},
   ]},
 ];
 
 export default function HubScreen(){
   const [query,setQuery]=useState('');
   const [dockSolid,setDockSolid]=useState(false);
+  const [isAdmin,setIsAdmin]=useState(false);
   const enter=useRef(new Animated.Value(0)).current;
-  useEffect(()=>{Animated.timing(enter,{toValue:1,duration:480,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start()},[enter]);
-  const filtered=useMemo(()=>{const q=query.trim().toLocaleLowerCase('tr-TR');if(!q)return groups;return groups.map(g=>({...g,items:g.items.filter(i=>`${i.title} ${i.subtitle} ${i.keywords}`.toLocaleLowerCase('tr-TR').includes(q))})).filter(g=>g.items.length)},[query]);
+
+  useEffect(()=>{
+    Animated.timing(enter,{toValue:1,duration:480,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start();
+    let dkd_mounted=true;
+    void supabase.rpc('drabornpark_is_admin').then(({data,error})=>{if(dkd_mounted&&!error)setIsAdmin(Boolean(data));}).catch(()=>undefined);
+    return()=>{dkd_mounted=false};
+  },[enter]);
+
+  const visibleGroups=useMemo(()=>groups.map(group=>({...group,items:group.items.filter(item=>!item.adminOnly||isAdmin)})).filter(group=>group.items.length),[isAdmin]);
+  const filtered=useMemo(()=>{const q=query.trim().toLocaleLowerCase('tr-TR');if(!q)return visibleGroups;return visibleGroups.map(g=>({...g,items:g.items.filter(i=>`${i.title} ${i.subtitle} ${i.keywords}`.toLocaleLowerCase('tr-TR').includes(q))})).filter(g=>g.items.length)},[query,visibleGroups]);
   const open=(item:MenuItem)=>router.push(item.route as any);
+
   return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.purple} secondary={palette.cyan}/><Animated.View style={[s.flex,{opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[12,0]})}]}]}>
     <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} onScroll={e=>setDockSolid(e.nativeEvent.contentOffset.y>24)} scrollEventThrottle={16}>
-      <ScreenHeader back={false} title="Merkezim" eyebrow="" accent={palette.purple} subtitle="Araç, park, güvenlik ve hesabın tek anlaşılır merkezde" right={<Pill label="v0.5.5" color={palette.purple}/>}/>
+      <ScreenHeader back={false} title="Merkezim" eyebrow="" accent={palette.purple} subtitle="Araç, park, güvenlik ve hesabın tek anlaşılır merkezde" right={<Pill label="v0.5.6" color={palette.purple}/>}/>
       <View style={s.hero}><View style={s.heroBadge}><SafeIcon name="view-dashboard-outline" size={36} color={palette.purple}/><View style={s.heroDot}/></View><View style={{flex:1}}><Text style={s.heroKicker}>KİŞİSEL ARAÇ AĞIN</Text><Text style={s.heroTitle}>Ne yapmak istiyorsun?</Text><Text style={s.heroText}>Ara, kategori seç veya doğrudan karta dokun.</Text><View style={s.spectrum}><View style={[s.bar,{backgroundColor:palette.cyan}]}/><View style={[s.bar,{backgroundColor:palette.purple}]}/><View style={[s.bar,{backgroundColor:palette.pink}]}/><View style={[s.bar,{backgroundColor:palette.orange}]}/><View style={[s.bar,{backgroundColor:palette.green}]}/></View></View></View>
       <View style={s.search}><View style={s.searchIcon}><SafeIcon name="magnify" size={23} color={palette.cyan}/></View><TextInput value={query} onChangeText={setQuery} placeholder="Park, etiket, aile, hesap…" placeholderTextColor={palette.muted2} style={s.searchInput}/>{query?<Pressable onPress={()=>setQuery('')} style={s.clear}><SafeIcon name="close" size={19} color={palette.muted}/></Pressable>:null}</View>
-      {!query?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.categoryRail}>{groups.map((g,index)=><View key={g.title} style={[s.category,{borderColor:`${g.color}72`,backgroundColor:`${g.color}16`}]}><View style={[s.categoryIcon,{backgroundColor:`${g.color}2C`}]}><SafeIcon name={g.icon} size={25} color={g.color}/></View><Text style={s.categoryTitle}>{g.title}</Text><View style={s.categoryBottom}><Text style={s.categoryCount}>{g.items.length} özellik</Text><Text style={[s.categoryNo,{color:g.color}]}>0{index+1}</Text></View><View style={[s.categoryLine,{backgroundColor:g.color}]}/></View>)}</ScrollView>:null}
+      {!query?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.categoryRail}>{visibleGroups.map((g,index)=><View key={g.title} style={[s.category,{borderColor:`${g.color}72`,backgroundColor:`${g.color}16`}]}><View style={[s.categoryIcon,{backgroundColor:`${g.color}2C`}]}><SafeIcon name={g.icon} size={25} color={g.color}/></View><Text style={s.categoryTitle}>{g.title}</Text><View style={s.categoryBottom}><Text style={s.categoryCount}>{g.items.length} özellik</Text><Text style={[s.categoryNo,{color:g.color}]}>0{index+1}</Text></View><View style={[s.categoryLine,{backgroundColor:g.color}]}/></View>)}</ScrollView>:null}
       {filtered.length?filtered.map((group,groupIndex)=><View key={group.title}><SectionHeading title={group.title} subtitle={group.caption} badge={`${group.items.length} ÖZELLİK`} color={group.color}/><View style={s.grid}>{group.items.map((item,itemIndex)=><MenuTile key={item.title} item={item} index={groupIndex*6+itemIndex} onPress={()=>open(item)}/>)}</View></View>):<View style={s.empty}><SafeIcon name="magnify-close" size={38} color={palette.muted}/><Text style={s.emptyTitle}>Sonuç bulunamadı</Text><Text style={s.emptyText}>Daha kısa bir kelimeyle tekrar ara.</Text></View>}
     </ScrollView>
     <BottomDock active="hub" transparent={!dockSolid} floating/>
