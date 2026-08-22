@@ -9,6 +9,12 @@ on:
       - 'scripts/release-v100.mjs'
       - 'assets/branding/drabornpark-icon.svg'
       - 'assets/branding/drabornpark-mark.svg'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/finalize-v100.yml'
+      - 'scripts/release-v100.mjs'
+      - 'scripts/release-v100.trigger'
 
 permissions:
   contents: write
