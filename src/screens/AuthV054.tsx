@@ -57,10 +57,13 @@ export default function AuthV054(){
     setBusy(true);
     try{
       if(mode==='login'){
-        const {error}=await supabase.auth.signInWithPassword({email:email.trim().toLowerCase(),password});if(error)throw error;
+        const {error}=await supabase.auth.signInWithPassword({email:email.trim().toLowerCase(),password});
+        if(error)throw error;
         await bootstrapProfile();
-        const pendingRaw=await AsyncStorage.getItem(PENDING_AVATAR_KEY);if(pendingRaw){try{await uploadPendingAvatar(JSON.parse(pendingRaw));}catch{}}
-        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);router.replace('/');
+        const pendingRaw=await AsyncStorage.getItem(PENDING_AVATAR_KEY);
+        if(pendingRaw){try{await uploadPendingAvatar(JSON.parse(pendingRaw));}catch{}}
+        void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        router.replace('/');
       }else{
         const normalized=username.trim().toLowerCase();
         const normalizedPhone=normalizePhone(phone);
@@ -68,17 +71,25 @@ export default function AuthV054(){
         if(!normalizedPhone){Alert.alert('Telefon numarasını kontrol et','Telefon numarasını ülke koduyla gir. Türkiye için örnek: +90 555 111 22 33');return;}
         if(!(await isUsernameAvailable(normalized))){Alert.alert('Kullanıcı adı kullanımda','Başka bir kullanıcı adı seç.');return;}
         if(avatarAsset)await AsyncStorage.setItem(PENDING_AVATAR_KEY,JSON.stringify({uri:avatarAsset.uri,mimeType:avatarAsset.mimeType,fileName:avatarAsset.fileName}));
-        const {data,error}=await supabase.auth.signUp({email:email.trim().toLowerCase(),password,options:{data:{display_name:normalized,username:normalized,phone_e164:normalizedPhone}}});
+        const {data,error}=await supabase.auth.signUp({
+          email:email.trim().toLowerCase(),
+          password,
+          options:{data:{display_name:normalized,username:normalized,phone_e164:normalizedPhone}},
+        });
         if(error)throw error;
         if(data.session){
-          await bootstrapProfile(normalized,normalized,undefined,normalizedPhone);await uploadPendingAvatar(avatarAsset);
-          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);router.replace('/');
+          await bootstrapProfile(normalized,normalized);
+          await uploadPendingAvatar(avatarAsset);
+          void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          router.replace('/');
         }else{
-          Alert.alert('E-postanı doğrula','Hesap oluşturuldu. E-posta doğrulamasından sonra giriş yaptığında kullanıcı adın, telefon numaran ve seçtiğin profil resmi hesabına otomatik aktarılır.');setMode('login');
+          Alert.alert('E-postanı doğrula','Hesap oluşturuldu. E-posta doğrulamasından sonra giriş yaptığında kullanıcı adın, telefon numaran ve seçtiğin profil resmi hesabına otomatik aktarılır.');
+          setMode('login');
         }
       }
-    }catch(e:any){Alert.alert('İşlem tamamlanamadı',e?.message==='username_taken'?'Bu kullanıcı adı kullanımda.':e?.message||'Beklenmeyen bir hata oluştu.');}
-    finally{setBusy(false)}
+    }catch(e:any){
+      Alert.alert('İşlem tamamlanamadı',e?.message==='username_taken'?'Bu kullanıcı adı kullanımda.':e?.message||'Beklenmeyen bir hata oluştu.');
+    }finally{setBusy(false)}
   }
 
   return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.cyan} secondary={palette.purple}/><KeyboardAvoidingView style={{flex:1}} behavior={Platform.OS==='ios'?'padding':'height'}><ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="always" showsVerticalScrollIndicator={false}>
@@ -87,12 +98,15 @@ export default function AuthV054(){
     <View style={s.tabs}><Pressable onPress={()=>setMode('login')} style={[s.tab,mode==='login'&&s.tabActive]}><MaterialCommunityIcons name="login" size={20} color={mode==='login'?palette.cyan:palette.muted2}/><Text style={[s.tabText,mode==='login'&&{color:palette.text}]}>Giriş Yap</Text></Pressable><Pressable onPress={()=>setMode('signup')} style={[s.tab,mode==='signup'&&s.tabActive]}><MaterialCommunityIcons name="account-plus-outline" size={20} color={mode==='signup'?palette.purple:palette.muted2}/><Text style={[s.tabText,mode==='signup'&&{color:palette.text}]}>Hesap Oluştur</Text></Pressable></View>
     <View style={s.form}>
       {mode==='signup'?<><Pressable onPress={pickAvatar} style={s.avatarPicker}><View style={s.avatarPreview}>{avatarAsset?<Image source={{uri:avatarAsset.uri}} style={s.avatarImage}/>:<MaterialCommunityIcons name="account-circle-outline" size={37} color={palette.purple}/>}<View style={s.avatarEdit}><MaterialCommunityIcons name="camera-plus-outline" size={14} color={palette.ink}/></View></View><View style={{flex:1}}><Text style={s.avatarTitle}>Profil resmi ekle</Text><Text style={s.avatarBody}>Opsiyonel • daha sonra değiştirebilirsin</Text></View><MaterialCommunityIcons name="image-edit-outline" size={23} color={palette.purple}/></Pressable><Field label="KULLANICI ADI *" value={username} set={setUsername} placeholder="draborneagle" icon="account-outline"/><Field label="TELEFON NUMARASI *" value={phone} set={setPhone} placeholder="+90 555 111 22 33" icon="phone-lock-outline" keyboard="phone-pad"/><View style={s.phoneNote}><MaterialCommunityIcons name="shield-lock-outline" size={18} color={palette.green}/><Text style={s.phoneNoteText}>Numaran QR/NFC sayfasında gösterilmez. Yalnızca sen açıkça onayladığında geçici arama talebinde paylaşılabilir.</Text></View></>:null}
-      <Field label="E-POSTA" value={email} set={setEmail} placeholder="ornek@mail.com" icon="email-outline" keyboard="email-address"/><Field label="PAROLA" value={password} set={setPassword} placeholder="En az 6 karakter" icon="lock-outline" secure/>
+      <Field label="E-POSTA" value={email} set={setEmail} placeholder="ornek@mail.com" icon="email-outline" keyboard="email-address"/>
+      <Field label="PAROLA" value={password} set={setPassword} placeholder="En az 6 karakter" icon="lock-outline" secure/>
       <Pressable disabled={busy} onPress={submit} style={[s.cta,busy&&{opacity:.6}]}>{busy?<ActivityIndicator color={palette.ink}/>:<><MaterialCommunityIcons name="shield-check" size={24} color={palette.ink}/><View style={{flex:1}}><Text style={s.ctaTitle}>{mode==='login'?'GÜVENLİ GİRİŞ YAP':'HESABIMI OLUŞTUR'}</Text><Text style={s.ctaSub}>{mode==='login'?'Araç merkezine devam et':'DraBornPark profilini başlat'}</Text></View><MaterialCommunityIcons name="arrow-right" size={22} color={palette.ink}/></>}</Pressable>
     </View>
     {mode==='signup'?<View style={s.trial}><View style={s.trialIcon}><MaterialCommunityIcons name="crown" size={27} color={palette.yellow}/></View><View style={{flex:1}}><Text style={s.trialTitle}>Etiket aktivasyonunda 14 Gün DraBornPark+ Hediye</Text><Text style={s.trialBody}>İlk uygun etiketini aktive ettiğinde premium özellikleri 14 gün deneyebilirsin. Süre sonunda temel NFC + QR özelliklerin kapanmaz.</Text></View></View>:null}
     <View style={s.privacy}><MaterialCommunityIcons name="shield-lock-outline" size={23} color={palette.green}/><Text style={s.privacyText}>Telefon, e-posta, tam ad ve park geçmişin QR/NFC ziyaretçisine gösterilmez.</Text></View>
   </ScrollView></KeyboardAvoidingView></SafeAreaView>;
 }
+
 function Field({label,value,set,placeholder,icon,keyboard,secure}:{label:string;value:string;set:(v:string)=>void;placeholder:string;icon:any;keyboard?:any;secure?:boolean}){return <View><Text style={s.label}>{label}</Text><View style={s.inputWrap}><MaterialCommunityIcons name={icon} size={22} color={palette.cyan}/><TextInput value={value} onChangeText={set} autoCapitalize="none" keyboardType={keyboard} secureTextEntry={secure} placeholder={placeholder} placeholderTextColor={palette.muted2} style={s.input}/></View></View>}
+
 const s=StyleSheet.create({safe:{flex:1,backgroundColor:palette.bg},scroll:{padding:20,paddingBottom:180},hero:{minHeight:180,borderRadius:radius.xl,borderWidth:1,borderColor:`${palette.cyan}48`,backgroundColor:`${palette.cyan}0E`,padding:20,flexDirection:'row',alignItems:'center',gap:16},heroIcon:{width:76,height:76,borderRadius:26,backgroundColor:`${palette.cyan}20`,alignItems:'center',justifyContent:'center'},heroKicker:{color:palette.cyan,fontSize:type.micro,fontWeight:'900',letterSpacing:1.2},heroTitle:{color:palette.text,fontSize:24,fontWeight:'900',lineHeight:29,letterSpacing:-.6,marginTop:5},heroBody:{color:palette.muted,fontSize:type.caption,lineHeight:19,marginTop:7},tabs:{flexDirection:'row',borderRadius:radius.md,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:6,marginTop:18,gap:6},tab:{flex:1,minHeight:58,borderRadius:17,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:8},tabActive:{backgroundColor:palette.panel3},tabText:{color:palette.muted,fontSize:type.body,fontWeight:'900'},form:{marginTop:14,borderRadius:radius.lg,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:17,gap:13},label:{color:palette.aqua,fontSize:type.micro,fontWeight:'900',letterSpacing:.9,marginBottom:7},inputWrap:{height:58,borderRadius:18,borderWidth:1,borderColor:palette.line,backgroundColor:palette.bg2,paddingHorizontal:14,flexDirection:'row',alignItems:'center',gap:10},input:{flex:1,color:palette.text,fontSize:type.body},avatarPicker:{minHeight:82,borderRadius:20,borderWidth:1,borderColor:`${palette.purple}55`,backgroundColor:`${palette.purple}12`,padding:12,flexDirection:'row',alignItems:'center',gap:12},avatarPreview:{width:58,height:58,borderRadius:20,borderWidth:1,borderColor:`${palette.purple}70`,backgroundColor:`${palette.purple}20`,alignItems:'center',justifyContent:'center'},avatarImage:{width:'100%',height:'100%',borderRadius:19},avatarEdit:{position:'absolute',right:-4,bottom:-4,width:23,height:23,borderRadius:8,backgroundColor:palette.aqua,borderWidth:2,borderColor:palette.panel,alignItems:'center',justifyContent:'center'},avatarTitle:{color:palette.text,fontSize:type.bodyStrong,fontWeight:'900'},avatarBody:{color:palette.muted,fontSize:type.caption,marginTop:3},phoneNote:{borderRadius:16,borderWidth:1,borderColor:`${palette.green}32`,backgroundColor:`${palette.green}0A`,padding:11,flexDirection:'row',gap:8},phoneNoteText:{flex:1,color:palette.muted,fontSize:type.micro,lineHeight:16},cta:{minHeight:68,borderRadius:21,backgroundColor:palette.aqua,marginTop:4,paddingHorizontal:15,flexDirection:'row',alignItems:'center',gap:11},ctaTitle:{color:palette.ink,fontSize:type.bodyStrong,fontWeight:'900'},ctaSub:{color:'#285D59',fontSize:type.caption,marginTop:2},trial:{marginTop:14,borderRadius:radius.lg,borderWidth:1,borderColor:`${palette.yellow}45`,backgroundColor:`${palette.yellow}0E`,padding:16,flexDirection:'row',gap:12},trialIcon:{width:52,height:52,borderRadius:18,backgroundColor:`${palette.yellow}20`,alignItems:'center',justifyContent:'center'},trialTitle:{color:palette.text,fontSize:type.cardTitle,fontWeight:'900'},trialBody:{color:palette.muted,fontSize:type.caption,lineHeight:19,marginTop:4},privacy:{marginTop:14,borderRadius:radius.md,borderWidth:1,borderColor:`${palette.green}38`,backgroundColor:`${palette.green}0B`,padding:15,flexDirection:'row',alignItems:'center',gap:11},privacyText:{flex:1,color:palette.muted,fontSize:type.caption,lineHeight:19}});
