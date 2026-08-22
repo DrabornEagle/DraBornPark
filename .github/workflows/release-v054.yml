@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths:
       - scripts/apply-v054.mjs
+      - scripts/fix-v054-type.mjs
+      - scripts/fix-v054-worklets.mjs
       - .github/workflows/release-v054.yml
 
 permissions:
@@ -48,12 +50,20 @@ jobs:
           if [ "$apply_code" -eq 0 ]; then
             node scripts/fix-v054-type.mjs 2>&1 | tee /tmp/v054-typefix.log
             fix_code=${PIPESTATUS[0]}
+            if [ "$fix_code" -eq 0 ]; then
+              node scripts/fix-v054-worklets.mjs 2>&1 | tee /tmp/v054-worklets.log
+              worklets_code=${PIPESTATUS[0]}
+            else
+              worklets_code=98
+            fi
           else
             fix_code=99
+            worklets_code=99
           fi
           echo "code=$apply_code" >> "$GITHUB_OUTPUT"
           echo "fix_code=$fix_code" >> "$GITHUB_OUTPUT"
-          test "$apply_code" -eq 0 -a "$fix_code" -eq 0
+          echo "worklets_code=$worklets_code" >> "$GITHUB_OUTPUT"
+          test "$apply_code" -eq 0 -a "$fix_code" -eq 0 -a "$worklets_code" -eq 0
       - id: install
         name: Install exact dependencies
         if: steps.apply.outcome == 'success'
@@ -115,7 +125,7 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          rm -f scripts/fix-v054-type.mjs .github/V054_FAILURE.txt
+          rm -f scripts/fix-v054-type.mjs scripts/fix-v054-worklets.mjs .github/V054_FAILURE.txt
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
@@ -176,7 +186,7 @@ jobs:
           rm -rf android artifacts
           {
             echo "DraBornPark v0.5.4 release validation failed."
-            echo "apply=${{ steps.apply.outcome }} code=${{ steps.apply.outputs.code }} fix_code=${{ steps.apply.outputs.fix_code }}"
+            echo "apply=${{ steps.apply.outcome }} code=${{ steps.apply.outputs.code }} fix_code=${{ steps.apply.outputs.fix_code }} worklets_code=${{ steps.apply.outputs.worklets_code }}"
             echo "install=${{ steps.install.outcome }} code=${{ steps.install.outputs.code }}"
             echo "integrity=${{ steps.integrity.outcome }} code=${{ steps.integrity.outputs.code }}"
             echo "expo=${{ steps.expo.outcome }} code=${{ steps.expo.outputs.code }}"
@@ -186,8 +196,8 @@ jobs:
             echo "android=${{ steps.android.outcome }} code=${{ steps.android.outputs.code }}"
             echo "publish=${{ steps.publish.outcome }}"
             echo
-            for f in /tmp/v054-apply.log /tmp/v054-typefix.log /tmp/v054-install.log /tmp/v054-integrity.log /tmp/v054-expo.log /tmp/v054-types.log /tmp/v054-web.log /tmp/v054-android.log; do
-              if [ -f "$f" ]; then echo "===== $f ====="; tail -n 220 "$f"; echo; fi
+            for f in /tmp/v054-apply.log /tmp/v054-typefix.log /tmp/v054-worklets.log /tmp/v054-install.log /tmp/v054-integrity.log /tmp/v054-expo.log /tmp/v054-types.log /tmp/v054-web.log /tmp/v054-android.log; do
+              if [ -f "$f" ]; then echo "===== $f ====="; tail -n 240 "$f"; echo; fi
             done
           } > .github/V054_FAILURE.txt
           git config user.name "github-actions[bot]"
