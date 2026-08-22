@@ -38,7 +38,7 @@ jobs:
   android-developer-apk:
     name: Android Developer APK
     needs: expo-check
-    if: github.event_name != 'pull_request' || startsWith(github.head_ref, 'build/') || startsWith(github.head_ref, 'fix/')
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 55
     steps:
