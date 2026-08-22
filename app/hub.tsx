@@ -1,0 +1,85 @@
+import { router } from 'expo-router';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { AuroraBackground, BottomDock, ScreenHeader, SectionHeading } from '@/src/components/AppChrome';
+import { Pill, SafeIcon } from '@/src/components/Primitives';
+import { palette, radius, type } from '@/src/theme';
+
+type MenuItem={title:string;subtitle:string;icon:string;color:string;route:string;badge?:string;keywords:string};
+type Group={title:string;caption:string;color:string;icon:string;items:MenuItem[]};
+
+const groups:Group[]=[
+  {title:'Araç & Park',caption:'Günlük kullanımın başladığı yer',color:palette.cyan,icon:'car-connected',items:[
+    {title:'Araçlarım',subtitle:'Araba ve motosiklet profilleri',icon:'car-multiple',color:palette.blue,route:'/vehicle',keywords:'araç araba motor motosiklet'},
+    {title:'Park Hafızası',subtitle:'GPS, kat, bölüm, fotoğraf ve bilet',icon:'map-marker-radius',color:palette.orange,route:'/park',keywords:'park konum otopark fotoğraf bilet'},
+    {title:'Etiketlerim',subtitle:'NFC + QR, aktivasyon ve devir',icon:'nfc',color:palette.cyan,route:'/tags',keywords:'nfc qr etiket aktivasyon devir'},
+    {title:'Araç Geçmişi',subtitle:'Aracının olay ve hareket geçmişi',icon:'history',color:palette.purple,route:'/timeline',keywords:'geçmiş olay zaman çizelgesi'},
+    {title:'İstatistiklerim',subtitle:'Aylık park ve güvenlik özeti',icon:'chart-donut',color:palette.green,route:'/insights',keywords:'özet istatistik aylık'},
+  ]},
+  {title:'İletişim & Güvenlik',caption:'Numaranı göstermeden haber al',color:palette.orange,icon:'shield-check-outline',items:[
+    {title:'Bildirim Merkezi',subtitle:'Araç bildirimleri ve hızlı cevaplar',icon:'bell-ring-outline',color:palette.orange,route:'/notifications',keywords:'bildirim cevap mesaj'},
+    {title:'DraBornPark Aile',subtitle:'Aile park paylaşımı ve izinler',icon:'account-group-outline',color:palette.purple,route:'/family',keywords:'aile paylaşım'},
+    {title:'Geçici Sürücü',subtitle:'Süreli bildirim yönlendirmesi',icon:'account-clock-outline',color:palette.green,route:'/guest',keywords:'geçici sürücü yönlendirme'},
+    {title:'Acil Durum Zinciri',subtitle:'Öncelikli kişiler ve yüksek öncelik',icon:'shield-alert-outline',color:palette.red,route:'/emergency',keywords:'acil zincir kişi'},
+    {title:'Gizlilik & Veri',subtitle:'Paylaşımlar, izinler ve veri kontrolü',icon:'shield-lock-outline',color:palette.aqua,route:'/legal',keywords:'gizlilik veri güvenlik'},
+  ]},
+  {title:'Akıllı Modlar',caption:'DraBornPark+ özellikleri',color:palette.purple,icon:'auto-fix',items:[
+    {title:'Vale / Servis',subtitle:'Araç teslimi ve servis durumları',icon:'car-key',color:palette.sky,route:'/modes',badge:'PLUS',keywords:'vale servis'},
+    {title:'Zaman Kuralları',subtitle:'Gün ve saate göre yönlendir',icon:'calendar-clock-outline',color:palette.pink,route:'/routing',badge:'PLUS',keywords:'zaman kural saat'},
+    {title:'DraBornPark+',subtitle:'Premium özellikler ve üyelik',icon:'crown-outline',color:palette.yellow,route:'/feature/plus',badge:'PLUS',keywords:'plus premium üyelik abonelik google play'},
+    {title:'Bildirim Ayarları',subtitle:'Sessiz saatler ve tercihler',icon:'tune-variant',color:palette.aqua,route:'/settings',keywords:'ayar bildirim sessiz'},
+  ]},
+  {title:'Hesap & Destek',caption:'Hesap, destek ve yasal kontroller',color:palette.blue,icon:'account-cog-outline',items:[
+    {title:'Hesabım',subtitle:'Profil, telefon ve hesap işlemleri',icon:'account-circle-outline',color:palette.blue,route:'/account',keywords:'hesap telefon kullanıcı'},
+    {title:'Destek Merkezi',subtitle:'Nasıl yardımcı olabiliriz?',icon:'lifebuoy',color:palette.purple,route:'/feature/support',keywords:'destek yardım talep sorun'},
+    {title:'Yasal & Gizlilik',subtitle:'Gizlilik, koşullar ve veri güvenliği',icon:'file-shield-outline',color:palette.green,route:'/legal',keywords:'yasal gizlilik koşullar veri güvenliği'},
+    {title:'Üretim Paneli',subtitle:'Etiket üretim ve doğrulama',icon:'factory',color:palette.orange,route:'/factory',keywords:'üretim etiket doğrulama'},
+  ]},
+];
+
+export default function HubScreen(){
+  const [query,setQuery]=useState('');
+  const [dockSolid,setDockSolid]=useState(false);
+  const enter=useRef(new Animated.Value(0)).current;
+
+  useEffect(()=>{Animated.timing(enter,{toValue:1,duration:460,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start()},[enter]);
+
+  const filtered=useMemo(()=>{
+    const q=query.trim().toLocaleLowerCase('tr-TR');
+    if(!q)return groups;
+    return groups.map(group=>({...group,items:group.items.filter(item=>`${item.title} ${item.subtitle} ${item.keywords}`.toLocaleLowerCase('tr-TR').includes(q))})).filter(group=>group.items.length);
+  },[query]);
+
+  return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.purple} secondary={palette.cyan}/><Animated.View style={[s.flex,{opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[12,0]})}]}]}>
+    <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} onScroll={event=>setDockSolid(event.nativeEvent.contentOffset.y>24)} scrollEventThrottle={16}>
+      <ScreenHeader back={false} title="Merkezim" eyebrow="" accent={palette.purple} subtitle="Araç, park, güvenlik ve hesabın tek anlaşılır merkezde" right={<Pill label="v0.5.4" color={palette.purple}/>}/>
+      <View style={s.hero}><View style={s.heroIcon}><SafeIcon name="view-dashboard-outline" size={36} color={palette.purple}/><View style={s.heroDot}/></View><View style={{flex:1}}><Text style={s.heroKicker}>KİŞİSEL ARAÇ AĞIN</Text><Text style={s.heroTitle}>Ne yapmak istiyorsun?</Text><Text style={s.heroText}>Ara, kategori seç veya doğrudan karta dokun.</Text><Spectrum/></View></View>
+      <View style={s.search}><View style={s.searchIcon}><SafeIcon name="magnify" size={23} color={palette.cyan}/></View><TextInput value={query} onChangeText={setQuery} placeholder="Park, etiket, Plus, destek…" placeholderTextColor={palette.muted2} style={s.searchInput}/>{query?<Pressable onPress={()=>setQuery('')} style={s.clear}><SafeIcon name="close" size={19} color={palette.muted}/></Pressable>:null}</View>
+
+      {!query?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.categoryRail}>{groups.map((group,index)=><View key={group.title} style={[s.category,{borderColor:`${group.color}72`,backgroundColor:`${group.color}16`}]}><View style={[s.categoryIcon,{backgroundColor:`${group.color}2C`}]}><SafeIcon name={group.icon} size={25} color={group.color}/></View><Text style={s.categoryTitle}>{group.title}</Text><View style={s.categoryBottom}><Text style={s.categoryCount}>{group.items.length} özellik</Text><Text style={[s.categoryNo,{color:group.color}]}>0{index+1}</Text></View><View style={[s.categoryLine,{backgroundColor:group.color}]}/></View>)}</ScrollView>:null}
+
+      {filtered.length?filtered.map((group,groupIndex)=><View key={group.title}><SectionHeading title={group.title} subtitle={group.caption} badge={`${group.items.length} ÖZELLİK`} color={group.color}/><View style={s.grid}>{group.items.map((item,itemIndex)=><MenuTile key={item.title} item={item} index={groupIndex*6+itemIndex} onPress={()=>router.push(item.route as any)}/>)}</View></View>):<View style={s.empty}><SafeIcon name="magnify-close" size={38} color={palette.muted}/><Text style={s.emptyTitle}>Sonuç bulunamadı</Text><Text style={s.emptyText}>Daha kısa bir kelimeyle tekrar ara.</Text></View>}
+    </ScrollView>
+    <BottomDock active="hub" transparent={!dockSolid} floating/>
+  </Animated.View></SafeAreaView>;
+}
+
+function MenuTile({item,index,onPress}:{item:MenuItem;index:number;onPress:()=>void}){
+  const appear=useRef(new Animated.Value(0)).current;
+  const scale=useRef(new Animated.Value(1)).current;
+  useEffect(()=>{Animated.timing(appear,{toValue:1,duration:350,delay:Math.min(index,16)*22,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start()},[appear,index]);
+  const press=(value:number)=>Animated.spring(scale,{toValue:value,useNativeDriver:true,speed:36,bounciness:4}).start();
+  return <Animated.View style={[s.tileWrap,{opacity:appear,transform:[{translateY:appear.interpolate({inputRange:[0,1],outputRange:[10,0]})},{scale}]}]}><Pressable onPress={onPress} onPressIn={()=>press(.97)} onPressOut={()=>press(1)} style={[s.tile,{borderColor:`${item.color}72`,backgroundColor:`${item.color}14`}]}><View style={s.tileTop}><View style={[s.tileIcon,{backgroundColor:`${item.color}2A`,borderColor:`${item.color}68`}]}><SafeIcon name={item.icon} size={30} color={item.color}/></View>{item.badge?<View style={[s.badge,{borderColor:`${item.color}60`}]}><Text style={[s.badgeText,{color:item.color}]}>{item.badge}</Text></View>:<SafeIcon name="arrow-top-right" size={20} color={item.color}/>}</View><Text numberOfLines={2} style={s.tileTitle}>{item.title}</Text><Text style={s.tileSub}>{item.subtitle}</Text><View style={[s.tileLine,{backgroundColor:item.color}]}/></Pressable></Animated.View>;
+}
+
+function Spectrum(){return <View style={s.spectrum}><View style={[s.bar,{backgroundColor:palette.cyan}]}/><View style={[s.bar,{backgroundColor:palette.purple}]}/><View style={[s.bar,{backgroundColor:palette.pink}]}/><View style={[s.bar,{backgroundColor:palette.orange}]}/><View style={[s.bar,{backgroundColor:palette.green}]}/></View>}
+
+const s=StyleSheet.create({
+  safe:{flex:1,backgroundColor:palette.bg},flex:{flex:1},scroll:{padding:20,paddingBottom:132},
+  hero:{minHeight:178,borderRadius:radius.xl,borderWidth:1,borderColor:`${palette.purple}70`,backgroundColor:`${palette.purple}15`,padding:20,flexDirection:'row',alignItems:'center',gap:16,overflow:'hidden'},heroIcon:{width:76,height:76,borderRadius:25,borderWidth:1,borderColor:`${palette.purple}78`,backgroundColor:`${palette.purple}28`,alignItems:'center',justifyContent:'center'},heroDot:{position:'absolute',right:8,top:8,width:10,height:10,borderRadius:5,backgroundColor:palette.aqua},heroKicker:{color:palette.cyan,fontSize:type.micro,fontWeight:'900',letterSpacing:1.2},heroTitle:{color:palette.text,fontSize:28,fontWeight:'900',letterSpacing:-.8,marginTop:5},heroText:{color:palette.muted,fontSize:type.caption,lineHeight:19,marginTop:7},spectrum:{height:4,flexDirection:'row',gap:3,marginTop:13},bar:{flex:1,borderRadius:99},
+  search:{height:64,borderRadius:23,borderWidth:1,borderColor:`${palette.cyan}60`,backgroundColor:palette.glassStrong,marginTop:14,paddingHorizontal:12,flexDirection:'row',alignItems:'center',gap:10},searchIcon:{width:40,height:40,borderRadius:14,borderWidth:1,borderColor:`${palette.cyan}60`,backgroundColor:`${palette.cyan}20`,alignItems:'center',justifyContent:'center'},searchInput:{flex:1,color:palette.text,fontSize:type.body},clear:{width:36,height:36,borderRadius:12,borderWidth:1,borderColor:palette.line,alignItems:'center',justifyContent:'center'},
+  categoryRail:{gap:10,paddingTop:13,paddingRight:10},category:{width:154,minHeight:112,borderRadius:24,borderWidth:1,padding:13,overflow:'hidden'},categoryIcon:{width:43,height:43,borderRadius:14,alignItems:'center',justifyContent:'center'},categoryTitle:{color:palette.text,fontSize:14,fontWeight:'900',marginTop:9},categoryBottom:{marginTop:'auto',flexDirection:'row',justifyContent:'space-between'},categoryCount:{color:palette.muted2,fontSize:type.micro},categoryNo:{fontSize:12,fontWeight:'900'},categoryLine:{position:'absolute',left:12,right:12,bottom:0,height:4,borderRadius:99},
+  grid:{flexDirection:'row',flexWrap:'wrap',gap:10},tileWrap:{width:'48.4%'},tile:{minHeight:188,borderRadius:27,borderWidth:1,padding:14,overflow:'hidden'},tileTop:{flexDirection:'row',justifyContent:'space-between',alignItems:'center'},tileIcon:{width:58,height:58,borderRadius:19,borderWidth:1,alignItems:'center',justifyContent:'center'},tileTitle:{color:palette.text,fontSize:17,fontWeight:'900',marginTop:14},tileSub:{color:palette.muted,fontSize:type.caption,lineHeight:18,marginTop:5,flex:1},tileLine:{position:'absolute',left:13,right:13,bottom:0,height:4,borderRadius:99},badge:{borderWidth:1,borderRadius:999,paddingHorizontal:8,paddingVertical:5},badgeText:{fontSize:10,fontWeight:'900'},
+  empty:{padding:35,alignItems:'center'},emptyTitle:{color:palette.text,fontSize:type.section,fontWeight:'900',marginTop:10},emptyText:{color:palette.muted,fontSize:type.caption,marginTop:5},
+});
