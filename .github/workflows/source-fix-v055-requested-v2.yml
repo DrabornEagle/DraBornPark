@@ -1,0 +1,106 @@
+name: DraBornPark v0.5.5 Requested Web Home Fix
+
+on:
+  push:
+    paths:
+      - '.github/workflows/source-fix-v055-requested-v2.yml'
+
+permissions:
+  contents: write
+
+env:
+  EXPO_NO_TELEMETRY: '1'
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Apply requested source changes
+        run: |
+          cat > /tmp/dkd_apply.mjs <<'NODE'
+          import fs from 'node:fs';
+
+          let home=fs.readFileSync('app/index.tsx','utf8');
+          home=home.replace('>• CANLI •</Text>','>•CANLI•</Text>');
+          const start=home.indexOf('function VehicleCore(');
+          const end=home.indexOf('function VehicleStatus(',start);
+          if(start<0||end<0) throw new Error('VehicleCore markers missing');
+          const replacement=`function VehicleCore({vehicle,tag,plus}:{vehicle:any;tag?:string;plus:boolean}){
+  const pulse=useRef(new Animated.Value(0)).current;const scan=useRef(new Animated.Value(0)).current;
+  useEffect(()=>{const p=Animated.loop(Animated.sequence([Animated.timing(pulse,{toValue:1,duration:980,easing:Easing.inOut(Easing.cubic),useNativeDriver:true}),Animated.timing(pulse,{toValue:0,duration:980,easing:Easing.inOut(Easing.cubic),useNativeDriver:true})]));const q=Animated.loop(Animated.timing(scan,{toValue:1,duration:3000,easing:Easing.linear,useNativeDriver:true}));p.start();q.start();return()=>{p.stop();q.stop()};},[pulse,scan]);
+  if(!vehicle)return <Pressable onPress={()=>router.push('/vehicle')} style={s.emptyVehicle}><SafeIcon name="car-plus" size={40} color={palette.cyan}/><Text style={s.emptyTitle}>İlk aracını ekle</Text><Text style={s.emptyBody}>Araç profilini oluştur, ardından NFC + QR etiketini bağla.</Text><View style={s.emptyCta}><Text style={s.emptyCtaText}>ARAÇ EKLE</Text><SafeIcon name="arrow-right" size={19} color={palette.ink}/></View></Pressable>;
+  const accent=vehicle.vehicle_type==='motorcycle'?palette.purple:palette.cyan;const tagColor=tag?palette.green:palette.orange;const meta=[vehicle.brand,vehicle.model,vehicle.color].filter(Boolean).join(' • ')||'Araç profili hazır';
+  return <Animated.View style={[s.vehicleCore,{borderColor:accent+'96',backgroundColor:vehicle.vehicle_type==='motorcycle'?'#120C22':'#061925',transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[1,1.006]})}]}]}><Animated.View pointerEvents="none" style={[s.vehicleOrb,{backgroundColor:accent+'18',opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.32,.62]}),transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[.92,1.08]})}]}]}/><Animated.View pointerEvents="none" style={[s.vehicleSweep,{backgroundColor:'#FFFFFF10',transform:[{translateX:scan.interpolate({inputRange:[0,1],outputRange:[-130,700]})},{rotate:'13deg'}]}]}/><Spectrum/><View style={s.vehicleHeader}><Animated.View style={[s.liveBadge,{transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[1,1.025]})}]}]}><Animated.View style={[s.liveDot,{opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.42,1]})}]}/><View><Text style={s.liveOver}>•CANLI•</Text><Text style={s.liveText}>AKTİF ARAÇ • CANLI</Text></View></Animated.View><Pill label={plus?'PLUS':'TEMEL'} color={plus?palette.yellow:palette.blue} icon={plus?'crown-outline':'shield-outline'}/></View><View style={s.vehicleMinimalMain}><Animated.View style={[s.vehicleIconMini,{borderColor:accent+'92',backgroundColor:accent+'22',transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[1,1.05]})}]}]}><SafeIcon name={vehicle.vehicle_type==='motorcycle'?'motorbike':'car-connected'} size={32} color={accent}/><Animated.View style={[s.onlineDot,{transform:[{scale:pulse.interpolate({inputRange:[0,1],outputRange:[.8,1.25]})}]}]}/></Animated.View><View style={{flex:1,minWidth:0}}><Text style={[s.coreEyebrow,{color:accent}]}>KİŞİSEL ARAÇ</Text><Text numberOfLines={1} style={s.coreName}>{vehicle.vehicle_name}</Text><Text numberOfLines={1} style={s.coreMeta}>{meta}</Text></View><Animated.View style={[s.vehicleShield,{borderColor:palette.green+'70',backgroundColor:palette.green+'14',opacity:pulse.interpolate({inputRange:[0,1],outputRange:[.68,1]})}]}><SafeIcon name="shield-check" size={23} color={palette.green}/></Animated.View></View><View style={s.vehicleMetaPills}><View style={[s.vehicleTinyPill,{borderColor:accent+'52',backgroundColor:accent+'10'}]}><SafeIcon name="card-text-outline" size={15} color={accent}/><Text numberOfLines={1} style={[s.vehicleTinyPillText,{color:accent}]}>{vehicle.plate||'PLAKA GİZLİ'}</Text></View><View style={[s.vehicleTinyPill,{borderColor:tagColor+'52',backgroundColor:tagColor+'10'}]}><SafeIcon name={tag?'nfc-variant':'qrcode-scan'} size={15} color={tagColor}/><Text numberOfLines={1} style={[s.vehicleTinyPillText,{color:tagColor}]}>{tag?'NFC + QR AKTİF':'ETİKET BEKLİYOR'}</Text></View><View style={[s.vehicleTinyPill,{borderColor:palette.green+'52',backgroundColor:palette.green+'10'}]}><SafeIcon name="lock-check-outline" size={15} color={palette.green}/><Text numberOfLines={1} style={[s.vehicleTinyPillText,{color:palette.green}]}>ÖZEL</Text></View></View><View style={s.vehicleBottomSpectrum}><View style={[s.bottomColor,{backgroundColor:accent,flex:2}]}/><View style={[s.bottomColor,{backgroundColor:palette.pink}]}/><View style={[s.bottomColor,{backgroundColor:palette.orange}]}/><View style={[s.bottomColor,{backgroundColor:palette.green}]}/></View></Animated.View>;
+}
+
+`;
+          home=home.slice(0,start)+replacement+home.slice(end);
+          const style="vehicleCore:{marginTop:14,borderRadius:28,borderWidth:1,padding:15,overflow:'hidden'},vehicleSweep:";
+          if(!home.includes(style)) throw new Error('Vehicle style marker missing');
+          home=home.replace(style,"vehicleCore:{marginTop:14,borderRadius:26,borderWidth:1,padding:14,minHeight:184,overflow:'hidden'},vehicleOrb:{position:'absolute',width:168,height:168,borderRadius:84,right:-72,top:24},vehicleShield:{width:38,height:38,borderRadius:13,borderWidth:1,alignItems:'center',justifyContent:'center'},vehicleMetaPills:{flexDirection:'row',gap:6,marginTop:12},vehicleTinyPill:{flex:1,minWidth:0,minHeight:36,borderRadius:12,borderWidth:1,paddingHorizontal:8,flexDirection:'row',alignItems:'center',justifyContent:'center',gap:5},vehicleTinyPillText:{fontSize:9.2,fontWeight:'900'},vehicleSweep:");
+          fs.writeFileSync('app/index.tsx',home);
+
+          let pub=fs.readFileSync('app/t/[id].tsx','utf8');
+          const oldOpen="function openDirectMessage(){const fallback:Category={key:'other',title:'Araç sahibine mesaj',body:'Araçla ilgili kısa ve güvenli bir mesaj gönderin.',priority:'normal'};setSelected(categories.find(item=>item.key==='other')||fallback);setMessageOpen(true);setError('');}";
+          const newOpen="function openDirectMessage(){const dkd_direct:Category={key:'direct_message',title:'Araç sahibine güvenli mesaj',body:'Araçla ilgili kısa ve güvenli bir mesaj gönderin. İsterseniz fotoğraf da ekleyebilirsiniz.',priority:'normal'};setSelected(dkd_direct);setMessageOpen(true);setError('');}";
+          if(!pub.includes(oldOpen)) throw new Error('Direct message opener marker missing');
+          pub=pub.replace(oldOpen,newOpen).replace("{selected.key==='other'?'Araç sahibine güvenli mesaj':selected.title}","{selected.key==='direct_message'||selected.key==='other'?'Araç sahibine güvenli mesaj':selected.title}");
+          const contactStart=pub.indexOf('{!sessionToken?<>');
+          const composerStart=pub.indexOf('{messageOpen&&selected?<View style={[s.compose',contactStart);
+          const composerEndMarker='</Pressable></View>:null}';
+          const composerEnd=pub.indexOf(composerEndMarker,composerStart);
+          if(contactStart<0||composerStart<0||composerEnd<0) throw new Error('Composer markers missing');
+          const composer=pub.slice(composerStart,composerEnd+composerEndMarker.length);
+          pub=pub.slice(0,composerStart)+pub.slice(composerEnd+composerEndMarker.length);
+          const insertMarker='</Pressable><SectionHeading title="Ne bildirmek istiyorsunuz?"';
+          const insertAt=pub.indexOf(insertMarker,contactStart);
+          if(insertAt<0) throw new Error('Composer insertion marker missing');
+          const afterButton=insertAt+'</Pressable>'.length;
+          pub=pub.slice(0,afterButton)+composer+pub.slice(afterButton);
+          pub=pub.replace('name="account-check-outline" size={21} color={palette.purple}','name="account-check-outline" size={23} color={palette.purple}').replace('name="nfc-variant" size={21} color={palette.green}','name="nfc-variant" size={23} color={palette.green}');
+          pub=pub.replace("publicBadge:{minHeight:40,borderRadius:999,borderWidth:1,paddingHorizontal:12,flexDirection:'row',alignItems:'center',gap:6},publicBadgeText:{fontSize:12,fontWeight:'900',letterSpacing:.35}","publicBadge:{minHeight:44,borderRadius:999,borderWidth:1,paddingHorizontal:14,flexDirection:'row',alignItems:'center',gap:7},publicBadgeText:{fontSize:12.8,fontWeight:'900',letterSpacing:.38}");
+          fs.writeFileSync('app/t/[id].tsx',pub);
+
+          let fn=fs.readFileSync('supabase/functions/drabornpark-public-contact/index.ts','utf8');
+          if(!fn.includes('direct_message:{title:"Araç sahibine yeni mesaj"')){
+            fn=fn.replace('other:{title:"Yeni araç bildirimi",body:"DraBornPark üzerinden aracınızla ilgili yeni bir bildirim gönderildi.",priority:"normal"}','direct_message:{title:"Araç sahibine yeni mesaj",body:"Bir kullanıcı DraBornPark üzerinden aracınızla ilgili doğrudan güvenli mesaj gönderdi.",priority:"normal"},other:{title:"Yeni araç bildirimi",body:"DraBornPark üzerinden aracınızla ilgili yeni bir bildirim gönderildi.",priority:"normal"}');
+            fn=fn.replace('filter(([k])=>k!=="blocked_exit")','filter(([k])=>k!=="blocked_exit"&&k!=="direct_message")');
+          }
+          fs.writeFileSync('supabase/functions/drabornpark-public-contact/index.ts',fn);
+
+          let check=fs.readFileSync('scripts/check-project.mjs','utf8');
+          check=check.replace("'• CANLI •'","'•CANLI•'");
+          const pubMarkers="['MESAJ YAZMA ALANI','FOTOĞRAF EKLE','Trendyol','Hepsiburada','Amazon','DraBornPark Mağaza','ARAÇ SAHİBİ •','NFC + QR • AKTİF']";
+          const newPubMarkers="['MESAJ YAZMA ALANI','FOTOĞRAF EKLE','Trendyol','Hepsiburada','Amazon','DraBornPark Mağaza','ARAÇ SAHİBİ •','NFC + QR • AKTİF',\"key:'direct_message'\"]";
+          if(!check.includes(pubMarkers)) throw new Error('Integrity public marker list missing');
+          check=check.replace(pubMarkers,newPubMarkers);
+          fs.writeFileSync('scripts/check-project.mjs',check);
+
+          let readme=fs.readFileSync('README.md','utf8');
+          readme=readme.replace('- Güvenli Araç İletişimi web ekranındaki `Mesaj Gönder` artık başka karta yönlendirme yapmaz; kendi içinde mesaj yazma alanı açar.','- Güvenli Araç İletişimi web ekranındaki `Mesaj Gönder` artık başka karta yönlendirme yapmaz; butonun hemen altında modern mesaj editörü açılır, fotoğraf eklenebilir ve `direct_message` kategorisiyle Yeni Araç Bildirimi akışından tamamen ayrıdır.');
+          fs.writeFileSync('README.md',readme);
+          NODE
+          node /tmp/dkd_apply.mjs
+
+      - name: Install
+        run: npm install --no-audit --no-fund
+      - name: TypeScript
+        run: npm run typecheck
+      - name: Web export
+        run: npx expo export --platform web
+      - name: Commit source
+        run: |
+          git config user.name 'DraBornPark Source Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add app/index.tsx 'app/t/[id].tsx' scripts/check-project.mjs README.md supabase/functions/drabornpark-public-contact/index.ts
+          git commit -m 'DraBornPark v0.5.5: finalize requested home and web UI'
+          git pull --rebase origin main
+          git push origin HEAD:main
