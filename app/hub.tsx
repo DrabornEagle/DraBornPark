@@ -46,7 +46,16 @@ export default function HubScreen(){
   useEffect(()=>{
     Animated.timing(enter,{toValue:1,duration:480,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start();
     let dkd_mounted=true;
-    void supabase.rpc('drabornpark_is_admin').then(({data,error})=>{if(dkd_mounted&&!error)setIsAdmin(Boolean(data));}).catch(()=>undefined);
+    const dkd_load_admin=async()=>{
+      try{
+        const {data,error}=await supabase.rpc('drabornpark_is_admin');
+        if(error)throw error;
+        if(dkd_mounted)setIsAdmin(Boolean(data));
+      }catch{
+        if(dkd_mounted)setIsAdmin(false);
+      }
+    };
+    void dkd_load_admin();
     return()=>{dkd_mounted=false};
   },[enter]);
 
