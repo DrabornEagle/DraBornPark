@@ -2,12 +2,12 @@ DraBornPark v0.5.4 release validation failed.
 apply=success code=0 fix_code=0 worklets_code=0
 install=success code=0
 integrity=success code=0
-expo=failure code=1
-types=skipped code=
-web=skipped code=
-source_commit=skipped
-android=skipped code=
-publish=skipped
+expo=success code=0
+types=success code=0
+web=success code=0
+source_commit=success
+android=success code=0
+publish=failure
 
 ===== /tmp/v054-apply.log =====
 DraBornPark v0.5.4 guarded release patch applied.
@@ -16,12 +16,12 @@ DraBornPark v0.5.4 guarded release patch applied.
 DraBornPark v0.5.4 support notification type fix applied.
 
 ===== /tmp/v054-worklets.log =====
-DraBornPark v0.5.4: react-native-worklets pinned to 0.12.1 for Reanimated 4.6.x / RN 0.86 compatibility.
+DraBornPark v0.5.4: Expo SDK 57 native pair pinned — Reanimated 4.5.1 + Worklets 0.10.1.
 
 ===== /tmp/v054-install.log =====
 npm warn deprecated uuid@7.0.3: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
 
-added 605 packages in 29s
+added 605 packages in 39s
 
 ===== /tmp/v054-integrity.log =====
 
@@ -31,8 +31,288 @@ added 605 packages in 29s
 DraBornPark integrity OK • v0.5.4 • Android vc20 • support/admin push • 14-day tag reward • Google Play billing prepared.
 
 ===== /tmp/v054-expo.log =====
-The following packages should be updated for best compatibility with the installed expo version:
-  react-native-worklets@0.12.1 - expected version: 0.10.1
-Your project may not work correctly until you install the expected versions of the packages.
-Found outdated dependencies
+Dependencies are up to date
+
+===== /tmp/v054-types.log =====
+
+> drabornpark@0.5.4 typecheck
+> node scripts/clean-generated-types.mjs && tsc --noEmit
+
+Cleared stale Expo Router generated types.
+
+===== /tmp/v054-web.log =====
+🔍 [expo-iap] Config values: horizonAppId=undefined, isHorizonEnabled=false, isFireOsEnabled=false, isVegaEnabled=false, isOnsideEnabled=false
+📦 [expo-iap] Using OpenIAP from CocoaPods
+Starting Metro Bundler
+
+| 🔍 [expo-iap] Config values: horizonAppId=undefined, isHorizonEnabled=false, isFireOsEnabled=false, isVegaEnabled=false, isOnsideEnabled=false
+| 📦 [expo-iap] Using OpenIAP from CocoaPods
+Web Bundled 21770ms node_modules/expo-router/entry.js (1026 modules)
+
+› Assets (19):
+node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/MaterialCommunityIcons.6e435534bd35da5fef04168860a9b8fa.ttf (1.3MB)
+node_modules/expo-router/assets/arrow_down.017bc6ba3fc25503e5eb5e53826d48a8.png (9.5KB)
+node_modules/expo-router/assets/error.d1ea1496f9057eb392d5bbf3732a61b7.png (469B)
+node_modules/expo-router/assets/file.19eeb73b9593a38f8e9f418337fc7d10.png (138B)
+node_modules/expo-router/assets/forward.d8b800c443b8972542883e0b9de2bdc6.png (188B)
+node_modules/expo-router/assets/pkg.ab19f4cbc543357183a20571f68380a3.png (364B)
+node_modules/expo-router/assets/react-navigation/elements/back-icon-mask.0a328cd9c1afd0afe8e3b1ec5165b1b4.png (653B)
+node_modules/expo-router/assets/react-navigation/elements/back-icon.35ba0eaec5a4f5ed12ca16fabeae451d.png (207B)
+node_modules/expo-router/assets/react-navigation/elements/clear-icon.c94f6478e7ae0cdd9f15de1fcb9e5e55.png (4 variations | 425B)
+node_modules/expo-router/assets/react-navigation/elements/close-icon.808e1b1b9b53114ec2838071a7e6daa7.png (4 variations | 235B)
+node_modules/expo-router/assets/react-navigation/elements/search-icon.286d67d3f74808a60a78d3ebf1a5fb57.png (928B)
+node_modules/expo-router/assets/sitemap.412dd9275b6b48ad28f5e3d81bb1f626.png (465B)
+node_modules/expo-router/assets/unmatched.20e71bdf79e3a97bf55fd9e164041578.png (4.8KB)
+
+› web bundles (2):
+_expo/static/js/web/entry-b6442f309c53816f9a072099fc329232.js (2.2MB)
+_expo/static/js/web/index-6ab293c3fe21236c7f2709233c38284f.js (62KB)
+
+› Files (2):
+index.html (1.2KB)
+metadata.json (49B)
+
+Exported: dist
+
+===== /tmp/v054-android.log =====
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-manifests/android/src/main/java/expo/modules/manifests/core/Manifest.kt:13:3 Deprecations and opt-ins on a method overridden from 'Any' may not be reported.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-manifests/android/src/main/java/expo/modules/manifests/core/Manifest.kt:15:12 'fun getRawJson(): JSONObject' is deprecated. Prefer to use specific field getters.
+
+> Task :expo-manifests:compileDebugJavaWithJavac
+> Task :expo-manifests:bundleLibCompileToJarDebug
+> Task :expo-updates-interface:compileDebugKotlin
+> Task :expo-updates-interface:compileDebugJavaWithJavac
+> Task :expo-updates-interface:bundleLibCompileToJarDebug
+> Task :react-native-worklets:buildCMakeDebug[arm64-v8a][worklets]
+> Task :expo-iap:compileDebugKotlin
+> Task :expo-iap:compileDebugJavaWithJavac
+> Task :expo-iap:bundleLibCompileToJarDebug
+> Task :expo-constants:bundleLibRuntimeToJarDebug
+> Task :expo-dev-client:bundleLibRuntimeToJarDebug
+> Task :expo-dev-menu-interface:bundleLibRuntimeToJarDebug
+> Task :expo-iap:bundleLibRuntimeToJarDebug
+> Task :expo-json-utils:bundleLibRuntimeToJarDebug
+> Task :expo-manifests:bundleLibRuntimeToJarDebug
+> Task :expo-modules-core:bundleLibRuntimeToJarDebug
+> Task :expo-updates-interface:bundleLibRuntimeToJarDebug
+> Task :expo-log-box:compileDebugKotlin
+> Task :expo-log-box:compileDebugJavaWithJavac
+> Task :expo-log-box:bundleLibCompileToJarDebug
+> Task :expo-log-box:bundleLibRuntimeToJarDebug
+> Task :expo-constants:processDebugJavaRes
+> Task :expo-dev-client:processDebugJavaRes NO-SOURCE
+> Task :expo-dev-menu-interface:processDebugJavaRes NO-SOURCE
+> Task :expo-iap:processDebugJavaRes
+> Task :expo-json-utils:processDebugJavaRes
+> Task :expo-log-box:processDebugJavaRes
+> Task :expo-manifests:processDebugJavaRes
+> Task :expo-modules-core:processDebugJavaRes
+> Task :expo-updates-interface:processDebugJavaRes
+> Task :app:mergeDebugJniLibFolders
+
+> Task :expo-dev-menu:compileDebugKotlin
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-menu/android/src/debug/java/com/facebook/react/devsupport/DevMenuSettingsBase.kt:6:8 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-menu/android/src/debug/java/com/facebook/react/devsupport/DevMenuSettingsBase.kt:18:51 'class PreferenceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-menu/android/src/debug/java/com/facebook/react/devsupport/DevMenuSettingsBase.kt:18:69 'static fun getDefaultSharedPreferences(p0: Context!): SharedPreferences!' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-menu/android/src/debug/java/com/facebook/react/devsupport/DevMenuSettingsBase.kt:51:13 This code uses error suppression for 'NOTHING_TO_OVERRIDE'. While it might compile and work, the compiler behavior is UNSPECIFIED and WILL NOT BE PRESERVED. Please report your use case to the Kotlin issue tracker instead: https://kotl.in/issue
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-menu/android/src/debug/java/com/facebook/react/devsupport/DevMenuSettingsBase.kt:58:13 This code uses error suppression for 'NOTHING_TO_OVERRIDE'. While it might compile and work, the compiler behavior is UNSPECIFIED and WILL NOT BE PRESERVED. Please report your use case to the Kotlin issue tracker instead: https://kotl.in/issue
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-menu/android/src/debug/java/expo/modules/devmenu/compose/ui/AppInfo.kt:64:5 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-menu/android/src/debug/java/expo/modules/devmenu/compose/ui/MenuButton.kt:33:5 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-menu/android/src/debug/java/expo/modules/devmenu/compose/ui/Onboarding.kt:70:5 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-menu/android/src/debug/java/expo/modules/devmenu/compose/ui/SystemSection.kt:52:3 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+
+> Task :react-native-screens:configureCMakeDebug[armeabi-v7a]
+> Task :react-native-worklets:configureCMakeDebug[armeabi-v7a]
+> Task :expo-dev-menu:compileDebugJavaWithJavac
+> Task :expo-dev-menu:bundleLibCompileToJarDebug
+> Task :react-native-screens:buildCMakeDebug[armeabi-v7a]
+> Task :expo-dev-menu:bundleLibRuntimeToJarDebug
+> Task :expo-dev-menu:processDebugJavaRes
+> Task :react-native-screens:configureCMakeDebug[x86]
+> Task :react-native-worklets:buildCMakeDebug[armeabi-v7a][worklets]
+> Task :expo-dev-launcher:compileDebugKotlin
+> Task :app:validateSigningDebug
+> Task :app:writeDebugAppMetadata
+> Task :app:writeDebugSigningConfigVersions
+> Task :react-native-worklets:configureCMakeDebug[x86]
+
+> Task :expo-dev-launcher:compileDebugKotlin
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/models/BranchViewModel.kt:80:31 'val runtimeVersion: String' is deprecated. Use 'runtime' field .
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/screens/BranchScreen.kt:59:9 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/screens/BranchScreen.kt:113:13 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/screens/HomeScreen.kt:53:5 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/screens/SettingsScreen.kt:345:11 'fun TextField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = ..., editable: Boolean = ..., cursorBrush: Brush = ..., textStyle: TextStyle = ..., textAlign: TextAlign = ..., lineHeight: TextUnit = ..., fontSize: TextUnit = ..., letterSpacing: TextUnit = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., singleLine: Boolean = ..., minLines: Int = ..., maxLines: Int = ..., keyboardActions: KeyboardActions = ..., keyboardOptions: KeyboardOptions = ..., visualTransformation: VisualTransformation = ..., interactionSource: MutableInteractionSource? = ..., textColor: Color = ..., content: @Composable() ComposableFunction1<TextFieldScope, Unit>): Unit' is deprecated. This will go to 2.0. Stateless TextFields in Compose do not work correctly in all languages and cause duplication characters and unexpected behaviors.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/ActionButton.kt:32:3 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/AppHeader.kt:98:7 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/AppLoadingErrorDialog.kt:35:26 'fun rememberDialogState(initiallyVisible: Boolean = ...): DialogState' is deprecated. This will go away in 2.0. Use Dialog from the com.composeunstyled package.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/AppLoadingErrorDialog.kt:55:3 'fun Dialog(state: DialogState, properties: DialogProperties = ..., onDismiss: () -> Unit = ..., content: @Composable() ComposableFunction1<DialogScope, Unit>): Unit' is deprecated. This will go away in 2.0. Use Dialog from the com.composeunstyled package.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/AppLoadingErrorDialog.kt:56:5 'fun DialogScope.Scrim(modifier: Modifier = ..., scrimColor: Color = ..., enter: EnterTransition = ..., exit: ExitTransition = ...): Unit' is deprecated. This will go away in 2.0. Use Dialog from the com.composeunstyled package.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/AppLoadingErrorDialog.kt:58:5 'fun DialogScope.DialogPanel(modifier: Modifier = ..., enter: EnterTransition = ..., exit: ExitTransition = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., content: @Composable() ComposableFunction0<Unit>): Unit' is deprecated. This will go away in 2.0. Use Dialog from the com.composeunstyled package.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/AppLoadingErrorDialog.kt:81:11 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/AppLoadingErrorDialog.kt:104:21 'fun rememberDialogState(initiallyVisible: Boolean = ...): DialogState' is deprecated. This will go away in 2.0. Use Dialog from the com.composeunstyled package.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/DevelopmentSession.kt:131:5 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/FetchDevelopmentServersButton.kt:27:5 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/RunningAppCard.kt:43:5 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/ScanQRCodeButton.kt:26:5 'fun Button(onClick: () -> Unit, enabled: Boolean = ..., shape: Shape = ..., backgroundColor: Color = ..., contentColor: Color = ..., contentPadding: PaddingValues = ..., borderColor: Color = ..., borderWidth: Dp = ..., modifier: Modifier = ..., role: Role = ..., indication: Indication? = ..., interactionSource: MutableInteractionSource? = ..., horizontalArrangement: Arrangement.Horizontal = ..., verticalAlignment: Alignment.Vertical = ..., content: @Composable() ComposableFunction1<RowScope, Unit>): Unit' is deprecated. Use UnstyledButton instead.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/compose/ui/ServerUrlInput.kt:62:5 'fun TextField(value: String, onValueChange: (String) -> Unit, modifier: Modifier = ..., editable: Boolean = ..., cursorBrush: Brush = ..., textStyle: TextStyle = ..., textAlign: TextAlign = ..., lineHeight: TextUnit = ..., fontSize: TextUnit = ..., letterSpacing: TextUnit = ..., fontWeight: FontWeight? = ..., fontFamily: FontFamily? = ..., singleLine: Boolean = ..., minLines: Int = ..., maxLines: Int = ..., keyboardActions: KeyboardActions = ..., keyboardOptions: KeyboardOptions = ..., visualTransformation: VisualTransformation = ..., interactionSource: MutableInteractionSource? = ..., textColor: Color = ..., content: @Composable() ComposableFunction1<TextFieldScope, Unit>): Unit' is deprecated. This will go to 2.0. Stateless TextFields in Compose do not work correctly in all languages and cause duplication characters and unexpected behaviors.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/launcher/DevLauncherActivity.kt:10:5 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/launcher/DevLauncherActivity.kt:24:5 'fun overridePendingTransition(p0: Int, p1: Int): Unit' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/launcher/DevLauncherRecentlyOpenedAppsRegistry.kt:33:47 Unchecked cast of 'MutableMap<Any?, Any?>' to 'MutableMap<String, Any>'.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/launcher/DevLauncherRecentlyOpenedAppsRegistry.kt:51:27 'fun getRawJson(): JSONObject' is deprecated. Prefer to use specific field getters.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/modules/DevLauncherModule.kt:14:29 'fun getRawJson(): JSONObject' is deprecated. Prefer to use specific field getters.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/react/DevLauncherBridgelessDevSupportManager.kt:44:38 This code uses error suppression for 'NOTHING_TO_OVERRIDE'. While it might compile and work, the compiler behavior is UNSPECIFIED and WILL NOT BE PRESERVED. Please report your use case to the Kotlin issue tracker instead: https://kotl.in/issue
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/debug/java/expo/modules/devlauncher/react/DevLauncherDevSupportManagerFactory.kt:16:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo-dev-launcher/android/src/main/java/expo/modules/devlauncher/DevLauncherPackage.kt:15:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+
+> Task :expo-dev-launcher:compileDebugJavaWithJavac
+> Task :expo-dev-launcher:bundleLibCompileToJarDebug
+> Task :expo-dev-launcher:bundleLibRuntimeToJarDebug
+> Task :react-native-screens:buildCMakeDebug[x86]
+> Task :expo-dev-launcher:processDebugJavaRes
+> Task :react-native-screens:configureCMakeDebug[x86_64]
+
+> Task :expo:compileDebugKotlin
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo/android/src/main/java/expo/modules/ExpoModulesPackage.kt:34:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:22:8 'class ReactInstanceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:102:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:102:43 'class ReactInstanceManager : Any' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo/android/src/main/java/expo/modules/ReactActivityDelegateWrapper.kt:103:21 'val reactInstanceManager: ReactInstanceManager' is deprecated. Deprecated in Java.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo/android/src/main/java/expo/modules/fetch/ExpoFetchModule.kt:33:39 'constructor(reactContext: ReactContext): ForwardingCookieHandler' is deprecated. Use the default constructor.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo/android/src/main/java/expo/modules/fetch/NativeResponse.kt:44:16 This declaration overrides a deprecated member but is not marked as deprecated itself. Add the '@Deprecated' annotation or suppress the diagnostic.
+w: file:///home/runner/work/DraBornPark/DraBornPark/node_modules/expo/android/src/main/java/expo/modules/fetch/NativeResponse.kt:46:11 'fun deallocate(): Unit' is deprecated. Use sharedObjectDidRelease() instead.
+
+> Task :expo:compileDebugJavaWithJavac
+> Task :expo:bundleLibCompileToJarDebug
+> Task :expo:bundleLibRuntimeToJarDebug
+> Task :expo:processDebugJavaRes
+> Task :app:compileDebugKotlin
+> Task :app:compileDebugJavaWithJavac
+> Task :app:transformDebugClassesWithAsm
+> Task :app:mergeLibDexDebug
+> Task :app:dexBuilderDebug
+> Task :app:processDebugJavaRes
+> Task :app:mergeDebugGlobalSynthetics
+> Task :app:mergeProjectDexDebug
+> Task :app:mergeDebugJavaResource
+> Task :react-native-worklets:buildCMakeDebug[x86][worklets]
+> Task :react-native-screens:buildCMakeDebug[x86_64]
+> Task :react-native-screens:mergeDebugJniLibFolders
+> Task :react-native-screens:mergeDebugNativeLibs
+> Task :react-native-screens:copyDebugJniLibsProjectOnly
+> Task :react-native-worklets:configureCMakeDebug[x86_64]
+> Task :react-native-worklets:buildCMakeDebug[x86_64][worklets]
+> Task :react-native-worklets:externalNativeBuildDebug
+> Task :react-native-worklets:generateJsonModelDebug
+> Task :react-native-worklets:prefabDebugConfigurePackage
+> Task :react-native-worklets:prefabDebugPackage
+> Task :react-native-worklets:mergeDebugJniLibFolders
+> Task :react-native-worklets:mergeDebugNativeLibs
+> Task :react-native-worklets:copyDebugJniLibsProjectOnly
+> Task :expo-modules-core:configureCMakeDebug[arm64-v8a]
+> Task :react-native-reanimated:configureCMakeDebug[arm64-v8a]
+> Task :react-native-reanimated:configureCMakeDebug[armeabi-v7a]
+> Task :react-native-reanimated:configureCMakeDebug[x86]
+> Task :react-native-reanimated:configureCMakeDebug[x86_64]
+> Task :react-native-reanimated:generateJsonModelDebug
+> Task :react-native-reanimated:prefabDebugConfigurePackage
+> Task :expo-modules-core:buildCMakeDebug[arm64-v8a]
+> Task :react-native-reanimated:buildCMakeDebug[arm64-v8a][reanimated]
+> Task :app:configureCMakeDebug[arm64-v8a]
+> Task :react-native-gesture-handler:configureCMakeDebug[arm64-v8a]
+
+> Task :expo-modules-core:buildCMakeDebug[arm64-v8a]
+C/C++: ninja: Entering directory `/home/runner/work/DraBornPark/DraBornPark/node_modules/expo-modules-core/android/.cxx/Debug/4v1g6z13/arm64-v8a'
+C/C++: /home/runner/work/DraBornPark/DraBornPark/node_modules/expo-modules-core/android/src/main/cpp/fabric/ExpoComponentDescriptorFactory.cpp:17:5: warning: 'RawPropsParser' is deprecated [-Wdeprecated-declarations]
+C/C++:    17 |     react::RawPropsParser(/*useRawPropsJsiValue=*/true)
+C/C++:       |     ^
+C/C++: /home/runner/work/DraBornPark/DraBornPark/node_modules/react-native/ReactCommon/react/renderer/core/RawPropsParser.h:31:5: note: 'RawPropsParser' has been explicitly marked deprecated here
+C/C++:    31 |   [[deprecated]] explicit RawPropsParser(bool /* ignored */) : RawPropsParser() {}
+C/C++:       |     ^
+C/C++: 1 warning generated.
+
+> Task :expo-modules-core:configureCMakeDebug[armeabi-v7a]
+> Task :expo-modules-core:buildCMakeDebug[armeabi-v7a]
+C/C++: ninja: Entering directory `/home/runner/work/DraBornPark/DraBornPark/node_modules/expo-modules-core/android/.cxx/Debug/4v1g6z13/armeabi-v7a'
+C/C++: /home/runner/work/DraBornPark/DraBornPark/node_modules/expo-modules-core/android/src/main/cpp/fabric/ExpoComponentDescriptorFactory.cpp:17:5: warning: 'RawPropsParser' is deprecated [-Wdeprecated-declarations]
+C/C++:    17 |     react::RawPropsParser(/*useRawPropsJsiValue=*/true)
+C/C++:       |     ^
+C/C++: /home/runner/work/DraBornPark/DraBornPark/node_modules/react-native/ReactCommon/react/renderer/core/RawPropsParser.h:31:5: note: 'RawPropsParser' has been explicitly marked deprecated here
+C/C++:    31 |   [[deprecated]] explicit RawPropsParser(bool /* ignored */) : RawPropsParser() {}
+C/C++:       |     ^
+C/C++: 1 warning generated.
+
+> Task :expo-modules-core:configureCMakeDebug[x86]
+> Task :expo-modules-core:buildCMakeDebug[x86]
+C/C++: ninja: Entering directory `/home/runner/work/DraBornPark/DraBornPark/node_modules/expo-modules-core/android/.cxx/Debug/4v1g6z13/x86'
+C/C++: /home/runner/work/DraBornPark/DraBornPark/node_modules/expo-modules-core/android/src/main/cpp/fabric/ExpoComponentDescriptorFactory.cpp:17:5: warning: 'RawPropsParser' is deprecated [-Wdeprecated-declarations]
+C/C++:    17 |     react::RawPropsParser(/*useRawPropsJsiValue=*/true)
+C/C++:       |     ^
+C/C++: /home/runner/work/DraBornPark/DraBornPark/node_modules/react-native/ReactCommon/react/renderer/core/RawPropsParser.h:31:5: note: 'RawPropsParser' has been explicitly marked deprecated here
+C/C++:    31 |   [[deprecated]] explicit RawPropsParser(bool /* ignored */) : RawPropsParser() {}
+C/C++:       |     ^
+C/C++: 1 warning generated.
+
+> Task :expo-modules-core:configureCMakeDebug[x86_64]
+> Task :react-native-reanimated:buildCMakeDebug[armeabi-v7a][reanimated]
+> Task :expo-modules-core:buildCMakeDebug[x86_64]
+C/C++: ninja: Entering directory `/home/runner/work/DraBornPark/DraBornPark/node_modules/expo-modules-core/android/.cxx/Debug/4v1g6z13/x86_64'
+C/C++: /home/runner/work/DraBornPark/DraBornPark/node_modules/expo-modules-core/android/src/main/cpp/fabric/ExpoComponentDescriptorFactory.cpp:17:5: warning: 'RawPropsParser' is deprecated [-Wdeprecated-declarations]
+C/C++:    17 |     react::RawPropsParser(/*useRawPropsJsiValue=*/true)
+C/C++:       |     ^
+C/C++: /home/runner/work/DraBornPark/DraBornPark/node_modules/react-native/ReactCommon/react/renderer/core/RawPropsParser.h:31:5: note: 'RawPropsParser' has been explicitly marked deprecated here
+C/C++:    31 |   [[deprecated]] explicit RawPropsParser(bool /* ignored */) : RawPropsParser() {}
+C/C++:       |     ^
+C/C++: 1 warning generated.
+
+> Task :expo-modules-core:mergeDebugNativeLibs
+> Task :expo-modules-core:copyDebugJniLibsProjectOnly
+> Task :react-native-reanimated:buildCMakeDebug[x86][reanimated]
+> Task :react-native-reanimated:buildCMakeDebug[x86_64][reanimated]
+> Task :react-native-reanimated:externalNativeBuildDebug
+> Task :react-native-reanimated:prefabDebugPackage
+> Task :react-native-reanimated:mergeDebugNativeLibs
+> Task :react-native-reanimated:copyDebugJniLibsProjectOnly
+> Task :react-native-gesture-handler:buildCMakeDebug[arm64-v8a]
+> Task :react-native-gesture-handler:configureCMakeDebug[armeabi-v7a]
+> Task :react-native-gesture-handler:buildCMakeDebug[armeabi-v7a]
+> Task :react-native-gesture-handler:configureCMakeDebug[x86]
+> Task :app:buildCMakeDebug[arm64-v8a]
+> Task :react-native-gesture-handler:buildCMakeDebug[x86]
+> Task :react-native-gesture-handler:configureCMakeDebug[x86_64]
+> Task :react-native-gesture-handler:buildCMakeDebug[x86_64]
+> Task :react-native-gesture-handler:mergeDebugNativeLibs
+> Task :react-native-gesture-handler:copyDebugJniLibsProjectOnly
+> Task :app:configureCMakeDebug[armeabi-v7a]
+> Task :app:buildCMakeDebug[armeabi-v7a]
+> Task :app:configureCMakeDebug[x86]
+> Task :app:buildCMakeDebug[x86]
+> Task :app:configureCMakeDebug[x86_64]
+> Task :app:buildCMakeDebug[x86_64]
+> Task :app:mergeDebugNativeLibs
+> Task :app:stripDebugDebugSymbols
+> Task :app:packageDebug
+> Task :app:createDebugApkListingFileRedirect
+> Task :app:assembleDebug
+gradle/actions: Writing build results to /home/runner/work/_temp/.gradle-actions/build-results/android-1787400363472.json
+
+[Incubating] Problems report is available at: file:///home/runner/work/DraBornPark/DraBornPark/android/build/reports/problems/problems-report.html
+
+Deprecated Gradle features were used in this build, making it incompatible with Gradle 10.
+
+You can use '--warning-mode all' to show the individual deprecation warnings and determine if they come from your own scripts or plugins.
+
+For more on this, please refer to https://docs.gradle.org/9.3.1/userguide/command_line_interface.html#sec:command_line_warnings in the Gradle documentation.
+
+BUILD SUCCESSFUL in 17m 32s
+531 actionable tasks: 531 executed
+package: name='com.draborneagle.drabornpark' versionCode='20' versionName='0.5.4' platformBuildVersionName='16' platformBuildVersionCode='36' compileSdkVersion='36' compileSdkVersionCodename='16'
+Verifies
+Verified using v1 scheme (JAR signing): false
+Verified using v2 scheme (APK Signature Scheme v2): true
+Verified using v3 scheme (APK Signature Scheme v3): false
+Verified using v3.1 scheme (APK Signature Scheme v3.1): false
+Verified using v3.2 scheme (APK Signature Scheme v3.2): false
+Verified using v4 scheme (APK Signature Scheme v4): false
+Verified for SourceStamp: false
+Number of signers: 1
 
