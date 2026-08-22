@@ -1,0 +1,32 @@
+name: Inspect DraBornPark v0.5.4 Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/inspect-v054.yml
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - name: Capture release workflow status
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run list --workflow release-v054.yml --limit 10 --json databaseId,status,conclusion,headSha,createdAt,updatedAt,url,event > .github/V054_RUN_STATUS.json
+          cat .github/V054_RUN_STATUS.json
+      - name: Commit status snapshot
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/V054_RUN_STATUS.json
+          git diff --cached --quiet || git commit -m "ci: snapshot v0.5.4 release status"
+          git push origin HEAD:main
