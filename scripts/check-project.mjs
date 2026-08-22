@@ -1,8 +1,8 @@
 import fs from 'node:fs';import path from 'node:path';
 const root=process.cwd();const read=p=>fs.readFileSync(path.join(root,p),'utf8');const exists=p=>fs.existsSync(path.join(root,p));const walk=d=>!fs.existsSync(d)?[]:fs.readdirSync(d,{withFileTypes:true}).flatMap(e=>{const f=path.join(d,e.name);return e.isDirectory()?walk(f):[f]});const fail=[];
 const pkg=JSON.parse(read('package.json'));const app=JSON.parse(read('app.json'));const repoVersion=read('.github/VERSION').trim();
-if(pkg.version!=='0.5.6'||app.expo?.version!=='0.5.6'||repoVersion!=='0.5.6')fail.push('v0.5.6 version coherence failed');
-if(app.expo?.android?.versionCode!==22)fail.push('Android versionCode must be 22');
+if(pkg.version!=='1.0.0'||app.expo?.version!=='1.0.0'||repoVersion!=='1.0.0')fail.push('v1.0 version coherence failed');
+if(app.expo?.android?.versionCode!==1)fail.push('Android versionCode must be 1');
 if(pkg.dependencies?.['expo-iap']!=='5.3.2')fail.push('expo-iap 5.3.2 required');
 if(pkg.dependencies?.['expo-build-properties']!=='~57.0.8')fail.push('expo-build-properties ~57.0.8 required');
 const required=['app/legal.tsx','app/account.tsx','app/tags.tsx','app/factory.tsx','app/hub.tsx','app/notifications.tsx','app/support/[id].tsx','src/components/ColorPopup.tsx','src/components/SupportCenterPanel.tsx','src/components/DraBornParkPlusPanel.tsx','src/lib/supabase-v056.ts','supabase/functions/dkd-drabornpark-admin-support-push/index.ts','supabase/functions/dkd-drabornpark-google-play/index.ts','supabase/migrations/20260822113456_dkd_drabornpark_v054_support_plus_billing.sql','supabase/migrations/20260822183736_dkd_drabornpark_v055_tag_transfer_pgcrypto_fix.sql','supabase/migrations/20260822183752_dkd_drabornpark_v055_tag_transfer_acl_hardening.sql','supabase/migrations/20260822193200_dkd_drabornpark_v055_realtime_vehicle_refresh.sql'];for(const f of required)if(!exists(f))fail.push('Required file missing: '+f);
@@ -10,12 +10,12 @@ const retired=['.github/v054-source','.github/v054-payload','scripts/release-v05
 const routes=walk(path.join(root,'app')).filter(f=>f.endsWith('.tsx'));for(const f of routes)if(!/export\s+default\s+/.test(fs.readFileSync(f,'utf8')))fail.push('Route has no default export: '+path.relative(root,f));
 const chrome=read('src/components/AppChrome.tsx');for(const m of ["label:'Ana Sayfa'","label:'Park Alanı'","label:'Bildirimler'"])if(!chrome.includes(m))fail.push('Bottom navigation marker missing: '+m);
 const auth=read('app/auth.tsx');for(const m of ['TELEFON NUMARASI *','phone_e164','normalizedPhone'])if(!auth.includes(m))fail.push('Signup phone marker missing: '+m);
-const hub=read('app/hub.tsx');if(hub.includes("title:'Yasal & Gizlilik'"))fail.push('Yasal & Gizlilik tile must be removed in v0.5.6');for(const m of ['adminOnly:true','drabornpark_is_admin','v0.5.6'])if(!hub.includes(m))fail.push('Hub v0.5.6 marker missing: '+m);
-const legal=read('app/legal.tsx');for(const m of ['GOOGLE PLAY UYUMLU ŞEFFAFLIK','Yaklaşık / kesin konum','Vercel / web hosting','23 Ağustos 2026','v0.5.6'])if(!legal.includes(m))fail.push('Privacy v0.5.6 marker missing: '+m);
+const hub=read('app/hub.tsx');if(hub.includes("title:'Yasal & Gizlilik'"))fail.push('Yasal & Gizlilik tile must be removed in v0.5.6');for(const m of ['adminOnly:true','drabornpark_is_admin','v1.0'])if(!hub.includes(m))fail.push('Hub v1.0 marker missing: '+m);
+const legal=read('app/legal.tsx');for(const m of ['GOOGLE PLAY UYUMLU ŞEFFAFLIK','Yaklaşık / kesin konum','Vercel / web hosting','23 Ağustos 2026','v1.0'])if(!legal.includes(m))fail.push('Privacy v1.0 marker missing: '+m);
 const factory=read('app/factory.tsx');for(const m of ['drabornpark_is_admin','if(!admin)'])if(!factory.includes(m))fail.push('Factory admin guard missing: '+m);
 const wrapper=read('src/lib/supabase-v056.ts');for(const m of ["startsWith('dkd_home_sync_')",'Date.now()','dkd_home_channel_sequence'])if(!wrapper.includes(m))fail.push('Realtime v0.5.6 guard missing: '+m);
 const tsconfig=read('tsconfig.json');if(!tsconfig.includes('"@/src/lib/supabase": ["./src/lib/supabase-v056"]'))fail.push('Supabase v0.5.6 path alias missing');
 const home=read('app/index.tsx');for(const m of ['dkd_home_sync_','•CANLI•','ARACINIZI KORUYUN'])if(!home.includes(m))fail.push('Home marker missing: '+m);
-const ci=read('.github/workflows/ci.yml');for(const m of ['DraBornPark-v0.5.6-vc22-developer-apk',"versionCode='22'","versionName='0.5.6'","if: github.event_name == 'workflow_dispatch'"])if(!ci.includes(m))fail.push('Permanent CI v0.5.6 marker missing: '+m);
+const ci=read('.github/workflows/ci.yml');for(const m of ['DraBornPark-v1.0-vc1-developer-apk',"versionCode='1'","versionName='1.0.0'","if: github.event_name == 'workflow_dispatch'"])if(!ci.includes(m))fail.push('Permanent CI v1.0 marker missing: '+m);
 if(fail.length){console.error('DraBornPark integrity check failed:\n- '+fail.join('\n- '));process.exit(1)}
-console.log('DraBornPark integrity OK • v0.5.6 • Android vc22 • Google Play privacy disclosures • admin-only factory • Realtime hot-refresh guard • APK manual-only.');
+console.log('DraBornPark integrity OK • v1.0 • Android vc1 • Google Play release candidate • custom icon/splash • admin-only factory.');

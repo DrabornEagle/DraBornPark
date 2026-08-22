@@ -2,7 +2,7 @@
   "expo": {
     "name": "DraBornPark",
     "slug": "drabornpark",
-    "version": "0.5.6",
+    "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "drabornpark",
     "userInterfaceStyle": "dark",
@@ -60,13 +60,19 @@
     },
     "android": {
       "package": "com.draborneagle.drabornpark",
-      "versionCode": 22,
+      "versionCode": 1,
       "backgroundColor": "#050816",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
         "POST_NOTIFICATIONS"
-      ]
+      ],
+      "icon": "./assets/branding/icon.png",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/branding/adaptive-icon.png",
+        "monochromeImage": "./assets/branding/monochrome-icon.png",
+        "backgroundColor": "#050816"
+      }
     },
     "ios": {
       "bundleIdentifier": "com.draborneagle.drabornpark",
@@ -74,6 +80,12 @@
     },
     "web": {
       "output": "single"
+    },
+    "icon": "./assets/branding/icon.png",
+    "splash": {
+      "image": "./assets/branding/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#050816"
     }
   }
 }
