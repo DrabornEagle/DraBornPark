@@ -10,9 +10,16 @@
     "plugins": [
       "expo-router",
       [
-        "expo-dev-client",
+        "expo-splash-screen",
         {
-          "launchMode": "most-recent"
+          "backgroundColor": "#050816",
+          "image": "./assets/branding/splash-icon.png",
+          "imageWidth": 152,
+          "resizeMode": "contain",
+          "dark": {
+            "backgroundColor": "#050816",
+            "image": "./assets/branding/splash-icon.png"
+          }
         }
       ],
       [
@@ -67,6 +74,10 @@
         "ACCESS_FINE_LOCATION",
         "POST_NOTIFICATIONS"
       ],
+      "blockedPermissions": [
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "android.permission.RECORD_AUDIO"
+      ],
       "icon": "./assets/branding/icon.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/branding/adaptive-icon.png",
@@ -81,11 +92,6 @@
     "web": {
       "output": "single"
     },
-    "icon": "./assets/branding/icon.png",
-    "splash": {
-      "image": "./assets/branding/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#050816"
-    }
+    "icon": "./assets/branding/icon.png"
   }
 }
