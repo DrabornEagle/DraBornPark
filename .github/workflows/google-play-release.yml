@@ -80,14 +80,6 @@ jobs:
           set -euo pipefail
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           test -f "$MANIFEST"
-          if grep -R -F "android.permission.SYSTEM_ALERT_WINDOW" android/app/src/main; then
-            echo "SYSTEM_ALERT_WINDOW unexpectedly present" >&2
-            exit 1
-          fi
-          if grep -R -F "android.permission.RECORD_AUDIO" android/app/src/main; then
-            echo "RECORD_AUDIO unexpectedly present" >&2
-            exit 1
-          fi
           if grep -R -F "exp+drabornpark" android/app/src/main; then
             echo "Development exp+drabornpark scheme unexpectedly present" >&2
             exit 1
@@ -172,9 +164,9 @@ jobs:
           "$AAPT" dump badging "$APK" | grep "package: name='com.draborneagle.drabornpark'"
           "$AAPT" dump badging "$APK" | grep "versionCode='1'"
           "$AAPT" dump badging "$APK" | grep "versionName='1.0.0'"
-          if "$AAPT" dump permissions "$APK" | grep -F "android.permission.SYSTEM_ALERT_WINDOW"; then exit 1; fi
-          if "$AAPT" dump permissions "$APK" | grep -F "android.permission.RECORD_AUDIO"; then exit 1; fi
-          if "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F "exp+drabornpark"; then exit 1; fi
+          if "$AAPT" dump permissions "$APK" | grep -F "android.permission.SYSTEM_ALERT_WINDOW"; then echo "SYSTEM_ALERT_WINDOW present in final APK" >&2; exit 1; fi
+          if "$AAPT" dump permissions "$APK" | grep -F "android.permission.RECORD_AUDIO"; then echo "RECORD_AUDIO present in final APK" >&2; exit 1; fi
+          if "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F "exp+drabornpark"; then echo "exp+drabornpark present in final APK" >&2; exit 1; fi
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/apk-signature.txt
           jarsigner -verify -verbose -certs "$AAB" > /tmp/aab-signature.txt
           grep -q "Verified" /tmp/apk-signature.txt
@@ -195,9 +187,9 @@ jobs:
           Android versionCode: 1
           Package: com.draborneagle.drabornpark
           expo-dev-client: removed
-          SYSTEM_ALERT_WINDOW: blocked and verified absent
-          RECORD_AUDIO: blocked and verified absent
-          exp+drabornpark development scheme: verified absent
+          SYSTEM_ALERT_WINDOW: verified absent from final APK
+          RECORD_AUDIO: verified absent from final APK
+          exp+drabornpark development scheme: verified absent from final APK
           Native splash: DraBornPark branded splash
           In-app startup: animated Loading screen
           Signing: persistent Google Play upload key backup generated with this build
