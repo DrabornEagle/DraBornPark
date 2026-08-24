@@ -2,132 +2,71 @@ name: DraBornPark Google Play Release
 
 on:
   workflow_dispatch:
-  push:
-    branches: [main]
-    paths:
-      - '.github/RELEASE_V100_TRIGGER'
-  pull_request:
-    branches: [main]
-    paths:
-      - '.github/RELEASE_V100_TRIGGER'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: drabornpark-google-play-v100
+  group: drabornpark-google-play-release
   cancel-in-progress: false
+
+env:
+  EXPECTED_UPLOAD_CERT_SHA256: '95:4C:F9:A8:E0:DB:09:46:A2:63:18:D6:95:7B:DF:0B:72:2D:51:7B:40:67:67:F8:3E:4C:37:BE:84:67:6B:C6'
 
 jobs:
   build-release:
     runs-on: ubuntu-24.04
     timeout-minutes: 75
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Setup Node 22
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 22
-
-      - name: Setup Java 17
-        uses: actions/setup-java@v5
+      - uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '17'
-
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-
+      - uses: gradle/actions/setup-gradle@v4
       - name: Install production dependencies
-        env:
-          CI: '1'
-        run: |
-          npm install --no-audit --no-fund
-          npx expo install expo-splash-screen
-
+        run: npm install --no-audit --no-fund
       - name: Verify source policy
         run: |
           npm run check
           npx expo install --check
           npm run typecheck
-          git diff --check
           ! grep -q 'expo-dev-client' package.json
           ! grep -q 'expo-dev-client' app.json
-
-      - name: Persist dependency lockfile
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          if ! git diff --cached --quiet; then
-            git commit -m "release: lock production dependencies for DraBornPark v1.0"
-            git push origin HEAD:main
-          fi
-
       - name: Generate clean Android production project
         env:
           CI: '1'
         run: npx expo prebuild --platform android --clean --no-install
-
-      - name: Verify generated production manifest
+      - name: Restore permanent Google Play upload key
         shell: bash
+        env:
+          KEYSTORE_B64: ${{ secrets.DRABORNPARK_UPLOAD_KEYSTORE_B64 }}
+          STORE_PASS: ${{ secrets.DRABORNPARK_UPLOAD_STORE_PASSWORD }}
+          KEY_PASS: ${{ secrets.DRABORNPARK_UPLOAD_KEY_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.DRABORNPARK_UPLOAD_KEY_ALIAS }}
         run: |
           set -euo pipefail
-          MANIFEST="android/app/src/main/AndroidManifest.xml"
-          test -f "$MANIFEST"
-          if grep -R -F "exp+drabornpark" android/app/src/main; then
-            echo "Development exp+drabornpark scheme unexpectedly present" >&2
-            exit 1
-          fi
-          if grep -R -F "expo.modules.devclient" android/app/src/main; then
-            echo "Expo dev client native marker unexpectedly present" >&2
-            exit 1
-          fi
-
-      - name: Create persistent Google Play upload key
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p signing-backup
-          STORE_PASS="$(openssl rand -hex 32)"
-          KEY_PASS="$STORE_PASS"
-          KEY_ALIAS="drabornpark_play_upload_v1"
-          KEYSTORE="$GITHUB_WORKSPACE/signing-backup/DraBornPark-Play-Upload-Key-v1.jks"
-          echo "::add-mask::$STORE_PASS"
-          echo "::add-mask::$KEY_PASS"
-          keytool -genkeypair -v -storetype JKS \
-            -keystore "$KEYSTORE" \
-            -storepass "$STORE_PASS" \
-            -keypass "$KEY_PASS" \
-            -alias "$KEY_ALIAS" \
-            -keyalg RSA -keysize 4096 -validity 10000 \
-            -dname "CN=DraBornPark Google Play Upload, OU=Android Release, O=DraBornPark, L=Ankara, ST=Ankara, C=TR"
-          {
-            echo "DraBornPark Google Play upload signing backup"
-            echo "Keep this file private and permanent. All future non-Play re-signable release builds must reuse this key."
-            echo "Alias: $KEY_ALIAS"
-            echo "Store password: $STORE_PASS"
-            echo "Key password: $KEY_PASS"
-            echo "Package: com.draborneagle.drabornpark"
-            echo "Initial release: 1.0.0 / versionCode 1"
-          } > signing-backup/SIGNING_CREDENTIALS.txt
-          keytool -list -v -keystore "$KEYSTORE" -storepass "$STORE_PASS" -alias "$KEY_ALIAS" > signing-backup/CERTIFICATE_DETAILS.txt
+          test -n "$KEYSTORE_B64" || { echo "Permanent upload keystore secret is missing" >&2; exit 1; }
+          test -n "$STORE_PASS" || { echo "Upload keystore password secret is missing" >&2; exit 1; }
+          test -n "$KEY_PASS" || { echo "Upload key password secret is missing" >&2; exit 1; }
+          test -n "$KEY_ALIAS" || { echo "Upload key alias secret is missing" >&2; exit 1; }
+          mkdir -p "$RUNNER_TEMP/drabornpark-signing"
+          KEYSTORE="$RUNNER_TEMP/drabornpark-signing/upload.jks"
+          printf '%s' "$KEYSTORE_B64" | base64 -d > "$KEYSTORE"
+          CERT_SHA="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$STORE_PASS" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n1)"
+          test "$CERT_SHA" = "$EXPECTED_UPLOAD_CERT_SHA256" || { echo "Wrong signing key fingerprint: $CERT_SHA" >&2; exit 1; }
           echo "DRABORNPARK_KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
           echo "DRABORNPARK_STORE_PASS=$STORE_PASS" >> "$GITHUB_ENV"
           echo "DRABORNPARK_KEY_PASS=$KEY_PASS" >> "$GITHUB_ENV"
           echo "DRABORNPARK_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
-
       - name: Configure release signing
         shell: bash
         run: |
           cat >> android/app/build.gradle <<'GRADLE'
 
-          // DraBornPark Google Play production signing.
           android {
               signingConfigs {
                   drabornparkPlayRelease {
@@ -137,76 +76,40 @@ jobs:
                       keyPassword System.getenv("DRABORNPARK_KEY_PASS")
                   }
               }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.drabornparkPlayRelease
-                  }
-              }
+              buildTypes { release { signingConfig signingConfigs.drabornparkPlayRelease } }
           }
           GRADLE
-
       - name: Build signed production APK and AAB
         working-directory: android
         env:
           CI: '1'
         run: ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon
-
-      - name: Verify final APK manifest and signatures
+      - name: Verify final production package
         shell: bash
         run: |
           set -euo pipefail
           APK="android/app/build/outputs/apk/release/app-release.apk"
           AAB="android/app/build/outputs/bundle/release/app-release.aab"
-          test -f "$APK"
-          test -f "$AAB"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -f "$APK" && test -f "$AAB"
           "$AAPT" dump badging "$APK" | grep "package: name='com.draborneagle.drabornpark'"
-          "$AAPT" dump badging "$APK" | grep "versionCode='1'"
-          "$AAPT" dump badging "$APK" | grep "versionName='1.0.0'"
-          if "$AAPT" dump permissions "$APK" | grep -F "android.permission.SYSTEM_ALERT_WINDOW"; then echo "SYSTEM_ALERT_WINDOW present in final APK" >&2; exit 1; fi
-          if "$AAPT" dump permissions "$APK" | grep -F "android.permission.RECORD_AUDIO"; then echo "RECORD_AUDIO present in final APK" >&2; exit 1; fi
-          if "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F "exp+drabornpark"; then echo "exp+drabornpark present in final APK" >&2; exit 1; fi
+          "$AAPT" dump badging "$APK" | grep "versionCode='2'"
+          "$AAPT" dump badging "$APK" | grep "versionName='1.0.1'"
+          if "$AAPT" dump permissions "$APK" | grep -F "android.permission.SYSTEM_ALERT_WINDOW"; then exit 1; fi
+          if "$AAPT" dump permissions "$APK" | grep -F "android.permission.RECORD_AUDIO"; then exit 1; fi
+          if "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F "exp+drabornpark"; then exit 1; fi
           "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/apk-signature.txt
+          grep -F "$EXPECTED_UPLOAD_CERT_SHA256" /tmp/apk-signature.txt
           jarsigner -verify -verbose -certs "$AAB" > /tmp/aab-signature.txt
-          grep -q "Verified" /tmp/apk-signature.txt
-
-      - name: Prepare release outputs
-        shell: bash
+      - name: Prepare v1.0.1 outputs
         run: |
-          set -euo pipefail
           mkdir -p release-output
-          cp android/app/build/outputs/apk/release/app-release.apk release-output/DraBornPark-v1.0-vc1-GooglePlay-release.apk
-          cp android/app/build/outputs/bundle/release/app-release.aab release-output/DraBornPark-v1.0-vc1-GooglePlay-release.aab
-          sha256sum release-output/*.apk release-output/*.aab > release-output/SHA256SUMS.txt
-          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          "$APKSIGNER" verify --print-certs release-output/DraBornPark-v1.0-vc1-GooglePlay-release.apk > release-output/SIGNATURE.txt
-          cat > release-output/BUILD_INFO.txt <<'EOF'
-          DraBornPark v1.0 Google Play production release
-          Version name: 1.0.0
-          Android versionCode: 1
-          Package: com.draborneagle.drabornpark
-          expo-dev-client: removed
-          SYSTEM_ALERT_WINDOW: verified absent from final APK
-          RECORD_AUDIO: verified absent from final APK
-          exp+drabornpark development scheme: verified absent from final APK
-          Native splash: DraBornPark branded splash
-          In-app startup: animated Loading screen
-          Signing: persistent Google Play upload key backup generated with this build
-          EOF
-
-      - name: Upload signed release
-        uses: actions/upload-artifact@v4
+          cp android/app/build/outputs/apk/release/app-release.apk release-output/DraBornPark-v1.0.1-vc2-GooglePlay-release.apk
+          cp android/app/build/outputs/bundle/release/app-release.aab release-output/DraBornPark-v1.0.1-vc2-GooglePlay-release.aab
+          sha256sum release-output/* > release-output/SHA256SUMS.txt
+      - uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v1.0-vc1-GooglePlay-signed-release
+          name: DraBornPark-v1.0.1-vc2-GooglePlay-signed-release
           path: release-output/
-          if-no-files-found: error
           retention-days: 30
-
-      - name: Upload private signing backup
-        uses: actions/upload-artifact@v4
-        with:
-          name: DraBornPark-GooglePlay-signing-backup-v1
-          path: signing-backup/
-          if-no-files-found: error
-          retention-days: 1
