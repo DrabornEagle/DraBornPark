@@ -1,8 +1,8 @@
 import fs from 'node:fs';import path from 'node:path';
 const root=process.cwd();const read=dkd_path=>fs.readFileSync(path.join(root,dkd_path),'utf8');const exists=dkd_path=>fs.existsSync(path.join(root,dkd_path));const fail=[];
 const pkg=JSON.parse(read('package.json'));const app=JSON.parse(read('app.json'));const repoVersion=read('.github/VERSION').trim();
-if(pkg.version!=='1.0.4'||app.expo?.version!=='1.0.4'||repoVersion!=='1.0.4')fail.push('v1.0.4 version coherence failed');
-if(app.expo?.android?.versionCode!==4)fail.push('Android versionCode must be 4');
+if(pkg.version!=='1.0.5'||app.expo?.version!=='1.0.5'||repoVersion!=='1.0.5')fail.push('v1.0.5 version coherence failed');
+if(app.expo?.android?.versionCode!==5)fail.push('Android versionCode must be 5');
 if(pkg.dependencies?.['expo-dev-client'])fail.push('expo-dev-client must not exist in production dependencies');
 if((app.expo?.plugins??[]).some(dkd_plugin=>Array.isArray(dkd_plugin)?dkd_plugin[0]==='expo-dev-client':dkd_plugin==='expo-dev-client'))fail.push('expo-dev-client production plugin must not exist');
 for(const dkd_dep of ['expo-clipboard','react-native-qrcode-svg','react-native-svg'])if(!pkg.dependencies?.[dkd_dep])fail.push('Required dependency missing: '+dkd_dep);
@@ -11,18 +11,18 @@ if(app.expo?.scheme!=='drabornpark')fail.push('Production scheme must be draborn
 const filters=app.expo?.android?.intentFilters??[];
 const hasTagLink=filters.some(dkd_filter=>dkd_filter?.action==='VIEW'&&dkd_filter?.autoVerify===true&&(dkd_filter?.data??[]).some(dkd_data=>dkd_data?.scheme==='https'&&dkd_data?.host==='www.draborneagle.com'&&dkd_data?.pathPrefix==='/DraBornPark/tag/'));
 const hasLegacyLink=filters.some(dkd_filter=>(dkd_filter?.data??[]).some(dkd_data=>dkd_data?.scheme==='https'&&dkd_data?.host==='www.draborneagle.com'&&dkd_data?.pathPrefix==='/DraBornPark/t/'));
-if(!hasTagLink)fail.push('Android App Link /DraBornPark/tag/ missing');if(!hasLegacyLink)fail.push('Legacy /DraBornPark/t/ App Link missing');
+if(!hasTagLink)fail.push('Android App Link /DraBornPark/tag/ missing');if(hasLegacyLink)fail.push('Legacy /DraBornPark/t/ App Link must not be advertised in v1.0.5');
 for(const dkd_asset of ['assets/branding/icon.png','assets/branding/adaptive-icon.png','assets/branding/splash-icon.png'])if(!exists(dkd_asset))fail.push('Generated brand asset missing: '+dkd_asset);
 for(const dkd_part of ['assets/branding/v101/part01.b64','assets/branding/v101/part02a.b64','assets/branding/v101/part02b.b64','assets/branding/v101/part03.b64'])if(!exists(dkd_part))fail.push('Brand source payload missing: '+dkd_part);
-const required=['app/_layout.tsx','app/DraBornPark/t/[token].tsx','app/DraBornPark/tag/[slug].tsx','app/activate-token/[token].tsx','src/components/DkdStartupSplash.tsx','scripts/materialize-v101-brand.mjs','supabase/migrations/20260824121000_dkd_drabornpark_v101_public_tag_links.sql','supabase/migrations/20260824160000_dkd_drabornpark_v103_factory_editing.sql','supabase/migrations/20260824180000_dkd_drabornpark_v104_short_public_links.sql','supabase/migrations/20260824181000_dkd_drabornpark_v104_activate_short_slug.sql','app/legal.tsx','app/account.tsx','app/tags.tsx','app/factory.tsx','app/hub.tsx','app/notifications.tsx','src/lib/supabase-v056.ts'];for(const dkd_file of required)if(!exists(dkd_file))fail.push('Required file missing: '+dkd_file);
+const required=['app/_layout.tsx','app/DraBornPark/t/[token].tsx','app/DraBornPark/tag/[slug].tsx','app/activate-token/[token].tsx','src/components/DkdStartupSplash.tsx','scripts/materialize-v101-brand.mjs','supabase/migrations/20260824121000_dkd_drabornpark_v101_public_tag_links.sql','supabase/migrations/20260824160000_dkd_drabornpark_v103_factory_editing.sql','supabase/migrations/20260824180000_dkd_drabornpark_v104_short_public_links.sql','supabase/migrations/20260824181000_dkd_drabornpark_v104_activate_short_slug.sql','supabase/migrations/20260824205500_dkd_drabornpark_v105_nfc_short_url.sql','app/legal.tsx','app/account.tsx','app/tags.tsx','app/factory.tsx','app/hub.tsx','app/notifications.tsx','src/lib/supabase-v056.ts'];for(const dkd_file of required)if(!exists(dkd_file))fail.push('Required file missing: '+dkd_file);
 const layout=read('app/_layout.tsx');for(const dkd_marker of ['DkdStartupSplash','preventAutoHideAsync','hideAsync'])if(!layout.includes(dkd_marker))fail.push('Animated startup splash marker missing: '+dkd_marker);
 const splash=read('src/components/DkdStartupSplash.tsx');if(!splash.includes('resizeMode="contain"'))fail.push('Splash safe-fit configuration missing');
-const shortRoute=read('app/DraBornPark/tag/[slug].tsx');if(!shortRoute.includes('/DraBornPark/t/'))fail.push('Short tag route redirect missing');
-const factory=read('app/factory.tsx');for(const dkd_marker of ['QRCode','expo-clipboard','dkd_drabornpark_factory_update_tag_v104','KULLANICI ADI / KİŞİSEL BAĞLANTI','KISA ETİKET KODU','/DraBornPark/tag/'])if(!factory.includes(dkd_marker))fail.push('Factory v1.0.4 marker missing: '+dkd_marker);
+const factory=read('app/factory.tsx');for(const dkd_marker of ['QRCode','expo-clipboard','dkd_drabornpark_factory_update_tag_v105','NFC BAĞLANTI KODU','/DraBornPark/tag/','Uzun UUID bağlantısı üretilmez'])if(!factory.includes(dkd_marker))fail.push('Factory v1.0.5 marker missing: '+dkd_marker);
+for(const dkd_forbidden of ['KULLANICI ADI / KİŞİSEL BAĞLANTI','KISA ETİKET KODU'])if(factory.includes(dkd_forbidden))fail.push('Legacy factory label must be removed: '+dkd_forbidden);
 const activateRoute=read('app/activate-token/[token].tsx');if(!activateRoute.includes('dkd_drabornpark_activate_public_slug_v104'))fail.push('Short-slug activation RPC missing');
-const auth=read('app/auth.tsx');for(const dkd_marker of ['KULLANICI ADI (OPSİYONEL)','isUsernameAvailable','username:normalized||null'])if(!auth.includes(dkd_marker))fail.push('Optional unique username marker missing: '+dkd_marker);
+const auth=read('app/auth.tsx');for(const dkd_marker of ['KULLANICI ADI (OPSİYONEL)','isUsernameAvailable','username:normalized||null'])if(!auth.includes(dkd_marker))fail.push('Optional account username marker missing: '+dkd_marker);
 const tags=read('app/tags.tsx');for(const dkd_marker of ['expo-clipboard','NFC / QR BAĞLANTISINI KOPYALA'])if(!tags.includes(dkd_marker))fail.push('Linked tag copy marker missing: '+dkd_marker);
 const uiPlugin=read('scripts/turkish-ui-babel-plugin.cjs');if(!uiPlugin.includes('APP_VERSION'))fail.push('Dynamic visible version normalization missing');
 if(exists('.github/workflows/ci.yml')||exists('.github/workflows/finalize-v100.yml'))fail.push('Legacy workflows must remain removed');
 if(fail.length){console.error('DraBornPark integrity check failed:\n- '+fail.join('\n- '));process.exit(1)}
-console.log('DraBornPark integrity OK • v1.0.4 • Android vc4 • immutable short NFC/QR • username friendly links • dynamic Supabase mapping • Android App Links.');
+console.log('DraBornPark integrity OK • v1.0.5 • Android vc5 • canonical NFC /tag/NNNN-NNNN • no advertised long UUID App Link • dynamic Supabase mapping.');
