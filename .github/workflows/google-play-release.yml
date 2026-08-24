@@ -1,21 +1,21 @@
-name: DraBornPark v1.0.4 Google Play Release
+name: DraBornPark v1.0.5 Google Play Release
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - '.github/RELEASE_V104_TRIGGER'
+      - '.github/RELEASE_V105_TRIGGER'
   pull_request:
     branches: [main]
     paths:
-      - '.github/RELEASE_V104_TRIGGER'
+      - '.github/RELEASE_V105_TRIGGER'
 
 permissions:
   contents: read
 
 concurrency:
-  group: drabornpark-google-play-release-v104-${{ github.event_name }}
+  group: drabornpark-google-play-release-v105-${{ github.event_name }}
   cancel-in-progress: false
 
 jobs:
@@ -66,7 +66,7 @@ jobs:
           test -f "$MANIFEST"
           grep -F 'www.draborneagle.com' "$MANIFEST"
           grep -F '/DraBornPark/tag/' "$MANIFEST"
-          grep -F '/DraBornPark/t/' "$MANIFEST"
+          if grep -F '/DraBornPark/t/' "$MANIFEST"; then echo 'Legacy long /t/ App Link unexpectedly present' >&2; exit 1; fi
           if grep -R -F 'exp+drabornpark' android/app/src/main; then echo 'Development exp+drabornpark scheme unexpectedly present' >&2; exit 1; fi
           if grep -R -F 'expo.modules.devclient' android/app/src/main; then echo 'Expo dev client marker unexpectedly present' >&2; exit 1; fi
       - name: Build production APK and AAB for secure signing
@@ -84,9 +84,10 @@ jobs:
           test -n "$APK" && test -f "$APK"
           test -n "$AAB" && test -f "$AAB"
           "$AAPT" dump badging "$APK" | grep "package: name='com.draborneagle.drabornpark'"
-          "$AAPT" dump badging "$APK" | grep "versionCode='4'"
-          "$AAPT" dump badging "$APK" | grep "versionName='1.0.4'"
+          "$AAPT" dump badging "$APK" | grep "versionCode='5'"
+          "$AAPT" dump badging "$APK" | grep "versionName='1.0.5'"
           "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F '/DraBornPark/tag/'
+          if "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F '/DraBornPark/t/'; then echo 'Legacy long /t/ App Link present' >&2; exit 1; fi
           if "$AAPT" dump permissions "$APK" | grep -F 'android.permission.SYSTEM_ALERT_WINDOW'; then echo 'SYSTEM_ALERT_WINDOW present' >&2; exit 1; fi
           if "$AAPT" dump permissions "$APK" | grep -F 'android.permission.RECORD_AUDIO'; then echo 'RECORD_AUDIO present' >&2; exit 1; fi
           if "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F 'exp+drabornpark'; then echo 'Development scheme present' >&2; exit 1; fi
@@ -97,26 +98,27 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-output
-          cp "$APK" release-output/DraBornPark-v1.0.4-vc4-production.apk
-          cp "$AAB" release-output/DraBornPark-v1.0.4-vc4-production-unsigned.aab
-          zip -q -d release-output/DraBornPark-v1.0.4-vc4-production-unsigned.aab \
+          cp "$APK" release-output/DraBornPark-v1.0.5-vc5-production.apk
+          cp "$AAB" release-output/DraBornPark-v1.0.5-vc5-production-unsigned.aab
+          zip -q -d release-output/DraBornPark-v1.0.5-vc5-production-unsigned.aab \
             'META-INF/*.SF' 'META-INF/*.RSA' 'META-INF/*.DSA' 'META-INF/*.EC' 'META-INF/MANIFEST.MF' || true
-          if unzip -Z1 release-output/DraBornPark-v1.0.4-vc4-production-unsigned.aab | grep -E '^META-INF/.*\.(SF|RSA|DSA|EC)$|^META-INF/MANIFEST\.MF$'; then
+          if unzip -Z1 release-output/DraBornPark-v1.0.5-vc5-production-unsigned.aab | grep -E '^META-INF/.*\.(SF|RSA|DSA|EC)$|^META-INF/MANIFEST\.MF$'; then
             echo 'AAB signature cleanup failed' >&2
             exit 1
           fi
           sha256sum release-output/* > release-output/SHA256SUMS.txt
           cat > release-output/BUILD_INFO.txt <<'EOF'
           DraBornPark Google Play production signing input
-          Version name: 1.0.4
-          Android versionCode: 4
+          Version name: 1.0.5
+          Android versionCode: 5
           Package: com.draborneagle.drabornpark
           Expo SDK: 57
           expo-dev-client: absent
           SYSTEM_ALERT_WINDOW: verified absent
           RECORD_AUDIO: verified absent
-          Android App Link: https://www.draborneagle.com/DraBornPark/tag/*
-          Legacy App Link retained: https://www.draborneagle.com/DraBornPark/t/*
+          Canonical Android App Link: https://www.draborneagle.com/DraBornPark/tag/*
+          Legacy long /DraBornPark/t/* App Link: not advertised
+          Physical NFC/QR format: https://www.draborneagle.com/DraBornPark/tag/NNNN-NNNN
           Existing AAB JAR signatures: stripped before external signing
           Expected upload certificate SHA-256: 95:4C:F9:A8:E0:DB:09:46:A2:63:18:D6:95:7B:DF:0B:72:2D:51:7B:40:67:67:F8:3E:4C:37:BE:84:67:6B:C6
           Final AAB must be signed exactly once with the permanent DraBornPark upload key and verified before distribution.
@@ -124,7 +126,7 @@ jobs:
       - name: Upload production secure-signing inputs
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v1.0.4-vc4-production-signing-inputs
+          name: DraBornPark-v1.0.5-vc5-production-signing-inputs
           path: release-output/
           if-no-files-found: error
           retention-days: 14
