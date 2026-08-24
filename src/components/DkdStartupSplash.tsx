@@ -29,7 +29,7 @@ export function DkdStartupSplash(){
 }
 
 const dkd_styles=StyleSheet.create({
-  root:{...StyleSheet.absoluteFillObject,zIndex:9999,elevation:9999,backgroundColor:'#050816',alignItems:'center',justifyContent:'center',paddingHorizontal:28},
+  root:{...StyleSheet.absoluteFill,zIndex:9999,elevation:9999,backgroundColor:'#050816',alignItems:'center',justifyContent:'center',paddingHorizontal:28},
   logo:{width:286,height:286},
   title:{marginTop:12,color:'#F7FBFF',fontSize:28,fontWeight:'900',letterSpacing:.2},
   sub:{marginTop:7,color:'#50D9FF',fontSize:11,fontWeight:'900',letterSpacing:1.7},
