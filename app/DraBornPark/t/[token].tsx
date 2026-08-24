@@ -1,0 +1,42 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import {router,useLocalSearchParams} from 'expo-router';
+import React,{useEffect,useMemo,useState} from 'react';
+import {ActivityIndicator,Alert,Pressable,ScrollView,StyleSheet,Text,TextInput,View} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import {PUBLIC_CONTACT_URL} from '@/src/data';
+import {palette,radius,type} from '@/src/theme';
+
+type DkdLookup={snapshot?:any;categories?:Array<{key:string;title:string;body:string;priority:string}>;error?:string};
+async function dkd_request(dkd_body:any){const dkd_response=await fetch(PUBLIC_CONTACT_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(dkd_body)});const dkd_data=await dkd_response.json().catch(()=>({}));if(!dkd_response.ok)throw new Error(String(dkd_data?.error||'request_failed'));return dkd_data;}
+function dkd_error_text(dkd_value:string){if(dkd_value.includes('tag_not_found'))return 'Bu DraBornPark etiketi bulunamadı.';if(dkd_value.includes('rate_limited'))return 'Çok fazla istek gönderildi. Biraz sonra tekrar dene.';return 'Etiket bilgisi şu anda alınamadı.';}
+
+export default function DkdPublicTagScreen(){
+  const dkd_params=useLocalSearchParams<{token?:string}>();
+  const dkd_token=String(dkd_params.token||'').trim();
+  const [dkd_data,setDkdData]=useState<DkdLookup|null>(null);
+  const [dkd_error,setDkdError]=useState('');
+  const [dkd_busy,setDkdBusy]=useState(false);
+  const [dkd_message,setDkdMessage]=useState('');
+  const [dkd_selected,setDkdSelected]=useState('');
+  const dkd_vehicle=dkd_data?.snapshot?.vehicle;
+  const dkd_active=Boolean(dkd_data?.snapshot?.activated);
+  const dkd_categories=useMemo(()=>dkd_data?.categories??[],[dkd_data]);
+  const dkd_load=async()=>{if(!dkd_token){setDkdError('Geçersiz etiket bağlantısı.');return;}setDkdBusy(true);setDkdError('');try{setDkdData(await dkd_request({action:'lookup',tagCode:dkd_token}));}catch(dkd_problem:any){setDkdError(dkd_error_text(String(dkd_problem?.message||'')));}finally{setDkdBusy(false)}};
+  useEffect(()=>{void dkd_load()},[dkd_token]);
+  const dkd_notify=async()=>{if(!dkd_selected)return Alert.alert('Bildirim seç','Araç sahibine iletilecek bildirimi seç.');setDkdBusy(true);try{await dkd_request({action:'notify',tagCode:dkd_token,category:dkd_selected,message:dkd_message.trim()||undefined,sessionKey:`app-${Date.now()}-${Math.random().toString(36).slice(2,10)}`});Alert.alert('Bildirim gönderildi','Araç sahibine DraBornPark üzerinden güvenli bildirim iletildi.');setDkdMessage('');setDkdSelected('');}catch(dkd_problem:any){Alert.alert('Gönderilemedi',dkd_error_text(String(dkd_problem?.message||'')));}finally{setDkdBusy(false)}};
+  return <SafeAreaView style={dkd_styles.safe}><ScrollView contentContainerStyle={dkd_styles.scroll} showsVerticalScrollIndicator={false}>
+    <View style={dkd_styles.brand}><MaterialCommunityIcons name="nfc" size={25} color={palette.cyan}/><Text style={dkd_styles.brandText}>DraBornPark</Text><Text style={dkd_styles.brandVersion}>v1.0.1</Text></View>
+    {dkd_busy&&!dkd_data?<View style={dkd_styles.center}><ActivityIndicator color={palette.cyan}/><Text style={dkd_styles.muted}>Etiket doğrulanıyor…</Text></View>:null}
+    {dkd_error?<View style={dkd_styles.card}><MaterialCommunityIcons name="alert-circle-outline" size={34} color={palette.red}/><Text style={dkd_styles.title}>{dkd_error}</Text><Pressable onPress={()=>void dkd_load()} style={dkd_styles.secondary}><Text style={dkd_styles.secondaryText}>TEKRAR DENE</Text></Pressable></View>:null}
+    {dkd_data?.snapshot&&!dkd_active?<View style={dkd_styles.card}><MaterialCommunityIcons name="shield-key-outline" size={42} color={palette.orange}/><Text style={dkd_styles.title}>Etiket aktivasyon bekliyor</Text><Text style={dkd_styles.body}>Bu NFC/QR etiketi henüz bir DraBornPark hesabı ve araçla eşleştirilmemiş. Kutudaki gizli PIN ile yalnızca gerçek sahibi aktive edebilir.</Text><Pressable onPress={()=>router.push(`/activate-token/${encodeURIComponent(dkd_token)}` as any)} style={dkd_styles.primary}><MaterialCommunityIcons name="key-variant" size={22} color={palette.ink}/><Text style={dkd_styles.primaryText}>ETİKETİ AKTİVE ET</Text></Pressable></View>:null}
+    {dkd_active?<>
+      <View style={dkd_styles.hero}><View style={dkd_styles.heroIcon}><MaterialCommunityIcons name={dkd_vehicle?.type==='motorcycle'?'motorbike':'car-sports'} size={42} color={palette.cyan}/></View><Text style={dkd_styles.eyebrow}>GÜVENLİ ARAÇ İLETİŞİMİ</Text><Text style={dkd_styles.title}>{dkd_vehicle?.name||[dkd_vehicle?.brand,dkd_vehicle?.model].filter(Boolean).join(' ')||'DraBornPark Aracı'}</Text><Text style={dkd_styles.body}>{[dkd_vehicle?.plate,dkd_vehicle?.color].filter(Boolean).join(' • ')||'Araç sahibinin paylaştığı bilgiler görüntüleniyor.'}</Text></View>
+      <Text style={dkd_styles.section}>ARAÇ SAHİBİNE BİLDİR</Text><View style={dkd_styles.grid}>{dkd_categories.map((dkd_item)=><Pressable key={dkd_item.key} onPress={()=>setDkdSelected(dkd_item.key)} style={[dkd_styles.category,dkd_selected===dkd_item.key&&dkd_styles.categoryOn]}><MaterialCommunityIcons name={dkd_selected===dkd_item.key?'check-circle':'bell-outline'} size={22} color={dkd_selected===dkd_item.key?palette.green:palette.cyan}/><Text style={dkd_styles.categoryTitle}>{dkd_item.title}</Text></Pressable>)}</View>
+      <TextInput value={dkd_message} onChangeText={setDkdMessage} maxLength={700} multiline placeholder="İstersen kısa bir açıklama ekle…" placeholderTextColor={palette.muted2} style={dkd_styles.input}/>
+      <Pressable disabled={dkd_busy||!dkd_selected} onPress={()=>void dkd_notify()} style={[dkd_styles.primary,(dkd_busy||!dkd_selected)&&{opacity:.45}]}>{dkd_busy?<ActivityIndicator color={palette.ink}/>:<><MaterialCommunityIcons name="send" size={22} color={palette.ink}/><Text style={dkd_styles.primaryText}>GÜVENLİ BİLDİRİM GÖNDER</Text></>}</Pressable>
+      <Text style={dkd_styles.privacy}>Telefon numarası paylaşılmaz. Bildirim DraBornPark üzerinden iletilir.</Text>
+    </>:null}
+  </ScrollView></SafeAreaView>;
+}
+
+const dkd_styles=StyleSheet.create({safe:{flex:1,backgroundColor:'#050816'},scroll:{padding:20,paddingBottom:60},brand:{height:48,flexDirection:'row',alignItems:'center',gap:9},brandText:{color:palette.text,fontSize:21,fontWeight:'900',flex:1},brandVersion:{color:palette.cyan,fontSize:11,fontWeight:'900'},center:{minHeight:300,alignItems:'center',justifyContent:'center',gap:12},muted:{color:palette.muted,fontSize:type.body},card:{marginTop:30,borderRadius:radius.xl,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:24,alignItems:'center'},hero:{marginTop:20,borderRadius:radius.xl,borderWidth:1,borderColor:`${palette.cyan}55`,backgroundColor:palette.panel,padding:24,alignItems:'center'},heroIcon:{width:76,height:76,borderRadius:24,backgroundColor:`${palette.cyan}14`,alignItems:'center',justifyContent:'center',marginBottom:15},eyebrow:{color:palette.cyan,fontSize:10,fontWeight:'900',letterSpacing:1.3},title:{color:palette.text,fontSize:24,fontWeight:'900',textAlign:'center',marginTop:10},body:{color:palette.muted,fontSize:type.body,lineHeight:22,textAlign:'center',marginTop:8},section:{color:palette.text,fontSize:13,fontWeight:'900',letterSpacing:.8,marginTop:26,marginBottom:10},grid:{gap:9},category:{minHeight:66,borderRadius:18,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,padding:14,flexDirection:'row',alignItems:'center',gap:11},categoryOn:{borderColor:`${palette.green}66`,backgroundColor:`${palette.green}10`},categoryTitle:{flex:1,color:palette.text,fontSize:type.bodyStrong,fontWeight:'800'},input:{minHeight:96,borderRadius:18,borderWidth:1,borderColor:palette.line,backgroundColor:palette.panel,color:palette.text,padding:14,textAlignVertical:'top',fontSize:type.body,marginTop:12},primary:{minHeight:62,borderRadius:20,backgroundColor:palette.aqua,alignItems:'center',justifyContent:'center',flexDirection:'row',gap:9,paddingHorizontal:18,marginTop:15},primaryText:{color:palette.ink,fontSize:type.bodyStrong,fontWeight:'900',textAlign:'center'},secondary:{minHeight:54,borderRadius:18,borderWidth:1,borderColor:palette.line,paddingHorizontal:22,alignItems:'center',justifyContent:'center',marginTop:18},secondaryText:{color:palette.text,fontSize:type.caption,fontWeight:'900'},privacy:{color:palette.muted2,fontSize:type.caption,lineHeight:18,textAlign:'center',marginTop:14}});

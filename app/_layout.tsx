@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as SplashScreen from 'expo-splash-screen';
 import {NavigationBar} from 'expo-navigation-bar';
 import {Stack} from 'expo-router';
 import {StatusBar} from 'expo-status-bar';
@@ -6,9 +7,12 @@ import React,{useEffect,useState} from 'react';
 import {Platform} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {ColorPopup} from '@/src/components/ColorPopup';
+import {DkdStartupSplash} from '@/src/components/DkdStartupSplash';
 import {getNotificationPermissionStatus,initializeNotificationPresentation,requestNotificationPermission,startAdminSupportNotifications,startForegroundReportNotifications,startNotificationResponseRouting,startPushTokenRefresh,syncPushRegistration} from '@/src/lib/push';
 import {supabase} from '@/src/lib/supabase';
 import {palette} from '@/src/theme';
+
+if(Platform.OS!=='web')void SplashScreen.preventAutoHideAsync().catch(()=>undefined);
 
 const PERMISSION_PROMPT_KEY='drabornpark_notification_prompt_v054';
 function LivePushRegistration(){
@@ -31,4 +35,13 @@ function NotificationPermissionPrompt(){
   const allow=async()=>{setBusy(true);try{await requestNotificationPermission();await AsyncStorage.setItem(PERMISSION_PROMPT_KEY,'asked');setVisible(false);}finally{setBusy(false)}};
   return <ColorPopup visible={visible&&!busy} icon="bell-ring-outline" eyebrow="BİLDİRİMLER" title="Aracından haberin olsun" body="Araç bildirimi, anonim mesaj, destek kaydı ve önemli DraBornPark uyarılarını kaçırmaman için bildirim izni gerekir. İzin, yalnızca bu bildirimleri göstermek için kullanılır." accent={palette.pink} secondary={palette.cyan} primaryLabel="BİLDİRİMLERE İZİN VER" onPrimary={()=>void allow()} secondaryLabel="ŞİMDİLİK DEĞİL" onSecondary={()=>void dismiss()} chips={['ARAÇ UYARILARI','DESTEK','GÜVENLİ MESAJLAR']}/>;
 }
-export default function RootLayout(){return <SafeAreaProvider><LivePushRegistration/><NotificationPermissionPrompt/><StatusBar style="light"/>{Platform.OS==='android'?<NavigationBar style="dark" hidden={false}/>:null}<Stack screenOptions={{headerShown:false,contentStyle:{backgroundColor:palette.bg},animation:'fade_from_bottom',animationDuration:220,gestureEnabled:true,fullScreenGestureEnabled:true}}/></SafeAreaProvider>;}
+export default function RootLayout(){
+  const [dkd_startup,setDkdStartup]=useState(true);
+  useEffect(()=>{
+    let dkd_alive=true;
+    const dkd_begin=async()=>{if(Platform.OS!=='web')await SplashScreen.hideAsync().catch(()=>undefined);setTimeout(()=>{if(dkd_alive)setDkdStartup(false)},1850)};
+    void dkd_begin();
+    return()=>{dkd_alive=false};
+  },[]);
+  return <SafeAreaProvider><LivePushRegistration/><NotificationPermissionPrompt/><StatusBar style="light"/>{Platform.OS==='android'?<NavigationBar style="dark" hidden={false}/>:null}<Stack screenOptions={{headerShown:false,contentStyle:{backgroundColor:palette.bg},animation:'fade_from_bottom',animationDuration:220,gestureEnabled:true,fullScreenGestureEnabled:true}}/>{dkd_startup?<DkdStartupSplash/>:null}</SafeAreaProvider>;
+}
