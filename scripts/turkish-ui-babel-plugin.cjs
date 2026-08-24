@@ -29,8 +29,7 @@ function translate(value) {
   if (typeof value !== 'string') return value;
   let next = value;
   for (const [from, to] of replacements) next = next.split(from).join(to);
-  // Kullanıcıya gösterilen eski sürüm etiketlerinin repo sürümünden kopmasını engeller.
-  next = next.replace(/\bv\d+\.\d+\.\d+\b/g, `v${APP_VERSION}`);
+  next = next.replace(/\bv\d+\.\d+(?:\.\d+)?\b/g, `v${APP_VERSION}`);
   return next;
 }
 function isDisplayString(path){

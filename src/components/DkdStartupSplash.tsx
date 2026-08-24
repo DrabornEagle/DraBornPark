@@ -6,7 +6,7 @@ export function DkdStartupSplash(){
   const dkd_pulse=useRef(new Animated.Value(0)).current;
   const dkd_float=useRef(new Animated.Value(0)).current;
   useEffect(()=>{
-    Animated.timing(dkd_enter,{toValue:1,duration:420,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start();
+    Animated.timing(dkd_enter,{toValue:1,duration:360,easing:Easing.out(Easing.cubic),useNativeDriver:true}).start();
     const dkd_pulse_loop=Animated.loop(Animated.sequence([
       Animated.timing(dkd_pulse,{toValue:1,duration:760,easing:Easing.inOut(Easing.cubic),useNativeDriver:true}),
       Animated.timing(dkd_pulse,{toValue:0,duration:760,easing:Easing.inOut(Easing.cubic),useNativeDriver:true}),
@@ -19,9 +19,13 @@ export function DkdStartupSplash(){
     return()=>{dkd_pulse_loop.stop();dkd_float_loop.stop()};
   },[dkd_enter,dkd_float,dkd_pulse]);
   return <Animated.View pointerEvents="none" style={[dkd_styles.root,{opacity:dkd_enter}]}>
-    <Animated.View style={{transform:[{translateY:dkd_float.interpolate({inputRange:[0,1],outputRange:[0,-8]})},{scale:dkd_pulse.interpolate({inputRange:[0,1],outputRange:[.97,1.025]})}]}}>
-      <Image source={require('../../assets/branding/splash-icon.png')} resizeMode="contain" style={dkd_styles.logo}/>
-    </Animated.View>
+    <View style={dkd_styles.logoFrame}>
+      <Animated.View style={dkd_styles.logoMotion}>
+        <Animated.View style={{transform:[{translateY:dkd_float.interpolate({inputRange:[0,1],outputRange:[0,-5]})},{scale:dkd_pulse.interpolate({inputRange:[0,1],outputRange:[.985,1.008]})}]}}>
+          <Image source={require('../../assets/branding/splash-icon.png')} resizeMode="contain" style={dkd_styles.logo}/>
+        </Animated.View>
+      </Animated.View>
+    </View>
     <Text style={dkd_styles.title}>DraBornPark</Text>
     <Text style={dkd_styles.sub}>NFC + QR ARAÇ İLETİŞİMİ</Text>
     <View style={dkd_styles.progress}><Animated.View style={[dkd_styles.progressFill,{transform:[{scaleX:dkd_pulse.interpolate({inputRange:[0,1],outputRange:[.35,1]})}]}]}/></View>
@@ -29,8 +33,10 @@ export function DkdStartupSplash(){
 }
 
 const dkd_styles=StyleSheet.create({
-  root:{...StyleSheet.absoluteFill,zIndex:9999,elevation:9999,backgroundColor:'#050816',alignItems:'center',justifyContent:'center',paddingHorizontal:28},
-  logo:{width:286,height:286},
+  root:{...StyleSheet.absoluteFill,zIndex:9999,elevation:9999,backgroundColor:'#050816',alignItems:'center',justifyContent:'center',paddingHorizontal:32,paddingVertical:48},
+  logoFrame:{width:260,height:260,alignItems:'center',justifyContent:'center',overflow:'visible'},
+  logoMotion:{width:242,height:242,alignItems:'center',justifyContent:'center',overflow:'visible'},
+  logo:{width:228,height:228},
   title:{marginTop:12,color:'#F7FBFF',fontSize:28,fontWeight:'900',letterSpacing:.2},
   sub:{marginTop:7,color:'#50D9FF',fontSize:11,fontWeight:'900',letterSpacing:1.7},
   progress:{marginTop:24,width:150,height:4,borderRadius:4,overflow:'hidden',backgroundColor:'#17233D'},
