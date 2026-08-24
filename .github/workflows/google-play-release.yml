@@ -88,7 +88,7 @@ jobs:
           CI: '1'
         run: ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon
 
-      - name: Verify unsigned production package
+      - name: Verify production package metadata
         shell: bash
         run: |
           set -euo pipefail
@@ -107,13 +107,25 @@ jobs:
           echo "APK=$APK" >> "$GITHUB_ENV"
           echo "AAB=$AAB" >> "$GITHUB_ENV"
 
-      - name: Prepare secure-signing inputs
+      - name: Prepare clean secure-signing inputs
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p release-output
-          cp "$APK" release-output/DraBornPark-v1.0.3-vc3-production-unsigned.apk
+          cp "$APK" release-output/DraBornPark-v1.0.3-vc3-production.apk
           cp "$AAB" release-output/DraBornPark-v1.0.3-vc3-production-unsigned.aab
+
+          # Expo/Gradle may sign the generated release bundle with Android Debug.
+          # Google Play requires exactly one certificate chain, so remove every
+          # existing JAR signature before the permanent upload key is applied.
+          zip -q -d release-output/DraBornPark-v1.0.3-vc3-production-unsigned.aab \
+            'META-INF/*.SF' 'META-INF/*.RSA' 'META-INF/*.DSA' 'META-INF/*.EC' 'META-INF/MANIFEST.MF' || true
+
+          if unzip -Z1 release-output/DraBornPark-v1.0.3-vc3-production-unsigned.aab | grep -E '^META-INF/.*\.(SF|RSA|DSA|EC)$|^META-INF/MANIFEST\.MF$'; then
+            echo 'AAB signature cleanup failed' >&2
+            exit 1
+          fi
+
           sha256sum release-output/* > release-output/SHA256SUMS.txt
           cat > release-output/BUILD_INFO.txt <<'EOF'
           DraBornPark Google Play production signing input
@@ -125,8 +137,9 @@ jobs:
           SYSTEM_ALERT_WINDOW: verified absent
           RECORD_AUDIO: verified absent
           Android App Link: https://www.draborneagle.com/DraBornPark/t/*
+          Existing AAB JAR signatures: stripped before external signing
           Expected upload certificate SHA-256: 95:4C:F9:A8:E0:DB:09:46:A2:63:18:D6:95:7B:DF:0B:72:2D:51:7B:40:67:67:F8:3E:4C:37:BE:84:67:6B:C6
-          Final AAB is signed outside GitHub Actions with the permanent DraBornPark upload key and verified before distribution.
+          Final AAB must be signed exactly once with the permanent DraBornPark upload key and verified before distribution.
           EOF
 
       - name: Upload production secure-signing inputs
