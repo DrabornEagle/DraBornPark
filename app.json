@@ -2,7 +2,7 @@
   "expo": {
     "name": "DraBornPark",
     "slug": "drabornpark",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "scheme": "drabornpark",
     "userInterfaceStyle": "dark",
@@ -67,7 +67,7 @@
     },
     "android": {
       "package": "com.draborneagle.drabornpark",
-      "versionCode": 3,
+      "versionCode": 4,
       "backgroundColor": "#050816",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
@@ -88,6 +88,11 @@
           "action": "VIEW",
           "autoVerify": true,
           "data": [
+            {
+              "scheme": "https",
+              "host": "www.draborneagle.com",
+              "pathPrefix": "/DraBornPark/tag/"
+            },
             {
               "scheme": "https",
               "host": "www.draborneagle.com",
