@@ -99,69 +99,21 @@ jobs:
             exit 1
           fi
 
-      - name: Restore permanent Google Play upload key
-        shell: bash
-        env:
-          KEYSTORE_B64: ${{ secrets.DRABORNPARK_UPLOAD_KEYSTORE_B64 }}
-          STORE_PASS: ${{ secrets.DRABORNPARK_UPLOAD_STORE_PASSWORD }}
-          KEY_PASS: ${{ secrets.DRABORNPARK_UPLOAD_KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.DRABORNPARK_UPLOAD_KEY_ALIAS }}
-        run: |
-          set -euo pipefail
-          test -n "$KEYSTORE_B64" || { echo 'Permanent upload keystore secret is missing' >&2; exit 1; }
-          test -n "$STORE_PASS" || { echo 'Upload keystore password secret is missing' >&2; exit 1; }
-          test -n "$KEY_PASS" || { echo 'Upload key password secret is missing' >&2; exit 1; }
-          test -n "$KEY_ALIAS" || { echo 'Upload key alias secret is missing' >&2; exit 1; }
-          mkdir -p "$RUNNER_TEMP/drabornpark-signing"
-          KEYSTORE="$RUNNER_TEMP/drabornpark-signing/upload.jks"
-          printf '%s' "$KEYSTORE_B64" | base64 -d > "$KEYSTORE"
-          CERT_SHA="$(keytool -list -v -keystore "$KEYSTORE" -storepass "$STORE_PASS" -alias "$KEY_ALIAS" | sed -n 's/^[[:space:]]*SHA256: //p' | head -n1)"
-          test "$CERT_SHA" = "$EXPECTED_UPLOAD_CERT_SHA256" || { echo "Wrong signing key fingerprint: $CERT_SHA" >&2; exit 1; }
-          echo "DRABORNPARK_KEYSTORE=$KEYSTORE" >> "$GITHUB_ENV"
-          echo "DRABORNPARK_STORE_PASS=$STORE_PASS" >> "$GITHUB_ENV"
-          echo "DRABORNPARK_KEY_PASS=$KEY_PASS" >> "$GITHUB_ENV"
-          echo "DRABORNPARK_KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
-
-      - name: Configure release signing
-        shell: bash
-        run: |
-          cat >> android/app/build.gradle <<'GRADLE'
-
-          // DraBornPark v1.0.1 Google Play production signing.
-          android {
-              signingConfigs {
-                  drabornparkPlayRelease {
-                      storeFile file(System.getenv("DRABORNPARK_KEYSTORE"))
-                      storePassword System.getenv("DRABORNPARK_STORE_PASS")
-                      keyAlias System.getenv("DRABORNPARK_KEY_ALIAS")
-                      keyPassword System.getenv("DRABORNPARK_KEY_PASS")
-                  }
-              }
-              buildTypes {
-                  release {
-                      signingConfig signingConfigs.drabornparkPlayRelease
-                  }
-              }
-          }
-          GRADLE
-
-      - name: Build signed production APK and AAB
+      - name: Build production APK and AAB for secure signing
         working-directory: android
         env:
           CI: '1'
         run: ./gradlew :app:assembleRelease :app:bundleRelease --no-daemon
 
-      - name: Verify final production package
+      - name: Verify unsigned production package
         shell: bash
         run: |
           set -euo pipefail
-          APK="android/app/build/outputs/apk/release/app-release.apk"
-          AAB="android/app/build/outputs/bundle/release/app-release.aab"
+          APK="$(find android/app/build/outputs/apk/release -maxdepth 1 -type f -name '*.apk' | head -n1)"
+          AAB="$(find android/app/build/outputs/bundle/release -maxdepth 1 -type f -name '*.aab' | head -n1)"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -n 1)"
-          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
-          ZIPALIGN="$(find "$ANDROID_HOME/build-tools" -type f -name zipalign | sort -V | tail -n 1)"
-          test -f "$APK"
-          test -f "$AAB"
+          test -n "$APK" && test -f "$APK"
+          test -n "$AAB" && test -f "$AAB"
           "$AAPT" dump badging "$APK" | grep "package: name='com.draborneagle.drabornpark'"
           "$AAPT" dump badging "$APK" | grep "versionCode='2'"
           "$AAPT" dump badging "$APK" | grep "versionName='1.0.1'"
@@ -169,22 +121,19 @@ jobs:
           if "$AAPT" dump permissions "$APK" | grep -F 'android.permission.SYSTEM_ALERT_WINDOW'; then echo 'SYSTEM_ALERT_WINDOW present' >&2; exit 1; fi
           if "$AAPT" dump permissions "$APK" | grep -F 'android.permission.RECORD_AUDIO'; then echo 'RECORD_AUDIO present' >&2; exit 1; fi
           if "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F 'exp+drabornpark'; then echo 'Development scheme present' >&2; exit 1; fi
-          "$ZIPALIGN" -c -P 16 -v 4 "$APK"
-          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee /tmp/apk-signature.txt
-          grep -F "$EXPECTED_UPLOAD_CERT_SHA256" /tmp/apk-signature.txt
-          jarsigner -verify -verbose -certs "$AAB" | tee /tmp/aab-signature.txt
-          grep -F 'jar verified.' /tmp/aab-signature.txt
+          echo "APK=$APK" >> "$GITHUB_ENV"
+          echo "AAB=$AAB" >> "$GITHUB_ENV"
 
-      - name: Prepare v1.0.1 outputs
+      - name: Prepare secure-signing inputs
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p release-output
-          cp android/app/build/outputs/apk/release/app-release.apk release-output/DraBornPark-v1.0.1-vc2-GooglePlay-release.apk
-          cp android/app/build/outputs/bundle/release/app-release.aab release-output/DraBornPark-v1.0.1-vc2-GooglePlay-release.aab
-          sha256sum release-output/*.apk release-output/*.aab > release-output/SHA256SUMS.txt
+          cp "$APK" release-output/DraBornPark-v1.0.1-vc2-production-unsigned.apk
+          cp "$AAB" release-output/DraBornPark-v1.0.1-vc2-production-unsigned.aab
+          sha256sum release-output/* > release-output/SHA256SUMS.txt
           cat > release-output/BUILD_INFO.txt <<'EOF'
-          DraBornPark Google Play production release
+          DraBornPark Google Play production signing input
           Version name: 1.0.1
           Android versionCode: 2
           Package: com.draborneagle.drabornpark
@@ -194,13 +143,14 @@ jobs:
           SYSTEM_ALERT_WINDOW: verified absent
           RECORD_AUDIO: verified absent
           Android App Link: https://www.draborneagle.com/DraBornPark/t/*
-          Signing certificate SHA-256: 95:4C:F9:A8:E0:DB:09:46:A2:63:18:D6:95:7B:DF:0B:72:2D:51:7B:40:67:67:F8:3E:4C:37:BE:84:67:6B:C6
+          Expected upload certificate SHA-256: 95:4C:F9:A8:E0:DB:09:46:A2:63:18:D6:95:7B:DF:0B:72:2D:51:7B:40:67:67:F8:3E:4C:37:BE:84:67:6B:C6
+          Final AAB is signed outside GitHub Actions with the permanent upload key and verified before distribution.
           EOF
 
-      - name: Upload signed Google Play release
+      - name: Upload production secure-signing inputs
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v1.0.1-vc2-GooglePlay-signed-release
+          name: DraBornPark-v1.0.1-vc2-production-signing-inputs
           path: release-output/
           if-no-files-found: error
-          retention-days: 30
+          retention-days: 7
