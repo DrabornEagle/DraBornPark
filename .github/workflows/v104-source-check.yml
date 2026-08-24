@@ -1,0 +1,64 @@
+name: DraBornPark v1.0.4 Source Check
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'package.json'
+      - 'package-lock.json'
+      - 'app.json'
+      - '.github/VERSION'
+      - '.github/workflows/v104-source-check.yml'
+      - 'app/**'
+      - 'src/**'
+      - 'scripts/**'
+      - 'assets/branding/v101/**'
+      - 'supabase/migrations/20260824180000_dkd_drabornpark_v104_short_public_links.sql'
+      - 'supabase/migrations/20260824181000_dkd_drabornpark_v104_activate_short_slug.sql'
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: drabornpark-v104-source-check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Sync dependency lock
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+      - name: Install dependencies and materialize brand assets
+        run: npm install --no-audit --no-fund
+      - name: Validate DraBornPark v1.0.4 source
+        run: |
+          npm run check
+          npx expo install --check
+          npm run typecheck
+          git diff --check
+      - name: Persist package lock on main
+        if: github.event_name == 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package-lock.json
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: sync DraBornPark v1.0.4 package lock"
+            git push origin HEAD:main
+          fi
+      - name: Confirm source validation produced no Android release
+        run: |
+          test ! -d android/app/build/outputs || { echo "Unexpected Android build output" >&2; exit 1; }
+          echo "DraBornPark v1.0.4 source validation complete."
