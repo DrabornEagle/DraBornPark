@@ -1,25 +1,22 @@
-name: DraBornPark Google Play Release
+name: DraBornPark v1.0.3 Google Play Release
 
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - '.github/RELEASE_V101_TRIGGER'
+      - '.github/RELEASE_V103_TRIGGER'
   pull_request:
     branches: [main]
     paths:
-      - '.github/RELEASE_V101_TRIGGER'
+      - '.github/RELEASE_V103_TRIGGER'
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
-  group: drabornpark-google-play-release-v101-${{ github.event_name }}
+  group: drabornpark-google-play-release-v103-${{ github.event_name }}
   cancel-in-progress: false
-
-env:
-  EXPECTED_UPLOAD_CERT_SHA256: '95:4C:F9:A8:E0:DB:09:46:A2:63:18:D6:95:7B:DF:0B:72:2D:51:7B:40:67:67:F8:3E:4C:37:BE:84:67:6B:C6'
 
 jobs:
   build-release:
@@ -36,6 +33,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
 
       - name: Setup Java 17
         uses: actions/setup-java@v5
@@ -46,12 +44,10 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Install aligned Expo SDK 57 dependencies
+      - name: Install locked dependencies
         env:
           CI: '1'
-        run: |
-          npm install --no-audit --no-fund
-          npx expo install --fix
+        run: npm ci --no-audit --no-fund
 
       - name: Verify source and dependency policy
         env:
@@ -63,19 +59,6 @@ jobs:
           git diff --check
           ! grep -q 'expo-dev-client' package.json
           ! grep -q 'expo-dev-client' app.json
-
-      - name: Persist aligned dependency lockfile
-        if: github.event_name != 'pull_request'
-        shell: bash
-        run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add package.json package-lock.json
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: lock Expo SDK 57 dependencies for v1.0.1"
-            git push origin HEAD:main
-          fi
 
       - name: Generate clean Android production project
         env:
@@ -115,8 +98,8 @@ jobs:
           test -n "$APK" && test -f "$APK"
           test -n "$AAB" && test -f "$AAB"
           "$AAPT" dump badging "$APK" | grep "package: name='com.draborneagle.drabornpark'"
-          "$AAPT" dump badging "$APK" | grep "versionCode='2'"
-          "$AAPT" dump badging "$APK" | grep "versionName='1.0.1'"
+          "$AAPT" dump badging "$APK" | grep "versionCode='3'"
+          "$AAPT" dump badging "$APK" | grep "versionName='1.0.3'"
           "$AAPT" dump xmltree "$APK" AndroidManifest.xml | grep -F 'www.draborneagle.com'
           if "$AAPT" dump permissions "$APK" | grep -F 'android.permission.SYSTEM_ALERT_WINDOW'; then echo 'SYSTEM_ALERT_WINDOW present' >&2; exit 1; fi
           if "$AAPT" dump permissions "$APK" | grep -F 'android.permission.RECORD_AUDIO'; then echo 'RECORD_AUDIO present' >&2; exit 1; fi
@@ -129,28 +112,27 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-output
-          cp "$APK" release-output/DraBornPark-v1.0.1-vc2-production-unsigned.apk
-          cp "$AAB" release-output/DraBornPark-v1.0.1-vc2-production-unsigned.aab
+          cp "$APK" release-output/DraBornPark-v1.0.3-vc3-production-unsigned.apk
+          cp "$AAB" release-output/DraBornPark-v1.0.3-vc3-production-unsigned.aab
           sha256sum release-output/* > release-output/SHA256SUMS.txt
           cat > release-output/BUILD_INFO.txt <<'EOF'
           DraBornPark Google Play production signing input
-          Version name: 1.0.1
-          Android versionCode: 2
+          Version name: 1.0.3
+          Android versionCode: 3
           Package: com.draborneagle.drabornpark
           Expo SDK: 57
-          React Native: 0.86.2
           expo-dev-client: absent
           SYSTEM_ALERT_WINDOW: verified absent
           RECORD_AUDIO: verified absent
           Android App Link: https://www.draborneagle.com/DraBornPark/t/*
           Expected upload certificate SHA-256: 95:4C:F9:A8:E0:DB:09:46:A2:63:18:D6:95:7B:DF:0B:72:2D:51:7B:40:67:67:F8:3E:4C:37:BE:84:67:6B:C6
-          Final AAB is signed outside GitHub Actions with the permanent upload key and verified before distribution.
+          Final AAB is signed outside GitHub Actions with the permanent DraBornPark upload key and verified before distribution.
           EOF
 
       - name: Upload production secure-signing inputs
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v1.0.1-vc2-production-signing-inputs
+          name: DraBornPark-v1.0.3-vc3-production-signing-inputs
           path: release-output/
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 14
