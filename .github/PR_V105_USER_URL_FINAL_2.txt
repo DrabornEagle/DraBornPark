@@ -1,0 +1,1 @@
+Ensures PR head differs after the release trigger update.
