@@ -1,0 +1,39 @@
+name: Restore DraBornPark v1.0.5 User URL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/RESTORE_V105_USER_URL_TRIGGER'
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Restore username URL UI without changing canonical NFC URL
+        run: node scripts/dkd-restore-v105-user-url.mjs
+      - name: Validate source patch
+        run: |
+          grep -q 'NFC BAĞLANTI KODU' app/factory.tsx
+          grep -q 'KULLANICI ADI / KİŞİSEL BAĞLANTI' app/factory.tsx
+          grep -q 'KİŞİSEL URL' app/factory.tsx
+          grep -q 'dkd_drabornpark_factory_update_tag_v104' app/factory.tsx
+          ! grep -q 'KISA ETİKET KODU' app/factory.tsx
+      - name: Commit restored UI
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/factory.tsx scripts/check-project.mjs
+          if ! git diff --cached --quiet; then
+            git commit -m 'fix(v1.0.5): restore personal username URL UI'
+            git push origin HEAD:main
+          fi
