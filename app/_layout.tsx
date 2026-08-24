@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as NavigationBar from 'expo-navigation-bar';
 import * as SplashScreen from 'expo-splash-screen';
-import {NavigationBar} from 'expo-navigation-bar';
 import {Stack} from 'expo-router';
 import {StatusBar} from 'expo-status-bar';
 import React,{useEffect,useState} from 'react';
@@ -39,9 +39,13 @@ export default function RootLayout(){
   const [dkd_startup,setDkdStartup]=useState(true);
   useEffect(()=>{
     let dkd_alive=true;
+    if(Platform.OS==='android'){
+      NavigationBar.setStyle('dark');
+      void NavigationBar.setVisibilityAsync('visible').catch(()=>undefined);
+    }
     const dkd_begin=async()=>{if(Platform.OS!=='web')await SplashScreen.hideAsync().catch(()=>undefined);setTimeout(()=>{if(dkd_alive)setDkdStartup(false)},1850)};
     void dkd_begin();
     return()=>{dkd_alive=false};
   },[]);
-  return <SafeAreaProvider><LivePushRegistration/><NotificationPermissionPrompt/><StatusBar style="light"/>{Platform.OS==='android'?<NavigationBar style="dark" hidden={false}/>:null}<Stack screenOptions={{headerShown:false,contentStyle:{backgroundColor:palette.bg},animation:'fade_from_bottom',animationDuration:220,gestureEnabled:true,fullScreenGestureEnabled:true}}/>{dkd_startup?<DkdStartupSplash/>:null}</SafeAreaProvider>;
+  return <SafeAreaProvider><LivePushRegistration/><NotificationPermissionPrompt/><StatusBar style="light"/><Stack screenOptions={{headerShown:false,contentStyle:{backgroundColor:palette.bg},animation:'fade_from_bottom',animationDuration:220,gestureEnabled:true,fullScreenGestureEnabled:true}}/>{dkd_startup?<DkdStartupSplash/>:null}</SafeAreaProvider>;
 }
