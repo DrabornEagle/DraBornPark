@@ -6,12 +6,16 @@ on:
     branches: [main]
     paths:
       - '.github/RELEASE_V101_TRIGGER'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/RELEASE_V101_TRIGGER'
 
 permissions:
   contents: write
 
 concurrency:
-  group: drabornpark-google-play-release-v101
+  group: drabornpark-google-play-release-v101-${{ github.event_name }}
   cancel-in-progress: false
 
 env:
@@ -61,6 +65,7 @@ jobs:
           ! grep -q 'expo-dev-client' app.json
 
       - name: Persist aligned dependency lockfile
+        if: github.event_name != 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
