@@ -1,4 +1,4 @@
-name: DraBornPark v1.0.5 Source Check
+name: DraBornPark v1.0.6 Source Check
 
 on:
   workflow_dispatch:
@@ -14,7 +14,7 @@ on:
       - 'src/**'
       - 'scripts/**'
       - 'assets/branding/v101/**'
-      - 'supabase/migrations/20260824205500_dkd_drabornpark_v105_nfc_short_url.sql'
+      - 'supabase/migrations/20260825024500_dkd_drabornpark_v106_realtime_calls.sql'
   pull_request:
     branches: [main]
 
@@ -22,7 +22,7 @@ permissions:
   contents: write
 
 concurrency:
-  group: drabornpark-v105-source-check-${{ github.ref }}
+  group: drabornpark-v106-source-check-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -39,9 +39,9 @@ jobs:
           cache: npm
       - name: Sync dependency lock
         run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-      - name: Install dependencies and materialize brand assets
+      - name: Install dependencies and materialize v1.0.6 assets
         run: npm install --no-audit --no-fund
-      - name: Validate DraBornPark v1.0.5 source
+      - name: Validate DraBornPark v1.0.6 source
         run: |
           npm run check
           npx expo install --check
@@ -54,10 +54,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add package-lock.json
           if ! git diff --cached --quiet; then
-            git commit -m "chore: sync DraBornPark v1.0.5 package lock"
+            git commit -m "chore: sync DraBornPark v1.0.6 package lock"
             git push origin HEAD:main
           fi
       - name: Confirm source validation produced no Android release
         run: |
           test ! -d android/app/build/outputs || { echo "Unexpected Android build output" >&2; exit 1; }
-          echo "DraBornPark v1.0.5 source validation complete."
+          echo "DraBornPark v1.0.6 source validation complete."
