@@ -1,0 +1,61 @@
+name: DraBornPark v1.0.8 Push Source Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/V108_PUSH_SYNC_TRIGGER'
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Align repository push functions with deployed v1.0.8
+        shell: bash
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs=require('fs');
+          function patch(file, replacements){
+            let text=fs.readFileSync(file,'utf8');
+            for(const [from,to] of replacements){if(text.includes(to))continue;if(!text.includes(from))throw new Error(`marker missing in ${file}: ${from.slice(0,80)}`);text=text.replace(from,to);}
+            fs.writeFileSync(file,text);
+          }
+          patch('supabase/functions/drabornpark-public-contact/index.ts',[
+            ['direct_message:{title:"Araç sahibine yeni mesaj"','direct_message:{title:"Doğrudan güvenli mesaj"'],
+            ['channelId:PUSH_CHANNEL,data}', 'channelId:PUSH_CHANNEL,sound:"default",data}'],
+            ['evidenceCamera:true,directMessage:true});','evidenceCamera:true,directMessage:true,pushChannel:PUSH_CHANNEL});']
+          ]);
+          patch('supabase/functions/drabornpark-call-request/index.ts',[
+            ['channelId:PUSH_CHANNEL,data:{type:"drabornpark_call_request"','channelId:PUSH_CHANNEL,sound:"default",data:{type:"drabornpark_call_request"'],
+            ['cameraEvidenceRequired:true});','cameraEvidenceRequired:true,pushChannel:PUSH_CHANNEL});']
+          ]);
+          NODE
+          grep -F 'const VERSION="1.0.8";' supabase/functions/drabornpark-public-contact/index.ts
+          grep -F 'const PUSH_CHANNEL="drabornpark-alerts-v4";' supabase/functions/drabornpark-public-contact/index.ts
+          grep -F 'sound:"default"' supabase/functions/drabornpark-public-contact/index.ts
+          grep -F 'pushChannel:PUSH_CHANNEL' supabase/functions/drabornpark-public-contact/index.ts
+          grep -F 'const VERSION="1.0.8";' supabase/functions/drabornpark-call-request/index.ts
+          grep -F 'sound:"default"' supabase/functions/drabornpark-call-request/index.ts
+          grep -F 'pushChannel:PUSH_CHANNEL' supabase/functions/drabornpark-call-request/index.ts
+      - name: Commit synchronized sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          if git diff --quiet; then exit 0; fi
+          git config user.name 'DrabornEagle Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add supabase/functions/drabornpark-public-contact/index.ts supabase/functions/drabornpark-call-request/index.ts
+          git commit -m 'chore(v1.0.8): synchronize deployed push function sources'
+          git push origin HEAD:main
