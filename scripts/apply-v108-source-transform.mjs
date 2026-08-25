@@ -2,6 +2,16 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const dkd_root=process.cwd();
+const dkd_read=dkd_file=>fs.readFileSync(path.join(dkd_root,dkd_file),'utf8');
+
+// Fresh repository sources are intentionally kept before the v1.0.7 materialized UI patch.
+// Run that compatibility transform only once; a v1.0.8-materialized tree must stay idempotent
+// when postinstall/check/typecheck execute more than once in the same workspace.
+const dkd_chrome_before=dkd_read('src/components/AppChrome.tsx');
+if(dkd_chrome_before.includes("dockLabel:{fontSize:type.micro,color:palette.muted2,fontWeight:'900',transform:[{translateX:6}]}")){
+  await import('./apply-v107-source-transform.mjs');
+}
+
 function dkd_patch(dkd_file,dkd_replacements){
   const dkd_path=path.join(dkd_root,dkd_file);
   let dkd_text=fs.readFileSync(dkd_path,'utf8');
