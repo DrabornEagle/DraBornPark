@@ -1,13 +1,13 @@
-name: DraBornPark v1.0.7 Google Play Sign
+name: DraBornPark v1.0.8 Google Play Sign
 
 on:
   workflow_run:
-    workflows: ["DraBornPark v1.0.7 Google Play Release"]
+    workflows: ["DraBornPark v1.0.8 Google Play Release"]
     types: [completed]
   workflow_dispatch:
     inputs:
       run_id:
-        description: "Successful v1.0.7 release workflow run ID"
+        description: "Successful v1.0.8 release workflow run ID"
         required: true
         type: string
 
@@ -46,14 +46,17 @@ jobs:
           test -n "$DKD_SOURCE_RUN_ID"
           echo "DKD_SOURCE_RUN_ID=$DKD_SOURCE_RUN_ID" >> "$GITHUB_ENV"
 
-      - name: Download verified unsigned v1.0.7 build
+      - name: Download verified unsigned v1.0.8 build
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p signing-input
-          gh run download "$DKD_SOURCE_RUN_ID" --repo "${GITHUB_REPOSITORY}" --name "DraBornPark-v1.0.7-vc7-production-signing-inputs" --dir signing-input
-          test -f signing-input/DraBornPark-v1.0.7-vc7-production-unsigned.aab
+          gh run download "$DKD_SOURCE_RUN_ID" --repo "${GITHUB_REPOSITORY}" --name "DraBornPark-v1.0.8-vc8-production-signing-inputs" --dir signing-input
+          test -f signing-input/DraBornPark-v1.0.8-vc8-production-unsigned.aab
           test -f signing-input/BUILD_INFO.txt
+          grep -F 'Version name: 1.0.8' signing-input/BUILD_INFO.txt
+          grep -F 'Android versionCode: 8' signing-input/BUILD_INFO.txt
+          grep -F 'Firebase project: drabornpark' signing-input/BUILD_INFO.txt
 
       - name: Validate permanent DraBornPark upload key
         shell: bash
@@ -76,13 +79,13 @@ jobs:
           fi
           echo "Permanent DraBornPark upload certificate verified."
 
-      - name: Sign v1.0.7 AAB exactly once
+      - name: Sign v1.0.8 AAB exactly once
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p signed-output
-          DKD_UNSIGNED="signing-input/DraBornPark-v1.0.7-vc7-production-unsigned.aab"
-          DKD_SIGNED="signed-output/DraBornPark-v1.0.7-vc7-GooglePlay-release.aab"
+          DKD_UNSIGNED="signing-input/DraBornPark-v1.0.8-vc8-production-unsigned.aab"
+          DKD_SIGNED="signed-output/DraBornPark-v1.0.8-vc8-GooglePlay-release.aab"
           if unzip -Z1 "$DKD_UNSIGNED" | grep -E '^META-INF/.*\.(SF|RSA|DSA|EC)$'; then
             echo "Unsigned source unexpectedly contains a JAR signature." >&2
             exit 1
@@ -95,8 +98,10 @@ jobs:
           test "$DKD_SIG_COUNT" -eq 1
           sha256sum "$DKD_SIGNED" | tee signed-output/SHA256SUMS.txt
           cat > signed-output/VERIFY.txt <<EOF
-          DraBornPark v1.0.7 / versionCode 7 — Google Play Signed Release
+          DraBornPark v1.0.8 / versionCode 8 — Google Play Signed Release
           Package: com.draborneagle.drabornpark
+          Expo EAS Project ID: db4ce418-3c4a-4323-9a1f-e39614b64e27
+          Firebase project: drabornpark
           Upload certificate SHA-256: $DKD_EXPECTED_CERT_SHA256
           Signature algorithm: SHA384withRSA
           Digest algorithm: SHA-256
@@ -110,7 +115,7 @@ jobs:
       - name: Upload signed Google Play AAB
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v1.0.7-vc7-GooglePlay-signed
+          name: DraBornPark-v1.0.8-vc8-GooglePlay-signed
           path: signed-output/
           if-no-files-found: error
           retention-days: 14
