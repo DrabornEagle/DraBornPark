@@ -46,18 +46,17 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes eas-cli@latest whoami
-          npx --yes eas-cli@latest project:info
-          npx --yes eas-cli@latest config -p android --profile production --non-interactive > /tmp/dkd-eas-config.json
+          npx --yes eas-cli@latest project:info | tee /tmp/dkd-project-info.txt
+          grep -F '@draborneagle/drabornpark' /tmp/dkd-project-info.txt
+          grep -F 'db4ce418-3c4a-4323-9a1f-e39614b64e27' /tmp/dkd-project-info.txt
           node <<'NODE'
           const fs=require('fs');
           const app=JSON.parse(fs.readFileSync('app.json','utf8'));
-          const cfg=JSON.parse(fs.readFileSync('/tmp/dkd-eas-config.json','utf8'));
           const expected='db4ce418-3c4a-4323-9a1f-e39614b64e27';
           if(app.expo?.owner!=='draborneagle')throw new Error('Expo owner mismatch');
           if(app.expo?.slug!=='drabornpark')throw new Error('Expo slug mismatch');
           if(app.expo?.extra?.eas?.projectId!==expected)throw new Error('app.json EAS projectId mismatch');
           if(app.expo?.android?.package!=='com.draborneagle.drabornpark')throw new Error('Android package mismatch');
-          if(cfg?.projectId && cfg.projectId!==expected)throw new Error('EAS config projectId mismatch');
           console.log('Expo project identity OK:',expected);
           NODE
 
