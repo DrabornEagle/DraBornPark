@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "255173303042",
+    "project_id": "drabornpark",
+    "storage_bucket": "drabornpark.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:255173303042:android:8c85641d4e2979f3db001b",
+        "android_client_info": {
+          "package_name": "com.draborneagle.drabornpark"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDu56z0Gk_BjLEii6Lpd-hCAYodlq7XXiI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
