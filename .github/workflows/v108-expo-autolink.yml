@@ -1,0 +1,100 @@
+name: DraBornPark v1.0.8 Expo EAS Auto Link
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/V108_EXPO_AUTOLINK_TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+jobs:
+  link-eas:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Verify Expo authentication secret
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPO_TOKEN:-}" ]; then
+            echo 'EXPO_TOKEN GitHub secret is not configured for this repository/account.' >&2
+            exit 42
+          fi
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Link existing Expo project and capture EAS Project ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes eas-cli@latest init --account draborneagle --non-interactive --json > /tmp/dkd-eas-init.json
+          cat /tmp/dkd-eas-init.json
+          node <<'NODE'
+          const fs=require('fs');
+          const raw=fs.readFileSync('/tmp/dkd-eas-init.json','utf8').trim();
+          const data=JSON.parse(raw);
+          const app=JSON.parse(fs.readFileSync('app.json','utf8'));
+          const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+          function findId(value){
+            if(typeof value==='string'&&uuid.test(value))return value;
+            if(value&&typeof value==='object')for(const [k,v] of Object.entries(value)){if(/project.?id|^id$/i.test(k)&&typeof v==='string'&&uuid.test(v))return v;const nested=findId(v);if(nested)return nested;}
+            return null;
+          }
+          const id=app?.expo?.extra?.eas?.projectId||findId(data);
+          if(!id||!uuid.test(id))throw new Error('EAS Project ID UUID could not be resolved.');
+          app.expo.owner='draborneagle';
+          app.expo.extra={...(app.expo.extra||{}),eas:{...((app.expo.extra||{}).eas||{}),projectId:id}};
+          fs.writeFileSync('app.json',JSON.stringify(app,null,2)+'\n');
+          fs.writeFileSync('.github/EAS_PROJECT_INFO.txt',`DraBornPark EAS Project\nOwner: draborneagle\nSlug: drabornpark\nProject ID: ${id}\nLinked: ${new Date().toISOString()}\n`);
+          console.log('Resolved EAS Project ID:',id);
+          NODE
+      - name: Validate linked Expo configuration
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes eas-cli@latest project:info
+          npx --yes eas-cli@latest config -p android --json --non-interactive > /tmp/dkd-eas-config.json
+          node <<'NODE'
+          const fs=require('fs');
+          const app=JSON.parse(fs.readFileSync('app.json','utf8'));
+          const cfg=JSON.parse(fs.readFileSync('/tmp/dkd-eas-config.json','utf8'));
+          const id=app.expo?.extra?.eas?.projectId;
+          if(app.expo?.owner!=='draborneagle')throw new Error('Expo owner mismatch');
+          if(app.expo?.slug!=='drabornpark')throw new Error('Expo slug mismatch');
+          if(app.expo?.android?.package!=='com.draborneagle.drabornpark')throw new Error('Android package mismatch');
+          if(!id)throw new Error('EAS Project ID missing');
+          if(cfg?.projectId&&cfg.projectId!==id)throw new Error('EAS config project ID mismatch');
+          console.log('Expo/EAS configuration verified for DraBornPark:',id);
+          NODE
+      - name: Verify project checks after linking
+        run: |
+          npm run check
+          npm run typecheck
+          npx expo prebuild --platform android --clean --no-install
+          test -f android/app/google-services.json
+          grep -F 'com.draborneagle.drabornpark' android/app/google-services.json
+      - name: Commit Expo EAS link
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'DrabornEagle Release Bot'
+          git config user.email 'actions@users.noreply.github.com'
+          git add app.json .github/EAS_PROJECT_INFO.txt
+          if git diff --cached --quiet; then exit 0; fi
+          git commit -m 'chore(v1.0.8): link DraBornPark to Expo EAS project'
+          git push origin HEAD:main
