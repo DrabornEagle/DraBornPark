@@ -3,6 +3,9 @@ const root=process.cwd();const read=dkd_path=>fs.readFileSync(path.join(root,dkd
 const pkg=JSON.parse(read('package.json'));const app=JSON.parse(read('app.json'));const repoVersion=read('.github/VERSION').trim();
 if(pkg.version!=='1.0.8'||app.expo?.version!=='1.0.8'||repoVersion!=='1.0.8')fail.push('v1.0.8 version coherence failed');
 if(app.expo?.android?.versionCode!==8)fail.push('Android versionCode must be 8');
+if(app.expo?.owner!=='draborneagle')fail.push('Expo owner must be draborneagle');
+if(app.expo?.slug!=='drabornpark')fail.push('Expo slug must be drabornpark');
+if(app.expo?.extra?.eas?.projectId!=='db4ce418-3c4a-4323-9a1f-e39614b64e27')fail.push('DraBornPark EAS projectId mismatch');
 if(!Object.values(pkg.scripts??{}).every(dkd_script=>String(dkd_script).includes('apply-v108-source-transform.mjs')))fail.push('All project scripts must apply v1.0.8 source transform');
 if(pkg.dependencies?.['expo-dev-client'])fail.push('expo-dev-client must not exist in production dependencies');
 if((app.expo?.plugins??[]).some(dkd_plugin=>Array.isArray(dkd_plugin)?dkd_plugin[0]==='expo-dev-client':dkd_plugin==='expo-dev-client'))fail.push('expo-dev-client production plugin must not exist');
@@ -35,4 +38,4 @@ const tags=read('app/tags.tsx');for(const dkd_marker of ['expo-clipboard','NFC /
 const uiPlugin=read('scripts/turkish-ui-babel-plugin.cjs');if(!uiPlugin.includes('APP_VERSION'))fail.push('Dynamic visible version normalization missing');
 for(const dkd_legacy of ['.github/workflows/restore-v105-user-url.yml','.github/workflows/v105-source-check.yml','scripts/dkd-restore-v105-user-url.mjs','scripts/apply-v106-source-transform.mjs'])if(exists(dkd_legacy))fail.push('Legacy v1.0.5/v1.0.6 release helper must be removed: '+dkd_legacy);
 if(fail.length){console.error('DraBornPark integrity check failed:\n- '+fail.join('\n- '));process.exit(1)}
-console.log('DraBornPark integrity OK • v1.0.8 • Android vc8 • Firebase Android config • FCM channel v4 • centered dock labels • restored secure-session badge • direct notification permission • 1024px factory QR export.');
+console.log('DraBornPark integrity OK • v1.0.8 • Android vc8 • Expo EAS linked • Firebase Android config • FCM channel v4 • centered dock labels • restored secure-session badge • direct notification permission • 1024px factory QR export.');
