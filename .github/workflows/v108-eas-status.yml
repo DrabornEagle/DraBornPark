@@ -24,9 +24,24 @@ jobs:
           cache: npm
       - name: Install project dependencies
         run: npm ci --no-audit --no-fund
-      - name: Read latest Android EAS builds
+      - name: Inspect active Android EAS build
         shell: bash
         run: |
           set -euo pipefail
           test -n "${EXPO_TOKEN:-}"
-          npx --yes eas-cli@latest build:list --platform android --limit 5 --json --non-interactive | tee /tmp/eas-builds.json
+          npx --yes eas-cli@latest build:view 9eb91191-b516-498b-b404-a79344afd8a3 --json | tee /tmp/dkd-build.json
+          node <<'NODE'
+          const fs=require('fs');
+          const d=JSON.parse(fs.readFileSync('/tmp/dkd-build.json','utf8'));
+          console.log('STATUS='+d.status);
+          console.log('VERSION='+d.appVersion);
+          console.log('BUILD_VERSION='+d.appBuildVersion);
+          console.log('ARTIFACT='+(d.artifacts?.buildUrl||d.artifacts?.applicationArchiveUrl||''));
+          const logs=d.logFiles||[];
+          fs.writeFileSync('/tmp/dkd-log-urls',logs.join('\n'));
+          NODE
+          while IFS= read -r dkd_log; do
+            [ -n "$dkd_log" ] || continue
+            echo '--- EAS LOG TAIL ---'
+            curl -L --fail --silent --show-error "$dkd_log" | tail -n 120 || true
+          done < /tmp/dkd-log-urls
