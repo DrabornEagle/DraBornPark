@@ -1,0 +1,29 @@
+name: DraBornPark v1.0.8 EAS Status Probe
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/EAS_STATUS_V108_TRIGGER'
+
+permissions:
+  contents: read
+
+env:
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+jobs:
+  status:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Read latest Android EAS builds
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${EXPO_TOKEN:-}"
+          npx --yes eas-cli@latest build:list --platform android --limit 5 --json --non-interactive | tee /tmp/eas-builds.json
