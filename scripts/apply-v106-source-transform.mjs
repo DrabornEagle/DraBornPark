@@ -27,7 +27,7 @@ dkd_patch('app/index.tsx',[[
 
 dkd_patch('app/_layout.tsx',[[
   "const PERMISSION_PROMPT_KEY='drabornpark_notification_prompt_v054';",
-  "const PERMISSION_PROMPT_KEY='drabornpark_notification_prompt_v106';"
+  "const PERMISSION_PROMPT_KEY='drabornpark_notification_prompt_v106b';"
 ]]);
 
 const dkd_call_helper="async function presentLocalCallRequest(call:any){const callId=String(call?.id||'');const key=callId?`call:${callId}`:`call:${String(call?.created_at||'')}`;if(rememberNotification(key))return;await presentSystemNotification({title:'Acil arama talebi',body:'Aracınız için yeni bir güvenli arama talebi geldi.',data:{type:'drabornpark_call_request',callRequestId:call?.id,source:'realtime-local-call'}});}\n";
