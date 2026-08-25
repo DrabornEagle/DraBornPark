@@ -1,0 +1,40 @@
+name: DraBornPark v1.0.8 Source Check
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app.json'
+      - 'package.json'
+      - '.github/VERSION'
+      - 'scripts/apply-v108-source-transform.mjs'
+      - 'scripts/check-project.mjs'
+      - '.github/V108_SOURCE_CHECK_TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate-v108:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Validate DraBornPark v1.0.8
+        run: npm run check
+      - name: TypeScript check
+        run: npm run typecheck
+      - name: Verify no Android release build was started
+        run: |
+          test "$(node -p "require('./app.json').expo.version")" = "1.0.8"
+          test "$(node -p "require('./app.json').expo.android.versionCode")" = "8"
+          echo "v1.0.8 source-only validation complete; no AAB/APK build step exists in this workflow."
