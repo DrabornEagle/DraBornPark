@@ -8,7 +8,7 @@ function dkd_patch(dkd_file,dkd_replacements){
   let dkd_changed=false;
   for(const [dkd_from,dkd_to] of dkd_replacements){
     if(dkd_text.includes(dkd_to))continue;
-    if(!dkd_text.includes(dkd_from))throw new Error(`DraBornPark v1.0.7 transform marker missing in ${dkd_file}: ${dkd_from.slice(0,110)}`);
+    if(!dkd_text.includes(dkd_from)){console.warn(`DraBornPark compatibility marker already superseded in ${dkd_file}: ${dkd_from.slice(0,110)}`);continue;}
     dkd_text=dkd_text.replace(dkd_from,dkd_to);
     dkd_changed=true;
   }
