@@ -82,7 +82,7 @@ export function subscribeInboxChanges(onChange: () => void) {
     if (!active || !userId) return;
 
     channel = supabase
-      .channel(`drabornpark-inbox-v053-${userId}-${Date.now()}`)
+      .channel(`drabornpark-inbox-v106-${userId}-${Date.now()}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
@@ -94,11 +94,17 @@ export function subscribeInboxChanges(onChange: () => void) {
         schema: 'public',
         table: 'drabornpark_messages',
       }, onChange)
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'drabornpark_call_requests',
+        filter: `owner_user_id=eq.${userId}`,
+      }, onChange)
       .subscribe();
 
     fallbackTimer = setInterval(() => {
       if (active) onChange();
-    }, 2000);
+    }, 1200);
   }).catch(() => undefined);
 
   return {
