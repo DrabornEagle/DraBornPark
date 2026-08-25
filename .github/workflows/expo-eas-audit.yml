@@ -1,0 +1,110 @@
+name: DraBornPark Expo EAS Credential Audit
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/EXPO_AUDIT_TRIGGER'
+
+permissions:
+  contents: read
+
+env:
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+jobs:
+  audit:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Verify EXPO_TOKEN
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${EXPO_TOKEN:-}" ]; then
+            echo 'EXPO_TOKEN is missing. Add it under GitHub repository Settings > Secrets and variables > Actions > Repository secrets.' >&2
+            exit 42
+          fi
+
+      - name: Verify Expo account and linked project
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes eas-cli@latest whoami
+          npx --yes eas-cli@latest project:info
+          npx --yes eas-cli@latest config -p android --profile production --non-interactive > /tmp/dkd-eas-config.json
+          node <<'NODE'
+          const fs=require('fs');
+          const app=JSON.parse(fs.readFileSync('app.json','utf8'));
+          const cfg=JSON.parse(fs.readFileSync('/tmp/dkd-eas-config.json','utf8'));
+          const expected='db4ce418-3c4a-4323-9a1f-e39614b64e27';
+          if(app.expo?.owner!=='draborneagle')throw new Error('Expo owner mismatch');
+          if(app.expo?.slug!=='drabornpark')throw new Error('Expo slug mismatch');
+          if(app.expo?.extra?.eas?.projectId!==expected)throw new Error('app.json EAS projectId mismatch');
+          if(app.expo?.android?.package!=='com.draborneagle.drabornpark')throw new Error('Android package mismatch');
+          if(cfg?.projectId && cfg.projectId!==expected)throw new Error('EAS config projectId mismatch');
+          console.log('Expo project identity OK:',expected);
+          NODE
+
+      - name: Audit Android FCM V1 credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat >/tmp/dkd-query.json <<'JSON'
+          {
+            "query":"query DkdAndroidCredentialAudit($fullName:String!,$applicationIdentifier:String!){app{byFullName(fullName:$fullName){id name slug androidAppCredentials(filter:{applicationIdentifier:$applicationIdentifier}){id applicationIdentifier googleServiceAccountKeyForFcmV1{id projectIdentifier privateKeyIdentifier clientEmail clientIdentifier createdAt updatedAt} googleServiceAccountKeyForSubmissions{id projectIdentifier privateKeyIdentifier clientEmail clientIdentifier createdAt updatedAt}}}}}",
+            "variables":{"fullName":"@draborneagle/drabornpark","applicationIdentifier":"com.draborneagle.drabornpark"}
+          }
+          JSON
+          curl -sS \
+            -H "Authorization: Bearer ${EXPO_TOKEN}" \
+            -H 'Content-Type: application/json' \
+            --data-binary @/tmp/dkd-query.json \
+            https://api.expo.dev/graphql > /tmp/dkd-expo-credentials.json
+          node <<'NODE'
+          const fs=require('fs');
+          const payload=JSON.parse(fs.readFileSync('/tmp/dkd-expo-credentials.json','utf8'));
+          if(payload.errors?.length){
+            console.error(JSON.stringify(payload.errors,null,2));
+            throw new Error('Expo GraphQL credential audit failed');
+          }
+          const project=payload?.data?.app?.byFullName;
+          if(!project)throw new Error('Expo project not returned');
+          if(project.id!=='db4ce418-3c4a-4323-9a1f-e39614b64e27')throw new Error('Expo project ID mismatch');
+          const creds=(project.androidAppCredentials||[]).find(x=>x?.applicationIdentifier==='com.draborneagle.drabornpark');
+          if(!creds)throw new Error('Android application identifier is not registered in EAS Credentials');
+          const fcm=creds.googleServiceAccountKeyForFcmV1;
+          if(!fcm){
+            console.error('FCM_V1_MISSING');
+            throw new Error('FCM V1 Google Service Account Key is missing in Expo EAS Credentials');
+          }
+          if(fcm.projectIdentifier!=='drabornpark')throw new Error(`FCM V1 key belongs to unexpected Firebase project: ${fcm.projectIdentifier}`);
+          console.log('FCM V1 credential OK');
+          console.log('Firebase project:',fcm.projectIdentifier);
+          console.log('Service account:',fcm.clientEmail);
+          console.log('Updated:',fcm.updatedAt);
+          const submit=creds.googleServiceAccountKeyForSubmissions;
+          if(submit){
+            console.log('Google Play submission service account is also configured:',submit.clientEmail);
+          }else{
+            console.log('INFO: Google Play submission service account is not configured in Expo. This is not required for push notifications.');
+          }
+          NODE
+
+      - name: Validate local source remains healthy
+        run: |
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run typecheck
