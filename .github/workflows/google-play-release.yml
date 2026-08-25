@@ -16,7 +16,7 @@ permissions:
 
 concurrency:
   group: drabornpark-google-play-release-v106-${{ github.event_name }}
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   build-release:
