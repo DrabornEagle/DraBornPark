@@ -1,0 +1,9 @@
+DraBornPark Expo EAS Project
+Owner: draborneagle
+Slug: drabornpark
+Project ID: db4ce418-3c4a-4323-9a1f-e39614b64e27
+Android package: com.draborneagle.drabornpark
+Firebase project: drabornpark
+Notification channel: drabornpark-alerts-v4
+Release source version: 1.0.8
+Android versionCode: 8
