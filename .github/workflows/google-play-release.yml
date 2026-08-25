@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: drabornpark-google-play-release-v106-${{ github.event_name }}
+  group: drabornpark-google-play-release-v106-final-${{ github.event_name }}
   cancel-in-progress: true
 
 jobs:
