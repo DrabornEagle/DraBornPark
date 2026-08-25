@@ -38,6 +38,9 @@ jobs:
             exit 42
           fi
 
+      - name: Install project dependencies
+        run: npm ci --no-audit --no-fund
+
       - name: Verify Expo account and linked project
         shell: bash
         run: |
@@ -105,6 +108,5 @@ jobs:
 
       - name: Validate local source remains healthy
         run: |
-          npm ci --no-audit --no-fund
           npm run check
           npm run typecheck
