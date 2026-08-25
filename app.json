@@ -46,7 +46,7 @@
       [
         "expo-notifications",
         {
-          "defaultChannel": "drabornpark-alerts-v3"
+          "defaultChannel": "drabornpark-alerts-v4"
         }
       ],
       [
@@ -68,6 +68,7 @@
     "android": {
       "package": "com.draborneagle.drabornpark",
       "versionCode": 8,
+      "googleServicesFile": "./google-services.json",
       "backgroundColor": "#050816",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
