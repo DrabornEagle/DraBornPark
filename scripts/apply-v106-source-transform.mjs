@@ -34,7 +34,7 @@ const dkd_call_helper="async function presentLocalCallRequest(call:any){const ca
 
 dkd_patch('src/lib/push.ts',[
   ["witness:'Bir olaya şahit olundu',emergency:'Acil durum bildirimi',other:'Yeni araç bildirimi'","witness:'Bir olaya şahit olundu',emergency:'Acil durum bildirimi',direct_message:'Doğrudan güvenli mesaj',other:'Yeni araç bildirimi'"],
-  ["const projectId=(Constants.expoConfig?.extra as any)?.eas?.projectId??(Constants as any).easConfig?.projectId??null;","const projectId=(Constants.expoConfig?.extra as any)?.eas?.projectId??(Constants as any).easConfig?.projectId??process.env.EXPO_PUBLIC_EAS_PROJECT_ID??null;"],
+  ["const projectId=(Constants.expoConfig?.extra as any)?.eas?.projectId??(Constants as any).easConfig?.projectId??null;","const projectId=(Constants.expoConfig?.extra as any)?.eas?.projectId??(Constants as any).easConfig?.projectId??((globalThis as any)?.process?.env?.EXPO_PUBLIC_EAS_PROJECT_ID??null);"],
   ["export function startForegroundReportNotifications():PushSubscription{",dkd_call_helper+"export function startForegroundReportNotifications():PushSubscription{"],
   [".on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_messages'},payload=>{void presentLocalVisitorMessage((payload as any).new);}).subscribe();",".on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_messages'},payload=>{void presentLocalVisitorMessage((payload as any).new);}).on('postgres_changes',{event:'INSERT',schema:'public',table:'drabornpark_call_requests',filter:`owner_user_id=eq.${user.id}`},payload=>{void presentLocalCallRequest((payload as any).new);}).subscribe();"]
 ]);
