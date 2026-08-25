@@ -8,6 +8,11 @@
     "scheme": "drabornpark",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#050816",
+    "extra": {
+      "eas": {
+        "projectId": "db4ce418-3c4a-4323-9a1f-e39614b64e27"
+      }
+    },
     "plugins": [
       "expo-router",
       [
