@@ -1,5 +1,6 @@
-DraBornPark v1.0.8 final source validation
+DraBornPark v1.0.8 final native validation
 Android versionCode 8
 Firebase Android: drabornpark
 Notification channel: drabornpark-alerts-v4
+Native prebuild validation enabled.
 No APK/AAB build requested.
