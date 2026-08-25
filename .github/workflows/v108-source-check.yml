@@ -5,8 +5,20 @@ on:
     branches: [main]
     paths:
       - 'app.json'
+      - 'google-services.json'
       - 'package.json'
+      - 'package-lock.json'
+      - 'app/_layout.tsx'
+      - 'src/lib/push.ts'
+      - 'src/components/AppChrome.tsx'
+      - 'app/index.tsx'
+      - 'app/factory.tsx'
+      - 'supabase/functions/drabornpark-public-contact/index.ts'
+      - 'supabase/functions/drabornpark-call-request/index.ts'
+      - 'supabase/functions/dkd-drabornpark-admin-support-push/index.ts'
+      - 'supabase/functions/dkd-drabornpark-google-play/index.ts'
       - '.github/VERSION'
+      - 'scripts/apply-v107-source-transform.mjs'
       - 'scripts/apply-v108-source-transform.mjs'
       - 'scripts/check-project.mjs'
       - '.github/V108_SOURCE_CHECK_TRIGGER'
@@ -18,7 +30,7 @@ permissions:
 jobs:
   validate-v108:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -33,8 +45,20 @@ jobs:
         run: npm run check
       - name: TypeScript check
         run: npm run typecheck
+      - name: Validate Firebase Android native prebuild
+        shell: bash
+        run: |
+          set -euo pipefail
+          CI=1 npx expo prebuild --platform android --clean --no-install
+          test -f android/app/google-services.json
+          node -e "const f=require('./android/app/google-services.json');const packages=(f.client||[]).map(x=>x?.client_info?.android_client_info?.package_name);if(f.project_info?.project_id!=='drabornpark'||!packages.includes('com.draborneagle.drabornpark'))process.exit(1)"
+          grep -R -F 'com.google.gms.google-services' android >/dev/null
+          grep -R -F 'POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml >/dev/null
+          echo "Firebase Android native prebuild OK — no APK/AAB generated."
       - name: Verify no Android release build was started
         run: |
           test "$(node -p "require('./app.json').expo.version")" = "1.0.8"
           test "$(node -p "require('./app.json').expo.android.versionCode")" = "8"
-          echo "v1.0.8 source-only validation complete; no AAB/APK build step exists in this workflow."
+          test ! -d android/app/build/outputs/bundle
+          test ! -d android/app/build/outputs/apk
+          echo "v1.0.8 source/native-config validation complete; no AAB/APK build step exists in this workflow."
