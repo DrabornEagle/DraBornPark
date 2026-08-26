@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const dkd_root=process.cwd();
-await import('./apply-v111-source-transform.mjs');
+const dkd_plus_before=fs.readFileSync(path.join(dkd_root,'src/components/DraBornParkPlusPanel.tsx'),'utf8');
+if(!dkd_plus_before.includes('dkdPaidPremium'))await import('./apply-v111-source-transform.mjs');
 
 function dkd_patch(dkd_file,dkd_replacements){
   const dkd_path=path.join(dkd_root,dkd_file);
