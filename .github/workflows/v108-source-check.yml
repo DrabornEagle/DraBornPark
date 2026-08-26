@@ -1,4 +1,4 @@
-name: DraBornPark v1.0.13 Source Check
+name: DraBornPark v1.0.14 Source Check
 
 on:
   push:
@@ -15,6 +15,7 @@ on:
       - 'src/components/AppChrome.tsx'
       - 'src/components/DraBornParkPlusPanel.tsx'
       - 'src/components/MandatoryUpdateGate.tsx'
+      - 'src/components/PremiumRouteGuard.tsx'
       - 'app/index.tsx'
       - 'app/hub.tsx'
       - 'app/factory.tsx'
@@ -24,9 +25,10 @@ on:
       - 'supabase/functions/dkd-drabornpark-google-play/index.ts'
       - 'supabase/functions/dkd-drabornpark-app-version/index.ts'
       - '.github/VERSION'
-      - '.github/V113_SOURCE_TRIGGER'
-      - 'scripts/apply-v113-source-transform.mjs'
-      - 'scripts/check-v113.mjs'
+      - '.github/V114_SOURCE_TRIGGER'
+      - 'scripts/apply-v114-source-transform.mjs'
+      - 'scripts/apply-v114-safe.mjs'
+      - 'scripts/check-v114.mjs'
       - '.github/workflows/v108-source-check.yml'
   workflow_dispatch:
 
@@ -34,7 +36,7 @@ permissions:
   contents: read
 
 jobs:
-  validate-v113:
+  validate-v114:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -47,7 +49,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Validate DraBornPark v1.0.13
+      - name: Validate DraBornPark v1.0.14
         run: npm run check
       - name: TypeScript check
         run: npm run typecheck
@@ -61,10 +63,10 @@ jobs:
           grep -R -F 'com.google.gms.google-services' android >/dev/null
           grep -R -F 'POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml >/dev/null
           echo "Firebase Android native prebuild OK — no APK/AAB generated."
-      - name: Verify v1.0.13 release metadata
+      - name: Verify v1.0.14 release metadata
         run: |
-          test "$(node -p "require('./app.json').expo.version")" = "1.0.13"
-          test "$(node -p "require('./app.json').expo.android.versionCode")" = "13"
+          test "$(node -p "require('./app.json').expo.version")" = "1.0.14"
+          test "$(node -p "require('./app.json').expo.android.versionCode")" = "14"
           test ! -d android/app/build/outputs/bundle
           test ! -d android/app/build/outputs/apk
-          echo "v1.0.13 source/native-config validation complete; no APK/AAB build step exists in this workflow."
+          echo "v1.0.14 source/native-config validation complete; no APK/AAB build step exists in this workflow."
