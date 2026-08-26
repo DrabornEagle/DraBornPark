@@ -1,8 +1,8 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {createClient} from "jsr:@supabase/supabase-js@2";
 
-const VERSION="1.0.15";
-const VERSION_CODE=15;
+const VERSION="1.0.16";
+const VERSION_CODE=16;
 const PLAY_URL="https://play.google.com/store/apps/details?id=com.draborneagle.drabornpark";
 const corsHeaders={"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"GET, POST, OPTIONS","Content-Type":"application/json; charset=utf-8","Cache-Control":"no-store, max-age=0"};
 const json=(data:unknown,status=200)=>new Response(JSON.stringify(data),{status,headers:corsHeaders});
