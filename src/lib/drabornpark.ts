@@ -33,6 +33,7 @@ async function currentUserId() {
 
 export function hasPlusEntitlement(profile: any | null, subscription: any | null) {
   if (!profile) return false;
+  if (profile.dkd_unlimited_plus===true) return true;
   if (profile.plus_trial_until && new Date(profile.plus_trial_until).getTime() > Date.now()) return true;
   const dkd_subscription_status=String(subscription?.status||'').toUpperCase();
   const dkd_expiry=subscription?.expires_at?new Date(subscription.expires_at).getTime():null;
@@ -127,7 +128,7 @@ export async function loadLiveDashboard(): Promise<LiveDashboard> {
   ] = await Promise.all([
     supabase.from('drabornpark_profiles').select('*').eq('user_id', userId).maybeSingle(),
     supabase.from('drabornpark_vehicles').select('*').eq('owner_user_id', userId).eq('is_active', true).order('created_at'),
-    supabase.from('drabornpark_tags').select('id,tag_code,serial_number,nfc_url,status,vehicle_id,manufactured_at,sold_at,activated_at,disabled_at,transfer_expires_at').eq('owner_user_id', userId).order('created_at', { ascending: false }),
+    supabase.from('drabornpark_tags').select('id,tag_code,serial_number,nfc_url,status,vehicle_id,manufactured_at,sold_at,activated_at,disabled_at,transfer_expires_at,dkd_subscription_suspended_at,dkd_subscription_previous_status').eq('owner_user_id', userId).order('created_at', { ascending: false }),
     supabase.from('drabornpark_parks').select('*').eq('owner_user_id', userId).order('parked_at', { ascending: false }).limit(30),
     supabase.from('drabornpark_reports').select('*').eq('owner_user_id', userId).order('created_at', { ascending: false }).limit(40),
     supabase.from('drabornpark_timeline_events').select('*').eq('owner_user_id', userId).order('occurred_at', { ascending: false }).limit(100),
@@ -163,12 +164,18 @@ export async function loadLiveDashboard(): Promise<LiveDashboard> {
   const dkdHadPaidMarker=Boolean(dkdServerSubscription)||['PLUS_ACTIVE','PLUS_GRACE_PERIOD','PLUS_CANCELLED'].includes(dkdProfileSubscriptionStatus);
   const dkdNotOwnedSubscription=dkdHadPaidMarker?{provider:'google_play_device',product_id:'drabornpark_plus',base_plan_id:null,status:'PLUS_NOT_OWNED',expires_at:null,auto_renewing:false,last_verified_at:null,client_store_entitlement:false,transaction_date:null}:null;
   const dkdResolvedSubscription=Platform.OS==='android'&&dkdLocalPlaySubscription?.dkdLocalOwnershipChecked?(dkdLocalPlaySubscription.subscription??dkdNotOwnedSubscription):(dkdLocalPlaySubscription?.subscription??(dkdServerActive?dkdServerSubscription:dkdServerSubscription));
+  let dkdResolvedTags=tagsRes.data??[];
+  try{
+    await supabase.rpc('dkd_drabornpark_sync_plus_tags');
+    const {data:dkdSyncedTags,error:dkdSyncTagsError}=await supabase.from('drabornpark_tags').select('id,tag_code,serial_number,nfc_url,status,vehicle_id,manufactured_at,sold_at,activated_at,disabled_at,transfer_expires_at,dkd_subscription_suspended_at,dkd_subscription_previous_status').eq('owner_user_id',userId).order('created_at',{ascending:false});
+    if(!dkdSyncTagsError&&dkdSyncedTags)dkdResolvedTags=dkdSyncedTags;
+  }catch(dkdTagSyncError){console.warn('[DraBornPark+] etiket abonelik eşitlemesi başarısız',String((dkdTagSyncError as any)?.message||dkdTagSyncError));}
 
   return {
     userId,
     profile: profileRes.data,
     vehicles: vehiclesRes.data ?? [],
-    tags: tagsRes.data ?? [],
+    tags: dkdResolvedTags,
     parks: parksRes.data ?? [],
     reports: reportsRes.data ?? [],
     timeline: timelineRes.data ?? [],

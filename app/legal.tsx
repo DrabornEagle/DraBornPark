@@ -19,7 +19,7 @@ const DATA=[
 ];
 
 export default function LegalScreen(){return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.green} secondary={palette.purple}/><ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-  <ScreenHeader title="Gizlilik & Veri Merkezi" eyebrow="GOOGLE PLAY UYUMLU ŞEFFAFLIK" accent={palette.green} subtitle="DraBornPark hangi veriye neden erişir, kim işler, ne kadar saklanır ve nasıl silebilirsin?" right={<Pill label="v1.0.15" color={palette.green}/>}/>
+  <ScreenHeader title="Gizlilik & Veri Merkezi" eyebrow="GOOGLE PLAY UYUMLU ŞEFFAFLIK" accent={palette.green} subtitle="DraBornPark hangi veriye neden erişir, kim işler, ne kadar saklanır ve nasıl silebilirsin?" right={<Pill label="v1.0.16" color={palette.green}/>}/>
   <View style={s.hero}><View style={s.heroIcon}><SafeIcon name="shield-lock-outline" size={39} color={palette.green}/></View><View style={{flex:1}}><Text style={s.heroKicker}>TEMEL PRENSİP</Text><Text style={s.heroTitle}>Araç iletişimi kişisel numaranı açığa çıkarmaz.</Text><Text style={s.heroBody}>Telefon ve e-posta QR/NFC ziyaretçisine gösterilmez. Park geçmişi kamusal değildir. DraBornPark kullanıcı verilerini reklam amacıyla satmaz ve mevcut sürümde davranışsal reklam SDK’sı kullanmaz.</Text></View></View>
 
   <SectionHeading title="Toplanabilen / işlenebilen veri grupları" subtitle="Google Play Data Safety beyanı yayımlanan uygulamanın gerçek davranışıyla eşleşmelidir"/>
@@ -51,7 +51,7 @@ export default function LegalScreen(){return <SafeAreaView style={s.safe}><Auror
 
   <SectionHeading title="Herkese açık belgeler" subtitle="Google Play ve kullanıcı için giriş gerektirmeden erişilebilir"/>
   <View style={s.links}><LinkCard icon="file-lock-outline" color={palette.green} title="Gizlilik Politikası" url={PRIVACY_URL}/><LinkCard icon="file-document-check-outline" color={palette.purple} title="Kullanım Koşulları" url={TERMS_URL}/><LinkCard icon="shield-check-outline" color={palette.cyan} title="Veri Güvenliği" url={DATA_SAFETY_URL}/><LinkCard icon="account-remove-outline" color={palette.red} title="Hesap Silme" url={ACCOUNT_DELETION_URL}/><LinkCard icon="lifebuoy" color={palette.blue} title="Destek" url={SUPPORT_URL}/></View>
-  <Text style={s.footer}>DraBornPark • DrabornEagle • Son güncelleme: 26 Ağustos 2026 • v1.0.15</Text>
+  <Text style={s.footer}>DraBornPark • DrabornEagle • Son güncelleme: 27 Ağustos 2026 • v1.0.16</Text>
 </ScrollView></SafeAreaView>}
 
 function Policy({icon,color,title,body}:{icon:string;color:string;title:string;body:string}){return <View style={s.policy}><View style={[s.policyIcon,{backgroundColor:`${color}18`}]}><SafeIcon name={icon} size={24} color={color}/></View><View style={{flex:1}}><Text style={s.policyTitle}>{title}</Text><Text style={s.policyBody}>{body}</Text></View></View>}
