@@ -1,4 +1,4 @@
-name: DraBornPark v1.0.8 Source Check
+name: DraBornPark v1.0.9 Source Check
 
 on:
   push:
@@ -11,6 +11,7 @@ on:
       - 'app/_layout.tsx'
       - 'src/lib/push.ts'
       - 'src/components/AppChrome.tsx'
+      - 'src/components/DraBornParkPlusPanel.tsx'
       - 'app/index.tsx'
       - 'app/factory.tsx'
       - 'supabase/functions/drabornpark-public-contact/index.ts'
@@ -18,17 +19,16 @@ on:
       - 'supabase/functions/dkd-drabornpark-admin-support-push/index.ts'
       - 'supabase/functions/dkd-drabornpark-google-play/index.ts'
       - '.github/VERSION'
-      - 'scripts/apply-v107-source-transform.mjs'
-      - 'scripts/apply-v108-source-transform.mjs'
-      - 'scripts/check-project.mjs'
-      - '.github/V108_SOURCE_CHECK_TRIGGER'
+      - 'scripts/apply-v109-source-transform.mjs'
+      - 'scripts/check-v109.mjs'
+      - '.github/workflows/v108-source-check.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  validate-v108:
+  validate-v109:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -41,7 +41,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Validate DraBornPark v1.0.8
+      - name: Validate DraBornPark v1.0.9
         run: npm run check
       - name: TypeScript check
         run: npm run typecheck
@@ -55,10 +55,10 @@ jobs:
           grep -R -F 'com.google.gms.google-services' android >/dev/null
           grep -R -F 'POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml >/dev/null
           echo "Firebase Android native prebuild OK — no APK/AAB generated."
-      - name: Verify no Android release build was started
+      - name: Verify v1.0.9 release metadata
         run: |
-          test "$(node -p "require('./app.json').expo.version")" = "1.0.8"
-          test "$(node -p "require('./app.json').expo.android.versionCode")" = "8"
+          test "$(node -p "require('./app.json').expo.version")" = "1.0.9"
+          test "$(node -p "require('./app.json').expo.android.versionCode")" = "9"
           test ! -d android/app/build/outputs/bundle
           test ! -d android/app/build/outputs/apk
-          echo "v1.0.8 source/native-config validation complete; no AAB/APK build step exists in this workflow."
+          echo "v1.0.9 source/native-config validation complete; no APK/AAB build step exists in this workflow."
