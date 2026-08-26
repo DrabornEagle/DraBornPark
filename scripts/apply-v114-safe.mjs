@@ -3,6 +3,7 @@ import path from 'node:path';
 
 const dkd_root=process.cwd();
 const dkd_read=dkd_file=>fs.readFileSync(path.join(dkd_root,dkd_file),'utf8');
+const dkd_write=(dkd_file,dkd_text)=>fs.writeFileSync(path.join(dkd_root,dkd_file),dkd_text);
 const dkd_exists=dkd_file=>fs.existsSync(path.join(dkd_root,dkd_file));
 
 const dkd_plus=dkd_read('src/components/DraBornParkPlusPanel.tsx');
@@ -20,5 +21,16 @@ const dkd_applied=
   dkd_google.includes('const VERSION="1.0.14";')&&
   dkd_exists('src/components/PremiumRouteGuard.tsx');
 
-if(dkd_applied)console.log('DraBornPark v1.0.14 source transforms already applied • repeat-safe skip.');
-else await import('./apply-v114-source-transform.mjs');
+if(dkd_applied){
+  console.log('DraBornPark v1.0.14 source transforms already applied • repeat-safe skip.');
+}else{
+  const dkd_transform_file='scripts/apply-v114-source-transform.mjs';
+  let dkd_transform=dkd_read(dkd_transform_file);
+  const dkd_old="  '<SafeAreaProvider><LivePushRegistration/><NotificationPermissionPrompt/><StatusBar style=\"light\"/>',\n  '<SafeAreaProvider><LivePushRegistration/><NotificationPermissionPrompt/><PremiumRouteGuard/><StatusBar style=\"light\"/>'";
+  const dkd_new="  '<SafeAreaProvider><MandatoryUpdateGate/><LivePushRegistration/><NotificationPermissionPrompt/><StatusBar style=\"light\"/>',\n  '<SafeAreaProvider><MandatoryUpdateGate/><LivePushRegistration/><NotificationPermissionPrompt/><PremiumRouteGuard/><StatusBar style=\"light\"/>'";
+  if(dkd_transform.includes(dkd_old)){
+    dkd_transform=dkd_transform.replace(dkd_old,dkd_new);
+    dkd_write(dkd_transform_file,dkd_transform);
+  }
+  await import('./apply-v114-source-transform.mjs');
+}
