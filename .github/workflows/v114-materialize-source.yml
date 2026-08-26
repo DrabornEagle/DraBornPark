@@ -1,0 +1,46 @@
+name: DraBornPark v1.0.14 Materialized Source Snapshot
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/V114_MATERIALIZE_TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  materialize:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout v1.0.14 baseline
+        uses: actions/checkout@v4
+        with:
+          ref: ea362e2b3f92e4619b69734d956bcfeeb1588db2
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Materialize and validate v1.0.14
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run typecheck
+          mkdir -p materialized/app materialized/src/components materialized/src/lib materialized/supabase/functions
+          cp app/index.tsx app/hub.tsx app/_layout.tsx app/legal.tsx app/admin.tsx app/factory.tsx materialized/app/
+          cp src/components/DraBornParkPlusPanel.tsx src/components/PremiumRouteGuard.tsx materialized/src/components/
+          cp src/lib/drabornpark.ts materialized/src/lib/
+          mkdir -p materialized/supabase/functions/dkd-drabornpark-google-play materialized/supabase/functions/dkd-drabornpark-app-version
+          cp supabase/functions/dkd-drabornpark-google-play/index.ts materialized/supabase/functions/dkd-drabornpark-google-play/
+          cp supabase/functions/dkd-drabornpark-app-version/index.ts materialized/supabase/functions/dkd-drabornpark-app-version/
+      - name: Upload materialized source
+        uses: actions/upload-artifact@v4
+        with:
+          name: DraBornPark-v1.0.14-materialized-source
+          path: materialized/
+          if-no-files-found: error
+          retention-days: 2
