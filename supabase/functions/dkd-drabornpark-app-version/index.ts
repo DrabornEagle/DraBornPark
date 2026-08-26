@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const VERSION="1.0.10";
-const VERSION_CODE=10;
+const VERSION="1.0.11";
+const VERSION_CODE=11;
 const PLAY_URL="https://play.google.com/store/apps/details?id=com.draborneagle.drabornpark";
 const corsHeaders={
   "Access-Control-Allow-Origin":"*",
