@@ -1,4 +1,4 @@
-name: DraBornPark v1.0.15 Source Check
+name: DraBornPark v1.0.16 Source Check
 
 on:
   push:
@@ -11,9 +11,12 @@ on:
       - 'app/_layout.tsx'
       - 'app/admin.tsx'
       - 'app/legal.tsx'
+      - 'app/tags.tsx'
+      - 'app/feature/[slug].tsx'
       - 'src/lib/drabornpark.ts'
       - 'src/lib/push.ts'
       - 'src/components/AppChrome.tsx'
+      - 'src/components/ColorPopup.tsx'
       - 'src/components/DraBornParkPlusPanel.tsx'
       - 'src/components/MandatoryUpdateGate.tsx'
       - 'src/components/PremiumRouteGuard.tsx'
@@ -25,11 +28,12 @@ on:
       - 'supabase/functions/dkd-drabornpark-admin-support-push/index.ts'
       - 'supabase/functions/dkd-drabornpark-google-play/index.ts'
       - 'supabase/functions/dkd-drabornpark-app-version/index.ts'
-      - 'supabase/migrations/20260826233200_dkd_drabornpark_v115_trial_entitlement.sql'
+      - 'supabase/migrations/20260827022000_dkd_drabornpark_v116_entitlement_tag_admin.sql'
       - '.github/VERSION'
-      - '.github/EAS_RELEASE_V115_TRIGGER'
+      - '.github/EAS_RELEASE_V116_TRIGGER'
       - 'scripts/apply-v115-safe.mjs'
-      - 'scripts/check-v115.mjs'
+      - 'scripts/apply-v116-safe.mjs'
+      - 'scripts/check-v116.mjs'
       - '.github/workflows/v108-source-check.yml'
   workflow_dispatch:
 
@@ -37,7 +41,7 @@ permissions:
   contents: read
 
 jobs:
-  validate-v115:
+  validate-v116:
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -50,7 +54,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Validate DraBornPark v1.0.15
+      - name: Validate DraBornPark v1.0.16
         run: npm run check
       - name: TypeScript check
         run: npm run typecheck
@@ -64,10 +68,11 @@ jobs:
           grep -R -F 'com.google.gms.google-services' android >/dev/null
           grep -R -F 'POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml >/dev/null
           echo "Firebase Android native prebuild OK — no APK/AAB generated."
-      - name: Verify v1.0.15 release metadata
+      - name: Verify v1.0.16 release metadata
         run: |
-          test "$(node -p "require('./app.json').expo.version")" = "1.0.15"
-          test "$(node -p "require('./app.json').expo.android.versionCode")" = "15"
+          test "$(node -p "require('./app.json').expo.version")" = "1.0.16"
+          test "$(node -p "require('./app.json').expo.android.versionCode")" = "16"
+          test "$(node -p "require('./package.json').version")" = "1.0.16"
           test ! -d android/app/build/outputs/bundle
           test ! -d android/app/build/outputs/apk
-          echo "v1.0.15 source/native-config validation complete; no APK/AAB build step exists in this workflow."
+          echo "v1.0.16 source/native-config validation complete; no APK/AAB build step exists in this workflow."
