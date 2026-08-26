@@ -11,7 +11,7 @@
     "android": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v109-source-transform.mjs && expo start --android --clear",
     "web": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v109-source-transform.mjs && expo start --web --clear",
     "typecheck": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v109-source-transform.mjs && node scripts/clean-generated-types.mjs && tsc --noEmit",
-    "check": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v109-source-transform.mjs && node scripts/check-project.mjs"
+    "check": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v109-source-transform.mjs && node scripts/check-v109.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
