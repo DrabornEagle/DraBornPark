@@ -1,3 +1,4 @@
+import {Platform} from 'react-native';
 import { readLocalFileBytes } from '@/src/lib/localFile';
 import { supabase } from '@/src/lib/supabase';
 
@@ -33,9 +34,15 @@ async function currentUserId() {
 export function hasPlusEntitlement(profile: any | null, subscription: any | null) {
   if (!profile) return false;
   if (profile.plus_trial_until && new Date(profile.plus_trial_until).getTime() > Date.now()) return true;
+  const dkd_subscription_status=String(subscription?.status||'').toUpperCase();
+  const dkd_expiry=subscription?.expires_at?new Date(subscription.expires_at).getTime():null;
+  if(Platform.OS==='android'){
+    if(['PLUS_NOT_OWNED','PLUS_REFUNDED','PLUS_UNVERIFIED','PLUS_EXPIRED'].includes(dkd_subscription_status))return false;
+    if(subscription?.client_store_entitlement===true&&['PLUS_ACTIVE','PLUS_GRACE_PERIOD','PLUS_CANCELLED'].includes(dkd_subscription_status))return !dkd_expiry||dkd_expiry>Date.now();
+    return false;
+  }
   const profileStatus=String(profile.subscription_status||'').toUpperCase();
-  const subscriptionStatus=String(subscription?.status||'').toUpperCase();
-  if (['PLUS_ACTIVE','PLUS_GRACE_PERIOD','PLUS_CANCELLED'].includes(subscriptionStatus)) return !subscription?.expires_at || new Date(subscription.expires_at).getTime()>Date.now();
+  if (['PLUS_ACTIVE','PLUS_GRACE_PERIOD','PLUS_CANCELLED'].includes(dkd_subscription_status)) return !dkd_expiry || dkd_expiry>Date.now();
   return ['PLUS_ACTIVE','PLUS_GRACE_PERIOD'].includes(profileStatus);
 }
 
@@ -86,6 +93,21 @@ export async function uploadProfileAvatar(asset: ProfileAvatarAsset) {
   return publicUrl;
 }
 
+async function dkdLoadLocalGooglePlaySubscription(){
+  if(Platform.OS!=='android')return {dkdLocalOwnershipChecked:false,subscription:null};
+  try{
+    const dkd_iap=await import('expo-iap');
+    const dkd_purchases=await dkd_iap.getAvailablePurchases();
+    const dkd_purchase=(dkd_purchases??[]).find((dkd_item:any)=>dkd_item.productId==='drabornpark_plus'&&dkd_item.purchaseToken&&String(dkd_item.purchaseState||'purchased')!=='pending');
+    if(!dkd_purchase)return {dkdLocalOwnershipChecked:true,subscription:null};
+    try{await dkd_iap.finishTransaction({purchase:dkd_purchase,isConsumable:false});}catch(dkd_error:any){const dkd_message=String(dkd_error?.message||dkd_error||'');if(!/already|acknowledg|ITEM_NOT_OWNED|not owned/i.test(dkd_message))console.warn('[DraBornPark+] Google Play işlemi tamamlanamadı',dkd_message);}
+    const dkd_token=String((dkd_purchase as any).purchaseToken||'');
+    const {data:dkd_verified,error:dkd_verify_error}=await supabase.functions.invoke('dkd-drabornpark-google-play',{body:{action:'verify',purchaseToken:dkd_token,productId:'drabornpark_plus'}});
+    if(dkd_verify_error||!dkd_verified?.ok){return {dkdLocalOwnershipChecked:true,subscription:{provider:'google_play_unverified',product_id:'drabornpark_plus',base_plan_id:null,status:'PLUS_UNVERIFIED',expires_at:null,auto_renewing:false,last_verified_at:null,client_store_entitlement:false,transaction_date:(dkd_purchase as any).transactionDate??null}};}
+    return {dkdLocalOwnershipChecked:true,subscription:{provider:'google_play_verified',product_id:'drabornpark_plus',base_plan_id:dkd_verified.basePlanId??null,status:String(dkd_verified.status||'PLUS_EXPIRED'),expires_at:dkd_verified.expiresAt??null,auto_renewing:Boolean(dkd_verified.autoRenewing),last_verified_at:new Date().toISOString(),client_store_entitlement:dkd_verified.entitled===true,transaction_date:(dkd_purchase as any).transactionDate??null,order_state:dkd_verified.orderState??null}};
+  }catch(dkd_error){console.warn('[DraBornPark+] Google Play entitlement kontrolü başarısız',String((dkd_error as any)?.message||dkd_error));return {dkdLocalOwnershipChecked:true,subscription:{provider:'google_play_unverified',product_id:'drabornpark_plus',base_plan_id:null,status:'PLUS_UNVERIFIED',expires_at:null,auto_renewing:false,last_verified_at:null,client_store_entitlement:false,transaction_date:null}};}
+}
+
 export async function loadLiveDashboard(): Promise<LiveDashboard> {
   const userId = await currentUserId();
   const [
@@ -101,6 +123,7 @@ export async function loadLiveDashboard(): Promise<LiveDashboard> {
     routingRes,
     emergencyRes,
     subscriptionRes,
+    dkdLocalPlaySubscription,
   ] = await Promise.all([
     supabase.from('drabornpark_profiles').select('*').eq('user_id', userId).maybeSingle(),
     supabase.from('drabornpark_vehicles').select('*').eq('owner_user_id', userId).eq('is_active', true).order('created_at'),
@@ -114,6 +137,7 @@ export async function loadLiveDashboard(): Promise<LiveDashboard> {
     supabase.from('drabornpark_routing_rules').select('*').eq('owner_user_id', userId).order('created_at', { ascending: false }),
     supabase.from('drabornpark_emergency_contacts').select('*').eq('owner_user_id', userId).order('priority').order('created_at'),
     supabase.from('drabornpark_subscriptions').select('*').eq('user_id', userId).order('created_at', { ascending: false }).limit(1).maybeSingle(),
+    dkdLoadLocalGooglePlaySubscription(),
   ]);
 
   const errors = [
@@ -131,6 +155,14 @@ export async function loadLiveDashboard(): Promise<LiveDashboard> {
     subscriptionRes.error,
   ].filter(Boolean);
   if (errors.length) throw errors[0];
+  const dkdServerSubscription=subscriptionRes.data;
+  const dkdServerStatus=String(dkdServerSubscription?.status||'').toUpperCase();
+  const dkdServerExpiry=dkdServerSubscription?.expires_at?new Date(dkdServerSubscription.expires_at).getTime():null;
+  const dkdServerActive=['PLUS_ACTIVE','PLUS_GRACE_PERIOD','PLUS_CANCELLED'].includes(dkdServerStatus)&&(!dkdServerExpiry||dkdServerExpiry>Date.now());
+  const dkdProfileSubscriptionStatus=String(profileRes.data?.subscription_status||'').toUpperCase();
+  const dkdHadPaidMarker=Boolean(dkdServerSubscription)||['PLUS_ACTIVE','PLUS_GRACE_PERIOD','PLUS_CANCELLED'].includes(dkdProfileSubscriptionStatus);
+  const dkdNotOwnedSubscription=dkdHadPaidMarker?{provider:'google_play_device',product_id:'drabornpark_plus',base_plan_id:null,status:'PLUS_NOT_OWNED',expires_at:null,auto_renewing:false,last_verified_at:null,client_store_entitlement:false,transaction_date:null}:null;
+  const dkdResolvedSubscription=Platform.OS==='android'&&dkdLocalPlaySubscription?.dkdLocalOwnershipChecked?(dkdLocalPlaySubscription.subscription??dkdNotOwnedSubscription):(dkdLocalPlaySubscription?.subscription??(dkdServerActive?dkdServerSubscription:dkdServerSubscription));
 
   return {
     userId,
@@ -145,7 +177,7 @@ export async function loadLiveDashboard(): Promise<LiveDashboard> {
     vehicleModes: modesRes.data ?? [],
     routingRules: routingRes.data ?? [],
     emergencyContacts: emergencyRes.data ?? [],
-    subscription: subscriptionRes.data,
+    subscription: dkdResolvedSubscription,
   };
 }
 

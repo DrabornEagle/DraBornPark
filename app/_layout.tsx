@@ -4,17 +4,19 @@ import * as SplashScreen from 'expo-splash-screen';
 import {Stack} from 'expo-router';
 import {StatusBar} from 'expo-status-bar';
 import React,{useEffect,useState} from 'react';
-import {AppState,Linking,Platform} from 'react-native';
+import {AppState,Platform} from 'react-native';
 import {SafeAreaProvider} from 'react-native-safe-area-context';
 import {ColorPopup} from '@/src/components/ColorPopup';
 import {DkdStartupSplash} from '@/src/components/DkdStartupSplash';
+import {PremiumRouteGuard} from '@/src/components/PremiumRouteGuard';
+import {MandatoryUpdateGate} from '@/src/components/MandatoryUpdateGate';
 import {getNotificationPermissionStatus,initializeNotificationPresentation,requestNotificationPermission,startAdminSupportNotifications,startForegroundReportNotifications,startNotificationResponseRouting,startPushTokenRefresh,syncPushRegistration} from '@/src/lib/push';
 import {supabase} from '@/src/lib/supabase';
 import {palette} from '@/src/theme';
 
 if(Platform.OS!=='web')void SplashScreen.preventAutoHideAsync().catch(()=>undefined);
 
-const PERMISSION_PROMPT_KEY='drabornpark_notification_prompt_v106b';
+const PERMISSION_PROMPT_KEY='drabornpark_notification_prompt_v107';
 const PERMISSION_SNOOZE_MS=30*60*1000;
 function LivePushRegistration(){
   useEffect(()=>{
@@ -36,9 +38,9 @@ function NotificationPermissionPrompt(){
     void check();const {data:auth}=supabase.auth.onAuthStateChange((_event,session)=>{if(session)void check();else if(active)setVisible(false);});const appState=AppState.addEventListener('change',next=>{if(next==='active')void check();});return()=>{active=false;auth.subscription.unsubscribe();appState.remove()};
   },[]);
   const dismiss=async()=>{await AsyncStorage.setItem(PERMISSION_PROMPT_KEY,`later:${Date.now()}`);setVisible(false)};
-  const allow=async()=>{setBusy(true);try{if(permissionStatus==='denied'){await AsyncStorage.removeItem(PERMISSION_PROMPT_KEY);await Linking.openSettings();setVisible(false);return;}const granted=await requestNotificationPermission();if(granted){await AsyncStorage.removeItem(PERMISSION_PROMPT_KEY);setPermissionStatus('granted');setVisible(false);}else{setPermissionStatus(await getNotificationPermissionStatus());setVisible(true);}}finally{setBusy(false)}};
+  const allow=async()=>{setBusy(true);try{const granted=await requestNotificationPermission();if(granted){await AsyncStorage.removeItem(PERMISSION_PROMPT_KEY);setPermissionStatus('granted');setVisible(false);}else{setPermissionStatus(await getNotificationPermissionStatus());setVisible(true);}}finally{setBusy(false)}};
   const denied=permissionStatus==='denied';
-  return <ColorPopup visible={visible&&!busy} icon="bell-ring-outline" eyebrow="BİLDİRİMLER" title={denied?'Bildirim iznini aç':'Aracından haberin olsun'} body={denied?'Android bildirim izni kapalı. Ayarlar ekranından DraBornPark bildirimlerine izin verdiğinde araç uyarıları ve güvenli mesajlar uygulama açıkken de sistem bildirimi olarak görünür.':'Araç bildirimi, anonim mesaj, destek kaydı ve önemli DraBornPark uyarılarını kaçırmaman için bildirim izni gerekir. İzin, yalnızca bu bildirimleri göstermek için kullanılır.'} accent={palette.pink} secondary={palette.cyan} primaryLabel={denied?'AYARLARI AÇ':'BİLDİRİMLERE İZİN VER'} onPrimary={()=>void allow()} secondaryLabel="ŞİMDİLİK DEĞİL" onSecondary={()=>void dismiss()} chips={['ARAÇ UYARILARI','DESTEK','GÜVENLİ MESAJLAR']}/>;
+  return <ColorPopup visible={visible&&!busy} icon="bell-ring-outline" eyebrow="BİLDİRİMLER" title={denied?'Bildirim iznini aç':'Aracından haberin olsun'} body={denied?'Android bildirim izni kapalı. BİLDİRİMLERİ AÇ düğmesine dokunduğunda DraBornPark Android bildirim iznini doğrudan yeniden ister; uygulama içinden Ayarlar ekranına yönlendirme yapılmaz.':'Araç bildirimi, anonim mesaj, destek kaydı ve önemli DraBornPark uyarılarını kaçırmaman için bildirim izni gerekir. BİLDİRİMLERİ AÇ düğmesi Android izin penceresini doğrudan açar.'} accent={palette.pink} secondary={palette.cyan} primaryLabel="BİLDİRİMLERİ AÇ" onPrimary={()=>void allow()} secondaryLabel="ŞİMDİLİK DEĞİL" onSecondary={()=>void dismiss()} chips={['ARAÇ UYARILARI','DESTEK','GÜVENLİ MESAJLAR']}/>;
 }
 export default function RootLayout(){
   const [dkd_startup,setDkdStartup]=useState(true);
@@ -52,5 +54,5 @@ export default function RootLayout(){
     void dkd_begin();
     return()=>{dkd_alive=false};
   },[]);
-  return <SafeAreaProvider><LivePushRegistration/><NotificationPermissionPrompt/><StatusBar style="light"/><Stack screenOptions={{headerShown:false,contentStyle:{backgroundColor:palette.bg},animation:'fade_from_bottom',animationDuration:220,gestureEnabled:true,fullScreenGestureEnabled:true}}/>{dkd_startup?<DkdStartupSplash/>:null}</SafeAreaProvider>;
+  return <SafeAreaProvider><MandatoryUpdateGate/><LivePushRegistration/><NotificationPermissionPrompt/><PremiumRouteGuard/><StatusBar style="light"/><Stack screenOptions={{headerShown:false,contentStyle:{backgroundColor:palette.bg},animation:'fade_from_bottom',animationDuration:220,gestureEnabled:true,fullScreenGestureEnabled:true}}/>{dkd_startup?<DkdStartupSplash/>:null}</SafeAreaProvider>;
 }

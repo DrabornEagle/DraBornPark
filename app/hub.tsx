@@ -3,30 +3,32 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Animated, Easing, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AuroraBackground, BottomDock, ScreenHeader, SectionHeading } from '@/src/components/AppChrome';
+import {ColorPopup} from '@/src/components/ColorPopup';
 import { Pill, SafeIcon } from '@/src/components/Primitives';
+import {hasPlusEntitlement,loadLiveDashboard} from '@/src/lib/drabornpark';
 import { supabase } from '@/src/lib/supabase';
 import { palette, radius, type } from '@/src/theme';
 
-type MenuItem={title:string;subtitle:string;icon:string;color:string;route:string;badge?:string;keywords:string;adminOnly?:boolean};
+type MenuItem={title:string;subtitle:string;icon:string;color:string;route:string;badge?:string;keywords:string;adminOnly?:boolean;requiresPlus?:boolean};
 type Group={title:string;caption:string;color:string;icon:string;items:MenuItem[]};
 const groups:Group[]=[
   {title:'Araç & Park',caption:'Günlük kullanımın başladığı yer',color:palette.cyan,icon:'car-connected',items:[
     {title:'Araçlarım',subtitle:'Araba ve motosiklet profilleri',icon:'car-multiple',color:palette.blue,route:'/vehicle',keywords:'araç araba motor motosiklet'},
     {title:'Park Hafızası',subtitle:'GPS, kat, bölüm, fotoğraf ve bilet',icon:'map-marker-radius',color:palette.orange,route:'/park',keywords:'park konum otopark fotoğraf bilet'},
     {title:'Etiketlerim',subtitle:'NFC + QR, aktivasyon ve devir',icon:'nfc',color:palette.cyan,route:'/tags',keywords:'nfc qr etiket aktivasyon devir'},
-    {title:'Araç Geçmişi',subtitle:'Aracının olay ve hareket geçmişi',icon:'history',color:palette.purple,route:'/timeline',keywords:'geçmiş olay zaman çizelgesi'},
-    {title:'İstatistiklerim',subtitle:'Aylık park ve güvenlik özeti',icon:'chart-donut',color:palette.green,route:'/insights',keywords:'özet istatistik aylık'},
+    {title:'Araç Geçmişi',subtitle:'Aracının olay ve hareket geçmişi',icon:'history',color:palette.purple,route:'/timeline',keywords:'geçmiş olay zaman çizelgesi',requiresPlus:true},
+    {title:'İstatistiklerim',subtitle:'Aylık park ve güvenlik özeti',icon:'chart-donut',color:palette.green,route:'/insights',keywords:'özet istatistik aylık',requiresPlus:true},
   ]},
   {title:'İletişim & Güvenlik',caption:'Numaranı göstermeden haber al',color:palette.orange,icon:'shield-check-outline',items:[
     {title:'Bildirim Merkezi',subtitle:'Araç bildirimleri ve hızlı cevaplar',icon:'bell-ring-outline',color:palette.orange,route:'/notifications',keywords:'bildirim cevap mesaj'},
-    {title:'DraBornPark Aile',subtitle:'Aile park paylaşımı ve izinler',icon:'account-group-outline',color:palette.purple,route:'/family',keywords:'aile paylaşım'},
-    {title:'Geçici Sürücü',subtitle:'Süreli bildirim yönlendirmesi',icon:'account-clock-outline',color:palette.green,route:'/guest',keywords:'geçici sürücü yönlendirme'},
-    {title:'Acil Durum Zinciri',subtitle:'Öncelikli kişiler ve yüksek öncelik',icon:'shield-alert-outline',color:palette.red,route:'/emergency',keywords:'acil zincir kişi'},
+    {title:'DraBornPark Aile',subtitle:'Aile park paylaşımı ve izinler',icon:'account-group-outline',color:palette.purple,route:'/family',keywords:'aile paylaşım',requiresPlus:true},
+    {title:'Geçici Sürücü',subtitle:'Süreli bildirim yönlendirmesi',icon:'account-clock-outline',color:palette.green,route:'/guest',keywords:'geçici sürücü yönlendirme',requiresPlus:true},
+    {title:'Acil Durum Zinciri',subtitle:'Öncelikli kişiler ve yüksek öncelik',icon:'shield-alert-outline',color:palette.red,route:'/emergency',keywords:'acil zincir kişi',requiresPlus:true},
     {title:'Gizlilik & Veri',subtitle:'Google Play uyumlu veri ve hesap kontrolleri',icon:'shield-lock-outline',color:palette.aqua,route:'/legal',keywords:'gizlilik veri güvenlik google play silme'},
   ]},
   {title:'Akıllı Modlar',caption:'DraBornPark+ otomasyonları',color:palette.purple,icon:'auto-fix',items:[
-    {title:'Vale / Servis',subtitle:'Araç teslimi ve servis durumları',icon:'car-key',color:palette.sky,route:'/modes',badge:'PLUS',keywords:'vale servis'},
-    {title:'Zaman Kuralları',subtitle:'Gün ve saate göre yönlendir',icon:'calendar-clock-outline',color:palette.pink,route:'/routing',badge:'PLUS',keywords:'zaman kural saat'},
+    {title:'Vale / Servis',subtitle:'Araç teslimi ve servis durumları',icon:'car-key',color:palette.sky,route:'/modes',badge:'PLUS',keywords:'vale servis',requiresPlus:true},
+    {title:'Zaman Kuralları',subtitle:'Gün ve saate göre yönlendir',icon:'calendar-clock-outline',color:palette.pink,route:'/routing',badge:'PLUS',keywords:'zaman kural saat',requiresPlus:true},
     {title:'DraBornPark+',subtitle:'Gelişmiş özellikler ve üyelik',icon:'crown-outline',color:palette.yellow,route:'/feature/plus',badge:'PLUS',keywords:'plus üyelik abonelik'},
     {title:'Bildirim Ayarları',subtitle:'Sessiz saatler ve tercihler',icon:'tune-variant',color:palette.aqua,route:'/settings',keywords:'ayar bildirim sessiz'},
   ]},
@@ -34,6 +36,7 @@ const groups:Group[]=[
     {title:'Hesabım',subtitle:'Hesap, veri ve hesap silme',icon:'account-circle-outline',color:palette.blue,route:'/account',keywords:'hesap silme kullanıcı'},
     {title:'Destek Merkezi',subtitle:'Yardım, destek ve talepler',icon:'lifebuoy',color:palette.purple,route:'/feature/support',keywords:'destek yardım'},
     {title:'Üretim Paneli',subtitle:'Etiket üretim ve doğrulama',icon:'factory',color:palette.orange,route:'/factory',keywords:'üretim etiket doğrulama admin',adminOnly:true},
+    {title:'Admin Paneli',subtitle:'Zorunlu güncelleme ve yayın kontrolleri',icon:'shield-crown-outline',color:palette.green,route:'/admin',keywords:'admin zorunlu güncelleme yayın politika',adminOnly:true},
   ]},
 ];
 
@@ -41,6 +44,9 @@ export default function HubScreen(){
   const [query,setQuery]=useState('');
   const [dockSolid,setDockSolid]=useState(false);
   const [isAdmin,setIsAdmin]=useState(false);
+  const [dkdPlusActive,setDkdPlusActive]=useState(false);
+  const [dkdPlusChecked,setDkdPlusChecked]=useState(false);
+  const [dkdPlusPopup,setDkdPlusPopup]=useState(false);
   const enter=useRef(new Animated.Value(0)).current;
 
   useEffect(()=>{
@@ -59,18 +65,21 @@ export default function HubScreen(){
     return()=>{dkd_mounted=false};
   },[enter]);
 
+  useEffect(()=>{let dkd_alive=true;void loadLiveDashboard().then(dkd_dashboard=>{if(!dkd_alive)return;setDkdPlusActive(hasPlusEntitlement(dkd_dashboard.profile,dkd_dashboard.subscription));setDkdPlusChecked(true)}).catch(()=>{if(dkd_alive){setDkdPlusActive(false);setDkdPlusChecked(true)}});return()=>{dkd_alive=false};},[]);
+
   const visibleGroups=useMemo(()=>groups.map(group=>({...group,items:group.items.filter(item=>!item.adminOnly||isAdmin)})).filter(group=>group.items.length),[isAdmin]);
   const filtered=useMemo(()=>{const q=query.trim().toLocaleLowerCase('tr-TR');if(!q)return visibleGroups;return visibleGroups.map(g=>({...g,items:g.items.filter(i=>`${i.title} ${i.subtitle} ${i.keywords}`.toLocaleLowerCase('tr-TR').includes(q))})).filter(g=>g.items.length)},[query,visibleGroups]);
-  const open=(item:MenuItem)=>router.push(item.route as any);
+  const open=(item:MenuItem)=>{if(item.requiresPlus&&(!dkdPlusChecked||!dkdPlusActive)){setDkdPlusPopup(true);return;}router.push(item.route as any)};
 
   return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.purple} secondary={palette.cyan}/><Animated.View style={[s.flex,{opacity:enter,transform:[{translateY:enter.interpolate({inputRange:[0,1],outputRange:[12,0]})}]}]}>
     <ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false} onScroll={e=>setDockSolid(e.nativeEvent.contentOffset.y>24)} scrollEventThrottle={16}>
-      <ScreenHeader back={false} title="Merkezim" eyebrow="" accent={palette.purple} subtitle="Araç, park, güvenlik ve hesabın tek anlaşılır merkezde" right={<Pill label="v1.0" color={palette.purple}/>}/>
+      <ScreenHeader back={false} title="Merkezim" eyebrow="" accent={palette.purple} subtitle="Araç, park, güvenlik ve hesabın tek anlaşılır merkezde" right={<Pill label="v1.0.15" color={palette.purple}/>}/>
       <View style={s.hero}><View style={s.heroBadge}><SafeIcon name="view-dashboard-outline" size={36} color={palette.purple}/><View style={s.heroDot}/></View><View style={{flex:1}}><Text style={s.heroKicker}>KİŞİSEL ARAÇ AĞIN</Text><Text style={s.heroTitle}>Ne yapmak istiyorsun?</Text><Text style={s.heroText}>Ara, kategori seç veya doğrudan karta dokun.</Text><View style={s.spectrum}><View style={[s.bar,{backgroundColor:palette.cyan}]}/><View style={[s.bar,{backgroundColor:palette.purple}]}/><View style={[s.bar,{backgroundColor:palette.pink}]}/><View style={[s.bar,{backgroundColor:palette.orange}]}/><View style={[s.bar,{backgroundColor:palette.green}]}/></View></View></View>
       <View style={s.search}><View style={s.searchIcon}><SafeIcon name="magnify" size={23} color={palette.cyan}/></View><TextInput value={query} onChangeText={setQuery} placeholder="Park, etiket, aile, hesap…" placeholderTextColor={palette.muted2} style={s.searchInput}/>{query?<Pressable onPress={()=>setQuery('')} style={s.clear}><SafeIcon name="close" size={19} color={palette.muted}/></Pressable>:null}</View>
       {!query?<ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.categoryRail}>{visibleGroups.map((g,index)=><View key={g.title} style={[s.category,{borderColor:`${g.color}72`,backgroundColor:`${g.color}16`}]}><View style={[s.categoryIcon,{backgroundColor:`${g.color}2C`}]}><SafeIcon name={g.icon} size={25} color={g.color}/></View><Text style={s.categoryTitle}>{g.title}</Text><View style={s.categoryBottom}><Text style={s.categoryCount}>{g.items.length} özellik</Text><Text style={[s.categoryNo,{color:g.color}]}>0{index+1}</Text></View><View style={[s.categoryLine,{backgroundColor:g.color}]}/></View>)}</ScrollView>:null}
       {filtered.length?filtered.map((group,groupIndex)=><View key={group.title}><SectionHeading title={group.title} subtitle={group.caption} badge={`${group.items.length} ÖZELLİK`} color={group.color}/><View style={s.grid}>{group.items.map((item,itemIndex)=><MenuTile key={item.title} item={item} index={groupIndex*6+itemIndex} onPress={()=>open(item)}/>)}</View></View>):<View style={s.empty}><SafeIcon name="magnify-close" size={38} color={palette.muted}/><Text style={s.emptyTitle}>Sonuç bulunamadı</Text><Text style={s.emptyText}>Daha kısa bir kelimeyle tekrar ara.</Text></View>}
     </ScrollView>
+    <ColorPopup visible={dkdPlusPopup} icon="crown-outline" eyebrow="DRABORNPARK+ GEREKLİ" title="Premium üyelikle açılır" body="Bu özellik için aktif DraBornPark+ aboneliği gerekir. Aboneliğini Google Play üzerinden başlatabilir veya mevcut satın almanı doğrulayabilirsin." accent={palette.yellow} secondary={palette.purple} primaryLabel="DRABORNPARK+ SAYFASINA GİT" onPrimary={()=>{setDkdPlusPopup(false);router.push('/feature/plus')}} secondaryLabel="VAZGEÇ" onSecondary={()=>setDkdPlusPopup(false)} chips={['GOOGLE PLAY','PREMIUM ERİŞİM','GÜVENLİ DOĞRULAMA']}/>
     <BottomDock active="hub" transparent={!dockSolid} floating/>
   </Animated.View></SafeAreaView>;
 }

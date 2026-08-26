@@ -7,7 +7,7 @@ import {supabase} from '@/src/lib/supabase';
 import {palette,radius,type} from '@/src/theme';
 
 const DKD_LATEST_VERSION='1.0.13';
-const DKD_LATEST_VERSION_CODE=13;
+const DKD_LATEST_VERSION_CODE=15;
 
 type DkdPolicy={force_update_enabled?:boolean;minimum_version_code?:number};
 
