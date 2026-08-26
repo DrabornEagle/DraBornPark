@@ -1,0 +1,119 @@
+name: DraBornPark v1.0.15 Materialize Previous Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/V115_MATERIALIZE_COMMIT_TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-commit:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout current main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          path: current
+      - name: Checkout successful v1.0.14 release
+        uses: actions/checkout@v4
+        with:
+          ref: fb065b72df2f6c949600c0908863eeb4c510c198
+          path: v114
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: v114/package-lock.json
+      - name: Materialize successful v1.0.14 source
+        working-directory: v114
+        run: npm ci --no-audit --no-fund
+      - name: Copy materialized source into v1.0.15
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp v114/app/index.tsx current/app/index.tsx
+          cp v114/app/hub.tsx current/app/hub.tsx
+          cp v114/app/_layout.tsx current/app/_layout.tsx
+          cp v114/app/legal.tsx current/app/legal.tsx
+          cp v114/app/admin.tsx current/app/admin.tsx
+          cp v114/app/factory.tsx current/app/factory.tsx
+          cp v114/src/components/DraBornParkPlusPanel.tsx current/src/components/DraBornParkPlusPanel.tsx
+          cp v114/src/components/PremiumRouteGuard.tsx current/src/components/PremiumRouteGuard.tsx
+          cp v114/src/lib/drabornpark.ts current/src/lib/drabornpark.ts
+      - name: Apply v1.0.15 fixes to materialized source
+        working-directory: current
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const read=p=>fs.readFileSync(p,'utf8');
+          const write=(p,s)=>fs.writeFileSync(p,s);
+          const must=(text,from,to,label)=>{
+            if(text.includes(to))return text;
+            if(!text.includes(from))throw new Error('v1.0.15 marker missing: '+label);
+            return text.replace(from,to);
+          };
+
+          let home=read('app/index.tsx');
+          home=home.replace("import { Alert, Animated, AppState, Easing, Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';","import { Alert, Animated, Easing, Image, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';");
+          home=home.replace("  const premiumShown=useRef(false);\n  const dkd_app_state=useRef(AppState.currentState);\n",'');
+          const oldEffect=`  useEffect(()=>{\n    if(!live||plus)return;\n    const dkd_show=()=>{if(premiumShown.current)return;premiumShown.current=true;setPremiumOpen(true)};\n    const dkd_timer=setTimeout(dkd_show,420);\n    const dkd_subscription=AppState.addEventListener('change',dkd_next_state=>{\n      if(/inactive|background/.test(dkd_app_state.current)&&dkd_next_state==='active'){premiumShown.current=false;dkd_show()}\n      dkd_app_state.current=dkd_next_state;\n    });\n    return()=>{clearTimeout(dkd_timer);dkd_subscription.remove()};\n  },[live,plus]);`;
+          const newEffect=`  useEffect(()=>{\n    if(!live||plus)return;\n    const dkd_runtime=globalThis as any;\n    if(dkd_runtime.__dkdPremiumPopupShownThisLaunch)return;\n    dkd_runtime.__dkdPremiumPopupShownThisLaunch=true;\n    const dkd_timer=setTimeout(()=>setPremiumOpen(true),420);\n    return()=>clearTimeout(dkd_timer);\n  },[live,plus]);`;
+          home=must(home,oldEffect,newEffect,'premium popup once per app launch');
+          home=home.replace('offsetX={-12} textOffsetX={-3} icon="shield-check-outline" text="GÜVENLİ OTURUM"','offsetX={-4} textOffsetX={-3} icon="shield-check-outline" text="GÜVENLİ OTURUM"');
+          home=home.replace(/v1\.0\.14/g,'v1.0.15');
+          write('app/index.tsx',home);
+
+          let plus=read('src/components/DraBornParkPlusPanel.tsx');
+          plus=plus.replace("const dkdPaidOwnershipEnded=dkdSubscriptionStatus==='PLUS_NOT_OWNED';const dkdPaidPremium=dkdStoreState==='active'&&Boolean(lastVerified?.entitled||dkdServerPremium);const dkdResolvedTrialActive=(dkdStoreState==='checking'||dkdPaidOwnershipEnded)?false:trialActive;","const dkdPaidPremium=dkdStoreState==='active'&&Boolean(lastVerified?.entitled||dkdServerPremium);const dkdResolvedTrialActive=dkdStoreState==='checking'?false:trialActive;");
+          write('src/components/DraBornParkPlusPanel.tsx',plus);
+
+          let lib=read('src/lib/drabornpark.ts');
+          const entitlement=/export function hasPlusEntitlement\(profile: any \| null, subscription: any \| null\) \{[\s\S]*?\n\}\n\nexport async function isUsernameAvailable/;
+          const replacement=`export function hasPlusEntitlement(profile: any | null, subscription: any | null) {\n  if (!profile) return false;\n  if (profile.plus_trial_until && new Date(profile.plus_trial_until).getTime() > Date.now()) return true;\n  const dkd_subscription_status=String(subscription?.status||'').toUpperCase();\n  const dkd_expiry=subscription?.expires_at?new Date(subscription.expires_at).getTime():null;\n  if(Platform.OS==='android'){\n    if(['PLUS_NOT_OWNED','PLUS_REFUNDED','PLUS_UNVERIFIED','PLUS_EXPIRED'].includes(dkd_subscription_status))return false;\n    if(subscription?.client_store_entitlement===true&&['PLUS_ACTIVE','PLUS_GRACE_PERIOD','PLUS_CANCELLED'].includes(dkd_subscription_status))return !dkd_expiry||dkd_expiry>Date.now();\n    return false;\n  }\n  const profileStatus=String(profile.subscription_status||'').toUpperCase();\n  if (['PLUS_ACTIVE','PLUS_GRACE_PERIOD','PLUS_CANCELLED'].includes(dkd_subscription_status)) return !dkd_expiry || dkd_expiry>Date.now();\n  return ['PLUS_ACTIVE','PLUS_GRACE_PERIOD'].includes(profileStatus);\n}\n\nexport async function isUsernameAvailable`;
+          if(!entitlement.test(lib))throw new Error('v1.0.15 entitlement function missing');
+          lib=lib.replace(entitlement,replacement);
+          write('src/lib/drabornpark.ts',lib);
+
+          for(const file of ['app/hub.tsx','app/factory.tsx','app/legal.tsx']){
+            let text=read(file).replace(/v1\.0\.14/g,'v1.0.15');
+            if(file==='app/legal.tsx')text=text.replace(/Son güncelleme: [^<]+/,'Son güncelleme: 26 Ağustos 2026 • v1.0.15');
+            write(file,text);
+          }
+          let admin=read('app/admin.tsx').replace('const DKD_LATEST_VERSION_CODE=14;','const DKD_LATEST_VERSION_CODE=15;');
+          write('app/admin.tsx',admin);
+          console.log('v1.0.15 materialized source fixes applied');
+          NODE
+      - name: Validate v1.0.15 materialized source
+        working-directory: current
+        run: |
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run typecheck
+          grep -F "69,99 TL / ay" src/components/DraBornParkPlusPanel.tsx
+          grep -F "599,99 TL / yıl" src/components/DraBornParkPlusPanel.tsx
+          grep -F "__dkdPremiumPopupShownThisLaunch" app/index.tsx
+          grep -F "offsetX={-4}" app/index.tsx
+          grep -F "PremiumRouteGuard" app/_layout.tsx
+          grep -F "requiresPlus" app/hub.tsx
+      - name: Commit materialized v1.0.15 source
+        working-directory: current
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "DrabornEagle Release Bot"
+          git config user.email "draborneagle@gmail.com"
+          git add app/index.tsx app/hub.tsx app/_layout.tsx app/legal.tsx app/admin.tsx app/factory.tsx src/components/DraBornParkPlusPanel.tsx src/components/PremiumRouteGuard.tsx src/lib/drabornpark.ts package-lock.json
+          if git diff --cached --quiet; then
+            echo "Materialized source already committed."
+            exit 0
+          fi
+          git commit -m "fix: materialize v1.0.15 app source without regressions"
+          git push origin HEAD:main
