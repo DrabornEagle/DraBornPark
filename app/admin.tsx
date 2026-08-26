@@ -1,4 +1,3 @@
-import {router} from 'expo-router';
 import React,{useEffect,useState} from 'react';
 import {ActivityIndicator,Pressable,ScrollView,StyleSheet,Switch,Text,View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -53,7 +52,7 @@ export default function AdminPanel(){
   };
 
   return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.orange} secondary={palette.purple}/><ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
-    <ScreenHeader title="Admin Paneli" eyebrow="YÖNETİCİ KONTROL MERKEZİ" subtitle="DraBornPark yayın ve uygulama politikalarını güvenli şekilde yönet." onBack={()=>router.back()} accent={palette.orange}/>
+    <ScreenHeader title="Admin Paneli" eyebrow="YÖNETİCİ KONTROL MERKEZİ" subtitle="DraBornPark yayın ve uygulama politikalarını güvenli şekilde yönet." accent={palette.orange}/>
     {dkdLoading?<View style={s.loading}><ActivityIndicator size="large" color={palette.orange}/><Text style={s.loadingText}>Admin yetkisi ve yayın politikası kontrol ediliyor…</Text></View>:!dkdAllowed?<View style={s.denied}><SafeIcon name="shield-lock-outline" size={38} color={palette.red}/><Text style={s.deniedTitle}>Yetki gerekli</Text><Text style={s.deniedText}>{dkdMessage||'Bu ekran yalnızca admin kullanıcılarına açıktır.'}</Text></View>:<>
       <View style={s.hero}><View style={s.heroIcon}><SafeIcon name="shield-crown-outline" size={34} color={palette.orange}/></View><View style={{flex:1}}><Text style={s.kicker}>CANLI YAYIN POLİTİKASI</Text><Text style={s.heroTitle}>Zorunlu Güncelleme</Text><Text style={s.heroText}>Tek anahtarla eski Android sürümlerinin uygulamaya girişini yönet.</Text></View></View>
       <View style={[s.control,{borderColor:dkdEnabled?palette.green+'88':palette.muted2+'66'}]}><View style={[s.statusIcon,{backgroundColor:(dkdEnabled?palette.green:palette.muted2)+'1C'}]}><SafeIcon name={dkdEnabled?'update':'update-off'} size={30} color={dkdEnabled?palette.green:palette.muted2}/></View><View style={{flex:1,minWidth:0}}><Text style={s.controlLabel}>ZORUNLU GÜNCELLEME</Text><Text style={[s.controlState,{color:dkdEnabled?palette.green:palette.muted2}]}>{dkdEnabled?'AKTİF':'PASİF'}</Text><Text style={s.controlMeta}>{dkdEnabled?`v${DKD_LATEST_VERSION} altındaki sürümler güncellemeye zorlanır.`:'Eski sürümler güncelleme yapılmadan açılabilir.'}</Text></View><Switch value={dkdEnabled} disabled={dkdSaving} onValueChange={dkdSetForceUpdate}/></View>
