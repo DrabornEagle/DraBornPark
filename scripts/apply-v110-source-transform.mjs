@@ -2,7 +2,10 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const dkd_root=process.cwd();
-await import('./apply-v109-source-transform.mjs');
+const dkd_home_before=fs.readFileSync(path.join(dkd_root,'app/index.tsx'),'utf8');
+if(!dkd_home_before.includes('<Pill label="v1.0.10" color={palette.purple}/>')){
+  await import('./apply-v109-source-transform.mjs');
+}
 
 function dkd_patch(dkd_file,dkd_replacements){
   const dkd_path=path.join(dkd_root,dkd_file);
