@@ -1,0 +1,46 @@
+name: DraBornPark v1.0.16 Materialized Source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/V116_MATERIALIZE_TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-v116:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Materialize and validate v1.0.16
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run typecheck
+      - name: Commit materialized v1.0.16 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'DrabornEagle Release Bot'
+          git config user.email 'draborneagle@gmail.com'
+          git add app/index.tsx app/hub.tsx app/tags.tsx 'app/feature/[slug].tsx' app/legal.tsx app/factory.tsx app/admin.tsx src/lib/drabornpark.ts package-lock.json supabase/functions/dkd-drabornpark-google-play/index.ts supabase/functions/dkd-drabornpark-app-version/index.ts
+          if git diff --cached --quiet; then
+            echo 'Materialized source already committed.'
+            exit 0
+          fi
+          git commit -m 'feat: materialize DraBornPark v1.0.16 source'
+          git push origin HEAD:main
