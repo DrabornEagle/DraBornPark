@@ -4,14 +4,14 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "postinstall": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-source-transform.mjs && node scripts/apply-v113-final-fix.mjs",
-    "start": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-source-transform.mjs && node scripts/apply-v113-final-fix.mjs && expo start --clear",
-    "dev": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-source-transform.mjs && node scripts/apply-v113-final-fix.mjs && expo start --clear",
-    "dev:tunnel": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-source-transform.mjs && node scripts/apply-v113-final-fix.mjs && expo start --clear --tunnel",
-    "android": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-source-transform.mjs && node scripts/apply-v113-final-fix.mjs && expo start --android --clear",
-    "web": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-source-transform.mjs && node scripts/apply-v113-final-fix.mjs && expo start --web --clear",
-    "typecheck": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-source-transform.mjs && node scripts/apply-v113-final-fix.mjs && node scripts/clean-generated-types.mjs && tsc --noEmit",
-    "check": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-source-transform.mjs && node scripts/apply-v113-final-fix.mjs && node scripts/check-v113.mjs"
+    "postinstall": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-safe.mjs && node scripts/apply-v113-final-fix.mjs",
+    "start": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-safe.mjs && node scripts/apply-v113-final-fix.mjs && expo start --clear",
+    "dev": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-safe.mjs && node scripts/apply-v113-final-fix.mjs && expo start --clear",
+    "dev:tunnel": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-safe.mjs && node scripts/apply-v113-final-fix.mjs && expo start --clear --tunnel",
+    "android": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-safe.mjs && node scripts/apply-v113-final-fix.mjs && expo start --android --clear",
+    "web": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-safe.mjs && node scripts/apply-v113-final-fix.mjs && expo start --web --clear",
+    "typecheck": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-safe.mjs && node scripts/apply-v113-final-fix.mjs && node scripts/clean-generated-types.mjs && tsc --noEmit",
+    "check": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v113-safe.mjs && node scripts/apply-v113-final-fix.mjs && node scripts/check-v113.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
