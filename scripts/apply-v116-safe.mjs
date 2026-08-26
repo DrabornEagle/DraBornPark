@@ -33,28 +33,30 @@ dkd_write('src/lib/drabornpark.ts',dkd_lib);
 // Tags page: subscription-suspended tag gets a modern Plus gate instead of manual rebind.
 let dkd_tags=dkd_read('app/tags.tsx');
 if(!dkd_tags.includes("@/src/components/ColorPopup")){
-  dkd_tags=dkd_tags.replace("import {AuroraBackground,BottomDock,ScreenHeader,SectionHeading} from '@/src/components/AppChrome';","import {AuroraBackground,BottomDock,ScreenHeader,SectionHeading} from '@/src/components/AppChrome';\nimport {ColorPopup} from '@/src/components/ColorPopup';");
+  dkd_tags=dkd_tags.replace("import {AuroraBackground,ScreenHeader,SectionHeading} from '@/src/components/AppChrome';","import {AuroraBackground,ScreenHeader,SectionHeading} from '@/src/components/AppChrome';\nimport {ColorPopup} from '@/src/components/ColorPopup';");
 }
 if(!dkd_tags.includes('dkdPlusPopup')){
-  const dkd_component_marker='export default function TagsScreen(){';
-  dkd_require(dkd_tags.includes(dkd_component_marker),'tags component');
-  dkd_tags=dkd_tags.replace(dkd_component_marker,dkd_component_marker+"\n  const [dkdPlusPopup,setDkdPlusPopup]=useState(false);\n  const [dkdPlusTag,setDkdPlusTag]=useState<any>(null);");
+  dkd_tags=dkd_tags.replace('export default function TagsScreen(){',"export default function TagsScreen(){\n  const [dkdPlusPopup,setDkdPlusPopup]=useState(false);\n  const [dkdPlusTag,setDkdPlusTag]=useState<any>(null);");
 }
 if(!dkd_tags.includes('const dkd_subscription_suspended=Boolean(dkd_tag.dkd_subscription_suspended_at);')){
-  dkd_tags=dkd_tags.replace(/\{dkd_data\.tags\.map\(\(dkd_tag:any\)=>\{/,'{dkd_data.tags.map((dkd_tag:any)=>{const dkd_subscription_suspended=Boolean(dkd_tag.dkd_subscription_suspended_at);');
+  const dkd_map='dkd_data.tags.map((dkd_tag:any)=><View key={dkd_tag.id}';
+  dkd_require(dkd_tags.includes(dkd_map),'tags map anchor');
+  dkd_tags=dkd_tags.replace(dkd_map,"dkd_data.tags.map((dkd_tag:any)=>{const dkd_subscription_suspended=Boolean(dkd_tag.dkd_subscription_suspended_at);return <View key={dkd_tag.id}");
+  dkd_tags=dkd_tags.replace('</View>):<View style={s.empty}>','</View>}):<View style={s.empty}>');
 }
-// Status text becomes explicit for auto-suspended tags.
-dkd_tags=dkd_tags.replace('{dkd_tag.status}',"{dkd_subscription_suspended?'PLUS GEREKLİ':dkd_tag.status}");
-// Turn the rebind action into a restore/Plus action only for subscription-suspended tags.
+dkd_tags=dkd_tags.replace('<Text style={s.tagStatus}>{dkd_tag.status} • {dkd_tag.serial_number}</Text>',"<Text style={[s.tagStatus,dkd_subscription_suspended&&{color:palette.yellow}]}>{dkd_subscription_suspended?'PLUS GEREKLİ':dkd_tag.status} • {dkd_tag.serial_number}</Text>");
+dkd_tags=dkd_tags.replace("<MaterialCommunityIcons name={dkd_tag.status==='DISABLED'?'shield-off-outline':'shield-check'} size={29} color={dkd_tag.status==='DISABLED'?palette.red:palette.green}/>","<MaterialCommunityIcons name={dkd_subscription_suspended?'crown-outline':dkd_tag.status==='DISABLED'?'shield-off-outline':'shield-check'} size={29} color={dkd_subscription_suspended?palette.yellow:dkd_tag.status==='DISABLED'?palette.red:palette.green}/>");
 if(!dkd_tags.includes("dkd_subscription_suspended?'Tekrar aktif et':'Yeni araca bağla'")){
-  dkd_tags=dkd_tags.replace(/<ActionCard([^>]*?)title="Yeni araca bağla"([^>]*?)onPress=\{\(\)=>\{/,"<ActionCard$1title={dkd_subscription_suspended?'Tekrar aktif et':'Yeni araca bağla'}$2onPress={()=>{if(dkd_subscription_suspended){setDkdPlusTag(dkd_tag);setDkdPlusPopup(true);return;}");
-  dkd_tags=dkd_tags.replace(/<DkdAction([^>]*?)title="Yeni araca bağla"([^>]*?)onPress=\{\(\)=>\{/,"<DkdAction$1title={dkd_subscription_suspended?'Tekrar aktif et':'Yeni araca bağla'}$2onPress={()=>{if(dkd_subscription_suspended){setDkdPlusTag(dkd_tag);setDkdPlusPopup(true);return;}");
+  const dkd_action='title="Yeni araca bağla" disabled={dkd_busy} onPress={()=>{const dkd_target=dkd_data.vehicles[0];';
+  const dkd_action_next="title={dkd_subscription_suspended?'Tekrar aktif et':'Yeni araca bağla'} disabled={dkd_busy} onPress={()=>{if(dkd_subscription_suspended){setDkdPlusTag(dkd_tag);setDkdPlusPopup(true);return;}const dkd_target=dkd_data.vehicles[0];";
+  dkd_require(dkd_tags.includes(dkd_action),'tag rebind action');
+  dkd_tags=dkd_tags.replace(dkd_action,dkd_action_next);
 }
 if(!dkd_tags.includes('ETİKETİN PLUS İLE KORUNUYOR')){
-  const dkd_dock='    <BottomDock active="hub"';
+  const dkd_info='    <View style={s.info}>';
   const dkd_popup=`    <ColorPopup visible={dkdPlusPopup} icon="shield-lock-outline" eyebrow="ETİKETİN PLUS İLE KORUNUYOR" title="DraBornPark+ gerekli" body={\`\${dkdPlusTag?.tag_code||'Etiketin'} DraBornPark+ süresi sona erdiği için güvenli şekilde devre dışı bırakıldı. Plus üyeliğin tekrar aktif olduğunda aynı araçla otomatik olarak yeniden bağlanacak.\`} accent={palette.yellow} secondary={palette.purple} primaryLabel="DRABORNPARK+ SAYFASINA GİT" onPrimary={()=>{setDkdPlusPopup(false);router.push('/feature/plus')}} secondaryLabel="ŞİMDİ DEĞİL" onSecondary={()=>setDkdPlusPopup(false)} chips={['OTOMATİK YENİDEN BAĞLANTI','NFC + QR','PLUS KORUMASI']}/>\n`;
-  dkd_require(dkd_tags.includes(dkd_dock),'tags dock anchor');
-  dkd_tags=dkd_tags.replace(dkd_dock,dkd_popup+dkd_dock);
+  dkd_require(dkd_tags.includes(dkd_info),'tags info anchor');
+  dkd_tags=dkd_tags.replace(dkd_info,dkd_popup+dkd_info);
 }
 dkd_write('app/tags.tsx',dkd_tags);
 
@@ -78,7 +80,7 @@ if(!dkd_feature.includes("@/src/components/ColorPopup")){
   dkd_feature=dkd_feature.replace("import {AuroraBackground,ScreenHeader,SectionHeading} from '@/src/components/AppChrome';","import {AuroraBackground,ScreenHeader,SectionHeading} from '@/src/components/AppChrome';\nimport {ColorPopup} from '@/src/components/ColorPopup';");
 }
 if(!dkd_feature.includes('dkdNoTagPopup')){
-  dkd_feature=dkd_feature.replace("const [data,setData]=useState<any>(null);const [busy,setBusy]=useState(false);","const [data,setData]=useState<any>(null);const [busy,setBusy]=useState(false);const [dkdNoTagPopup,setDkdNoTagPopup]=useState(false);");
+  dkd_feature=dkd_feature.replace("const [data,setData]=useState<any>(null);const [busy,setBusy]=useState(false);const [privacy,setPrivacy]","const [data,setData]=useState<any>(null);const [busy,setBusy]=useState(false);const [dkdNoTagPopup,setDkdNoTagPopup]=useState(false);const [privacy,setPrivacy]");
   dkd_feature=dkd_feature.replace("loadLiveDashboard().then(next=>{setData(next);const current=next.profile?.privacy_settings||{};","loadLiveDashboard().then(next=>{setData(next);if(key==='plus'&&(next.tags??[]).length===0)setDkdNoTagPopup(true);const current=next.profile?.privacy_settings||{};");
   const dkd_close='  </ScrollView></SafeAreaView>;';
   const dkd_popup=`    <ColorPopup visible={dkdNoTagPopup} icon="nfc" eyebrow="BAĞLI ETİKET BULUNMUYOR" title="DraBornPark+ ve etiket birlikte daha güçlü" body="Abonelik seçeneklerini yine de inceleyebilirsin. Etiket bağladığında 14 günlük etiket ödülü, NFC/QR araç iletişimi ve Plus ile otomatik etiket koruması devreye girer." accent={palette.cyan} secondary={palette.yellow} primaryLabel="DRABORNPARK+ SAYFASINI AÇ" onPrimary={()=>setDkdNoTagPopup(false)} secondaryLabel="ETİKET AKTİVE ET" onSecondary={()=>{setDkdNoTagPopup(false);router.push('/activate/new')}} chips={['ETİKET ÖDÜLÜ','NFC + QR','GOOGLE PLAY']}/>\n`;
@@ -86,6 +88,14 @@ if(!dkd_feature.includes('dkdNoTagPopup')){
   dkd_feature=dkd_feature.replace(dkd_close,dkd_popup+dkd_close);
 }
 dkd_write('app/feature/[slug].tsx',dkd_feature);
+
+// Edge function visible versions.
+for(const dkd_edge of ['supabase/functions/dkd-drabornpark-google-play/index.ts','supabase/functions/dkd-drabornpark-app-version/index.ts']){
+  if(!fs.existsSync(path.join(dkd_root,dkd_edge)))continue;
+  let dkd_edge_text=dkd_read(dkd_edge).replace('const VERSION="1.0.15";','const VERSION="1.0.16";');
+  if(dkd_edge.includes('app-version'))dkd_edge_text=dkd_edge_text.replace('const VERSION_CODE=15;','const VERSION_CODE=16;');
+  dkd_write(dkd_edge,dkd_edge_text);
+}
 
 // Package lock top-level release metadata.
 if(fs.existsSync(path.join(dkd_root,'package-lock.json'))){
