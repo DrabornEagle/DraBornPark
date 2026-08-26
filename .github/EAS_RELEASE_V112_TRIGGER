@@ -1,2 +1,2 @@
 DraBornPark v1.0.13 / versionCode 13
-Triggered for signed Google Play AAB after refund-entitlement and admin update-control fixes.
+Retry signed Google Play AAB on Ubuntu 22.04 runner.
