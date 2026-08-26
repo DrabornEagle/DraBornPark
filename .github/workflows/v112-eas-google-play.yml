@@ -1,4 +1,4 @@
-name: DraBornPark v1.0.12 EAS Google Play Build
+name: DraBornPark v1.0.13 EAS Google Play Build
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Verify Expo token and v1.0.12 source
+      - name: Verify Expo token and v1.0.13 source
         shell: bash
         run: |
           set -euo pipefail
@@ -45,7 +45,7 @@ jobs:
           npm ci --no-audit --no-fund
           npm run check
           npm run typecheck
-          node -e "const a=require('./app.json').expo;if(a.version!=='1.0.12'||a.android.versionCode!==12)process.exit(1)"
+          node -e "const a=require('./app.json').expo;if(a.version!=='1.0.13'||a.android.versionCode!==13)process.exit(1)"
           npx --yes eas-cli@latest whoami
           npx --yes eas-cli@latest project:info | tee /tmp/dkd-project.txt
           grep -F '@draborneagle/drabornpark' /tmp/dkd-project.txt
@@ -83,7 +83,7 @@ jobs:
           mkdir -p signed-output
           DKD_URL="$(cat /tmp/dkd-eas-url)"
           DKD_BUILD_ID="$(cat /tmp/dkd-eas-id)"
-          DKD_AAB="signed-output/DraBornPark-v1.0.12-vc12-GooglePlay-release.aab"
+          DKD_AAB="signed-output/DraBornPark-v1.0.13-vc13-GooglePlay-release.aab"
           curl -L --fail --retry 3 --retry-delay 2 "$DKD_URL" -o "$DKD_AAB"
           test -s "$DKD_AAB"
           jarsigner -verify -verbose -certs "$DKD_AAB" | tee signed-output/JARSIGNER_VERIFY.txt
@@ -99,7 +99,7 @@ jobs:
           test "$DKD_SIG_COUNT" -eq 1
           sha256sum "$DKD_AAB" | tee signed-output/SHA256SUMS.txt
           cat > signed-output/VERIFY.txt <<EOF
-          DraBornPark v1.0.12 / versionCode 12 — EAS Google Play Signed Release
+          DraBornPark v1.0.13 / versionCode 13 — EAS Google Play Signed Release
           Package: com.draborneagle.drabornpark
           Expo project: @draborneagle/drabornpark
           EAS Project ID: db4ce418-3c4a-4323-9a1f-e39614b64e27
@@ -114,7 +114,7 @@ jobs:
       - name: Upload final signed AAB
         uses: actions/upload-artifact@v4
         with:
-          name: DraBornPark-v1.0.12-vc12-GooglePlay-final
+          name: DraBornPark-v1.0.13-vc13-GooglePlay-final
           path: signed-output/
           if-no-files-found: error
           retention-days: 14
