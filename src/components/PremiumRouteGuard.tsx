@@ -32,4 +32,4 @@ export function PremiumRouteGuard(){
   </>;
 }
 
-const s=StyleSheet.create({blocker:{...StyleSheet.absoluteFillObject,zIndex:9998,elevation:9998,backgroundColor:'rgba(5,8,22,.94)',alignItems:'center',justifyContent:'center',padding:26},checkCard:{width:'100%',maxWidth:420,borderWidth:1,borderColor:palette.yellow+'55',backgroundColor:palette.panel,borderRadius:28,padding:24,alignItems:'center'},checkTitle:{color:palette.text,fontSize:20,fontWeight:'900',marginTop:14,textAlign:'center'},checkBody:{color:palette.muted,fontSize:13,lineHeight:20,marginTop:6,textAlign:'center'}});
+const s=StyleSheet.create({blocker:{position:'absolute',left:0,right:0,top:0,bottom:0,zIndex:9998,elevation:9998,backgroundColor:'rgba(5,8,22,.94)',alignItems:'center',justifyContent:'center',padding:26},checkCard:{width:'100%',maxWidth:420,borderWidth:1,borderColor:palette.yellow+'55',backgroundColor:palette.panel,borderRadius:28,padding:24,alignItems:'center'},checkTitle:{color:palette.text,fontSize:20,fontWeight:'900',marginTop:14,textAlign:'center'},checkBody:{color:palette.muted,fontSize:13,lineHeight:20,marginTop:6,textAlign:'center'}});
