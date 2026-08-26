@@ -15,10 +15,10 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 25
     steps:
-      - name: Checkout v1.0.14 baseline
+      - name: Checkout successful v1.0.14 release
         uses: actions/checkout@v4
         with:
-          ref: ea362e2b3f92e4619b69734d956bcfeeb1588db2
+          ref: fb065b72df2f6c949600c0908863eeb4c510c198
       - name: Setup Node 22
         uses: actions/setup-node@v4
         with:
