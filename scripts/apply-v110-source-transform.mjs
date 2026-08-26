@@ -13,6 +13,8 @@ function dkd_patch(dkd_file,dkd_replacements){
   let dkd_changed=false;
   for(const [dkd_from,dkd_to] of dkd_replacements){
     if(dkd_text.includes(dkd_to))continue;
+    const dkd_billing_hotfix_supersedes=dkd_file==='src/components/DraBornParkPlusPanel.tsx'&&dkd_from.includes('eyebrow="GOOGLE PLAY DOĞRULANDI"')&&dkd_text.includes('dkdFinishOwnedPurchase')&&dkd_text.includes('lastVerified?.localStore');
+    if(dkd_billing_hotfix_supersedes)continue;
     if(!dkd_text.includes(dkd_from))throw new Error(`DraBornPark v1.0.10 transform marker missing in ${dkd_file}: ${dkd_from.slice(0,160)}`);
     dkd_text=dkd_text.replace(dkd_from,dkd_to);
     dkd_changed=true;
