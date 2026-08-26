@@ -32,3 +32,5 @@ const dkd_checks=[
 ];
 for(const [dkd_ok,dkd_message] of dkd_checks){if(!dkd_ok)throw new Error(dkd_message)}
 console.log('DraBornPark v1.0.16 checks: PASS');
+
+// Final materialized source checkpoint: e2b688e5db9bb92c829f16f29cfdfb0d41953902
