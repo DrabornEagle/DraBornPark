@@ -1,0 +1,120 @@
+name: DraBornPark v1.0.9 EAS Google Play Build
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/EAS_RELEASE_V109_TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+  DKD_EXPECTED_CERT_SHA256: "95:4C:F9:A8:E0:DB:09:46:A2:63:18:D6:95:7B:DF:0B:72:2D:51:7B:40:67:67:F8:3E:4C:37:BE:84:67:6B:C6"
+
+jobs:
+  build-signed-aab:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Verify Expo token and v1.0.9 source
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${EXPO_TOKEN:-}"
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run typecheck
+          node -e "const a=require('./app.json').expo;if(a.version!=='1.0.9'||a.android.versionCode!==9)process.exit(1)"
+          npx --yes eas-cli@latest whoami
+          npx --yes eas-cli@latest project:info | tee /tmp/dkd-project.txt
+          grep -F '@draborneagle/drabornpark' /tmp/dkd-project.txt
+          grep -F 'db4ce418-3c4a-4323-9a1f-e39614b64e27' /tmp/dkd-project.txt
+
+      - name: Build signed production AAB on EAS
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx --yes eas-cli@latest build --platform android --profile production --non-interactive --wait --json > /tmp/dkd-eas-build.raw
+          cat /tmp/dkd-eas-build.raw
+          node <<'NODE'
+          const fs=require('fs');
+          const raw=fs.readFileSync('/tmp/dkd-eas-build.raw','utf8').trim();
+          let data;
+          for(const index of [raw.indexOf('['),raw.indexOf('{')].filter(x=>x>=0).sort((a,b)=>a-b)){
+            try{data=JSON.parse(raw.slice(index));break;}catch{}
+          }
+          if(!data) throw new Error('Unable to parse EAS build JSON');
+          const list=Array.isArray(data)?data:[data];
+          const build=list[0]||{};
+          const url=build?.artifacts?.buildUrl||build?.artifacts?.applicationArchiveUrl||build?.artifactUrl;
+          const id=build?.id||build?.build?.id||'';
+          if(!url) throw new Error('EAS signed AAB URL missing');
+          fs.writeFileSync('/tmp/dkd-eas-url',url+'\n');
+          fs.writeFileSync('/tmp/dkd-eas-id',String(id)+'\n');
+          console.log('EAS build ID:',id);
+          console.log('Signed AAB URL resolved.');
+          NODE
+
+      - name: Download and verify signed Google Play AAB
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p signed-output
+          DKD_URL="$(cat /tmp/dkd-eas-url)"
+          DKD_BUILD_ID="$(cat /tmp/dkd-eas-id)"
+          DKD_AAB="signed-output/DraBornPark-v1.0.9-vc9-GooglePlay-release.aab"
+          curl -L --fail --retry 3 --retry-delay 2 "$DKD_URL" -o "$DKD_AAB"
+          test -s "$DKD_AAB"
+          jarsigner -verify -verbose -certs "$DKD_AAB" | tee signed-output/JARSIGNER_VERIFY.txt
+          grep -q 'jar verified.' signed-output/JARSIGNER_VERIFY.txt
+          keytool -printcert -jarfile "$DKD_AAB" > signed-output/CERTIFICATE.txt
+          DKD_CERT_SHA256="$(sed -n 's/^[[:space:]]*SHA256: //p' signed-output/CERTIFICATE.txt | head -n1 | tr '[:lower:]' '[:upper:]')"
+          echo "Resolved upload certificate: $DKD_CERT_SHA256"
+          if [ "$DKD_CERT_SHA256" != "$DKD_EXPECTED_CERT_SHA256" ]; then
+            echo "EAS build was signed with an unexpected upload certificate." >&2
+            exit 1
+          fi
+          DKD_SIG_COUNT="$(unzip -Z1 "$DKD_AAB" | grep -Ec '^META-INF/.*\.SF$')"
+          test "$DKD_SIG_COUNT" -eq 1
+          sha256sum "$DKD_AAB" | tee signed-output/SHA256SUMS.txt
+          cat > signed-output/VERIFY.txt <<EOF
+          DraBornPark v1.0.9 / versionCode 9 — EAS Google Play Signed Release
+          Package: com.draborneagle.drabornpark
+          Expo project: @draborneagle/drabornpark
+          EAS Project ID: db4ce418-3c4a-4323-9a1f-e39614b64e27
+          Firebase project: drabornpark
+          EAS build ID: $DKD_BUILD_ID
+          Upload certificate SHA-256: $DKD_CERT_SHA256
+          AAB signature blocks: $DKD_SIG_COUNT
+          jarsigner verification: PASS
+          FINAL RESULT: PASS
+          EOF
+
+      - name: Upload final signed AAB
+        uses: actions/upload-artifact@v4
+        with:
+          name: DraBornPark-v1.0.9-vc9-GooglePlay-final
+          path: signed-output/
+          if-no-files-found: error
+          retention-days: 14
