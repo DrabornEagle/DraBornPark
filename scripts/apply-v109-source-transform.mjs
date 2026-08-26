@@ -2,7 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const dkd_root=process.cwd();
-await import('./apply-v108-source-transform.mjs');
+const dkd_home_source=fs.readFileSync(path.join(dkd_root,'app/index.tsx'),'utf8');
+if(!dkd_home_source.includes('<Pill label="v1.0.9" color={palette.purple}/>'))await import('./apply-v108-source-transform.mjs');
 
 function dkd_patch(dkd_file,dkd_replacements){
   const dkd_path=path.join(dkd_root,dkd_file);
@@ -24,7 +25,7 @@ dkd_patch('src/components/DraBornParkPlusPanel.tsx',[
   ],
   [
     "const planInfo=useMemo(()=>Object.fromEntries(plans.map(plan=>{const matches=offers.filter(offer=>String(offer.basePlanId||'')===plan.id);const offer=matches.find(offer=>!offer.offerId)||matches[0];const phases=offer?.pricingPhases?.pricingPhaseList??[];const paid=[...phases].reverse().find((phase:any)=>Number(phase.priceAmountMicros||0)>0)||phases.at?.(-1);return [plan.id,{offer,price:paid?.formattedPrice||null,period:paid?.billingPeriod||null}];})),[offers]);",
-    "const planInfo=useMemo(()=>Object.fromEntries(plans.map(plan=>{const dkdPeriod=plan.id==='monthly'?'P1M':'P1Y';const dkdWords=plan.id==='monthly'?['monthly','month','aylik','aylık']:['yearly','annual','year','yillik','yıllık'];const dkdMatches=offers.filter(offer=>{const dkdBase=String(offer?.basePlanId||'').toLocaleLowerCase('tr-TR');const dkdPhases=offer?.pricingPhases?.pricingPhaseList??offer?.pricingPhases??[];return dkdBase===plan.id||dkdWords.some(word=>dkdBase.includes(word))||dkdPhases.some((phase:any)=>String(phase?.billingPeriod||'').toUpperCase()===dkdPeriod);});const offer=dkdMatches.find(item=>!item?.offerId&&!item?.id)||dkdMatches[0];const phases=offer?.pricingPhases?.pricingPhaseList??offer?.pricingPhases??[];const paid=[...phases].reverse().find((phase:any)=>Number(phase?.priceAmountMicros||0)>0)||phases.at?.(-1);return [plan.id,{offer,price:paid?.formattedPrice||paid?.displayPrice||null,period:paid?.billingPeriod||null}];})),[offers]);"
+    "const planInfo=useMemo(()=>Object.fromEntries(plans.map(plan=>{const dkdPeriod=plan.id==='monthly'?'P1M':'P1Y';const dkdWords=plan.id==='monthly'?['monthly','month','aylik','aylık']:['yearly','annual','year','yillik','yıllık'];const dkdMatches=offers.filter(offer=>{const dkdBase=String(offer?.basePlanId||'').toLocaleLowerCase('tr-TR');const dkdRawPhases=offer?.pricingPhases?.pricingPhaseList??offer?.pricingPhases??[];const dkdPhases=Array.isArray(dkdRawPhases)?dkdRawPhases:[];return dkdBase===plan.id||dkdWords.some(word=>dkdBase.includes(word))||dkdPhases.some((phase:any)=>String(phase?.billingPeriod||'').toUpperCase()===dkdPeriod);});const offer=dkdMatches.find(item=>!item?.offerId&&!item?.id)||dkdMatches[0];const dkdRawPhases=offer?.pricingPhases?.pricingPhaseList??offer?.pricingPhases??[];const phases=Array.isArray(dkdRawPhases)?dkdRawPhases:[];const paid=[...phases].reverse().find((phase:any)=>Number(phase?.priceAmountMicros||0)>0)||phases.at?.(-1);return [plan.id,{offer,price:paid?.formattedPrice||paid?.displayPrice||null,period:paid?.billingPeriod||null}];})),[offers]);"
   ],
   [
     "if(!info?.offer?.offerToken){setMessage(PRODUCT_ID+' / '+planId+' planı henüz bu Google Play test hesabına sunulmuyor.');return;}",
