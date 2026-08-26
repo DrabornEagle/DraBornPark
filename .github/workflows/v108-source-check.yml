@@ -24,6 +24,7 @@ on:
       - 'supabase/functions/dkd-drabornpark-google-play/index.ts'
       - 'supabase/functions/dkd-drabornpark-app-version/index.ts'
       - '.github/VERSION'
+      - '.github/V113_SOURCE_TRIGGER'
       - 'scripts/apply-v113-source-transform.mjs'
       - 'scripts/check-v113.mjs'
       - '.github/workflows/v108-source-check.yml'
