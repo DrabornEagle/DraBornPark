@@ -3,9 +3,9 @@ values (
   'update_policy',
   jsonb_build_object(
     'force_update_enabled', false,
-    'minimum_version_code', 18,
-    'latest_version', '1.0.19',
-    'latest_version_code', 19
+    'minimum_version_code', 17,
+    'latest_version', '1.0.18',
+    'latest_version_code', 18
   ),
   now(),
   null
