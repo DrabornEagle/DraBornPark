@@ -5,7 +5,7 @@ const dkd_run=dkd_file=>{const dkd_result=spawnSync(process.execPath,[dkd_file],
 const dkd_read=dkd_file=>fs.readFileSync(dkd_file,'utf8');
 
 dkd_run('scripts/materialize-v101-brand.mjs');
-dkd_run('scripts/apply-v123-safe.mjs');
+dkd_run('scripts/apply-v123-idempotent.mjs');
 
 const dkd_app_json=JSON.parse(dkd_read('app.json'));
 dkd_app_json.expo.version='1.0.23';
