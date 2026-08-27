@@ -1,0 +1,41 @@
+name: DraBornPark v1.0.20 Source Sync
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/V120_SOURCE_SYNC_TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  sync-v120:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Materialize and validate
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run typecheck
+      - name: Commit canonical v1.0.20 source
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.json package.json package-lock.json .github/VERSION app/index.tsx app/hub.tsx app/legal.tsx app/factory.tsx app/admin.tsx src/components/DraBornParkPlusPanel.tsx supabase/functions/dkd-drabornpark-google-play/index.ts supabase/functions/dkd-drabornpark-app-version/index.ts
+          if ! git diff --cached --quiet; then
+            git commit -m 'release: sync DraBornPark v1.0.20 canonical source'
+            git push origin HEAD:main
+          fi
