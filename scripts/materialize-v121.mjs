@@ -3,6 +3,7 @@ import {spawnSync} from 'node:child_process';
 
 const dkd_run=dkd_file=>{const dkd_result=spawnSync(process.execPath,[dkd_file],{stdio:'inherit'});if(dkd_result.status!==0)process.exit(dkd_result.status??1);};
 const dkd_read=dkd_file=>fs.readFileSync(dkd_file,'utf8');
+dkd_run('scripts/materialize-v101-brand.mjs');
 const dkd_app=JSON.parse(dkd_read('app.json')).expo;
 const dkd_plus=dkd_read('src/components/DraBornParkPlusPanel.tsx');
 const dkd_google=dkd_read('supabase/functions/dkd-drabornpark-google-play/index.ts');
