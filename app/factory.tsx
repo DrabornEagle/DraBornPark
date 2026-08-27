@@ -121,7 +121,7 @@ export default function FactoryScreen(){
   if(!dkd_admin)return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.red}/><View style={s.denied}><MaterialCommunityIcons name="shield-lock-outline" size={48} color={palette.red}/><Text style={s.deniedTitle}>Üretim Paneli korumalı</Text><Text style={s.muted}>Etiket üretim bilgileri yalnızca yönetici hesaplarına açıktır.</Text><Pressable onPress={()=>router.replace('/')} style={s.primary}><Text style={s.primaryText}>ANA SAYFAYA DÖN</Text></Pressable></View></SafeAreaView>;
 
   return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.cyan} secondary={palette.orange}/><ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-    <ScreenHeader title="Üretim Paneli" eyebrow="NFC + QR ETİKET MERKEZİ • v1.0.20" accent={palette.cyan} subtitle="NFC bağlantı kodu kalıcıdır; sahip ve araç eşleşmesi Supabase üzerinden dinamik değişir."/>
+    <ScreenHeader title="Üretim Paneli" eyebrow="NFC + QR ETİKET MERKEZİ • v1.0.21" accent={palette.cyan} subtitle="NFC bağlantı kodu kalıcıdır; sahip ve araç eşleşmesi Supabase üzerinden dinamik değişir."/>
     <View style={s.stats}><DkdStat icon="nfc" value={dkd_tags.length} label="Toplam" color={palette.cyan}/><DkdStat icon="qrcode" value={dkd_tags.filter(dkd_tag=>dkd_tag.public_alias).length} label="NFC URL" color={palette.purple}/><DkdStat icon="shield-check" value={dkd_active_count} label="Aktif" color={palette.green}/></View>
 
     <SectionHeading title="Doğru fiziksel akış" subtitle="Her fiziksel etiket benzersiz, sahip eşleşmesi dinamik" color={palette.purple}/>
