@@ -11,6 +11,8 @@ type DkdVersionPayload={
   latestVersion?:string;
   latestVersionCode?:number;
   minimumVersionCode?:number;
+  requiredVersionCode?:number;
+  forceUpdateEnabled?:boolean;
   forceUpdateBelow?:number;
   message?:string;
   playUrl?:string;
@@ -35,11 +37,12 @@ export function MandatoryUpdateGate(){
       if(!dkdResponse.ok)return;
       const dkdPayload:DkdVersionPayload=await dkdResponse.json();
       const dkdCurrent=dkdCurrentVersionCode();
-      const dkdMinimum=Number(dkdPayload.minimumVersionCode??dkdPayload.forceUpdateBelow??0);
+      const dkdEnabled=Boolean(dkdPayload.forceUpdateEnabled);
+      const dkdRequired=Number(dkdPayload.requiredVersionCode??dkdPayload.forceUpdateBelow??dkdPayload.latestVersionCode??dkdPayload.minimumVersionCode??0);
       if(dkdPayload.latestVersion)setDkdLatestVersion(String(dkdPayload.latestVersion));
       if(dkdPayload.message)setDkdMessage(String(dkdPayload.message));
       if(dkdPayload.playUrl)setDkdPlayUrl(String(dkdPayload.playUrl));
-      setDkdVisible(Boolean(dkdCurrent>0&&dkdMinimum>0&&dkdCurrent<dkdMinimum));
+      setDkdVisible(Boolean(dkdEnabled&&dkdCurrent>0&&dkdRequired>0&&dkdCurrent<dkdRequired));
     }catch(error){
       console.warn('[DraBornPark update]',String((error as any)?.message||error));
     }

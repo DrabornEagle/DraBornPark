@@ -6,10 +6,10 @@ import {SafeIcon} from '@/src/components/Primitives';
 import {supabase} from '@/src/lib/supabase';
 import {palette,radius,type} from '@/src/theme';
 
-const DKD_LATEST_VERSION='1.0.16';
-const DKD_LATEST_VERSION_CODE=16;
+const DKD_FALLBACK_LATEST_VERSION='1.0.17';
+const DKD_FALLBACK_LATEST_VERSION_CODE=17;
 
-type DkdPolicy={force_update_enabled?:boolean;minimum_version_code?:number};
+type DkdPolicy={force_update_enabled?:boolean;minimum_version_code?:number;latest_version?:string;latest_version_code?:number};
 type DkdUser={
   dkd_user_id:string;
   dkd_email:string|null;
@@ -28,7 +28,9 @@ export default function AdminPanel(){
   const [dkdSaving,setDkdSaving]=useState(false);
   const [dkdAllowed,setDkdAllowed]=useState(false);
   const [dkdEnabled,setDkdEnabled]=useState(false);
-  const [dkdMinimum,setDkdMinimum]=useState(0);
+  const [dkdMinimum,setDkdMinimum]=useState(16);
+  const [dkdLatestVersion,setDkdLatestVersion]=useState(DKD_FALLBACK_LATEST_VERSION);
+  const [dkdLatestCode,setDkdLatestCode]=useState(DKD_FALLBACK_LATEST_VERSION_CODE);
   const [dkdMessage,setDkdMessage]=useState('');
   const [dkdQuery,setDkdQuery]=useState('');
   const [dkdUsers,setDkdUsers]=useState<DkdUser[]>([]);
@@ -57,7 +59,9 @@ export default function AdminPanel(){
       if(dkdPolicyError)throw dkdPolicyError;
       const dkdValue=(dkdPolicy??{}) as DkdPolicy;
       setDkdEnabled(Boolean(dkdValue.force_update_enabled));
-      setDkdMinimum(Number(dkdValue.minimum_version_code||0));
+      setDkdLatestVersion(String(dkdValue.latest_version||DKD_FALLBACK_LATEST_VERSION));
+      setDkdLatestCode(Number(dkdValue.latest_version_code||DKD_FALLBACK_LATEST_VERSION_CODE));
+      setDkdMinimum(Number(dkdValue.minimum_version_code||Math.max(1,Number(dkdValue.latest_version_code||DKD_FALLBACK_LATEST_VERSION_CODE)-1)));
       const {data:dkdRows,error:dkdUsersError}=await supabase.rpc('dkd_drabornpark_admin_search_users',{dkd_query:''});
       if(dkdUsersError)throw dkdUsersError;
       setDkdUsers((dkdRows??[]) as DkdUser[]);
@@ -71,11 +75,13 @@ export default function AdminPanel(){
     if(!dkdAllowed||dkdSaving)return;
     setDkdSaving(true);setDkdMessage('');
     try{
-      const {data:dkdPolicy,error:dkdError}=await supabase.rpc('dkd_drabornpark_set_force_update',{dkd_enabled:dkdNext,dkd_latest_version_code:DKD_LATEST_VERSION_CODE});
+      const {data:dkdPolicy,error:dkdError}=await supabase.rpc('dkd_drabornpark_set_force_update',{dkd_enabled:dkdNext,dkd_latest_version_code:dkdLatestCode});
       if(dkdError)throw dkdError;
       const dkdValue=(dkdPolicy??{}) as DkdPolicy;
       setDkdEnabled(Boolean(dkdValue.force_update_enabled));
-      setDkdMinimum(Number(dkdValue.minimum_version_code||0));
+      setDkdLatestVersion(String(dkdValue.latest_version||DKD_FALLBACK_LATEST_VERSION));
+      setDkdLatestCode(Number(dkdValue.latest_version_code||DKD_FALLBACK_LATEST_VERSION_CODE));
+      setDkdMinimum(Number(dkdValue.minimum_version_code||Math.max(1,Number(dkdValue.latest_version_code||DKD_FALLBACK_LATEST_VERSION_CODE)-1)));
       setDkdMessage(dkdNext?'Zorunlu güncelleme AKTİF. Eski sürümler Google Play güncellemesine yönlendirilecek.':'Zorunlu güncelleme PASİF. Kullanıcılar uygulamayı güncellemeden açabilir.');
     }catch(dkdError:any){setDkdMessage(dkdError?.message||'Zorunlu güncelleme ayarı değiştirilemedi.');}
     finally{setDkdSaving(false);}
@@ -104,8 +110,8 @@ export default function AdminPanel(){
     <ScreenHeader title="Admin Paneli" eyebrow="YÖNETİCİ KONTROL MERKEZİ" subtitle="Yayın politikasını ve DraBornPark kullanıcılarını tek merkezden güvenli şekilde yönet." accent={palette.orange}/>
     {dkdLoading?<View style={s.loading}><ActivityIndicator size="large" color={palette.orange}/><Text style={s.loadingText}>Admin yetkisi, yayın politikası ve kullanıcılar kontrol ediliyor…</Text></View>:!dkdAllowed?<View style={s.denied}><SafeIcon name="shield-lock-outline" size={38} color={palette.red}/><Text style={s.deniedTitle}>Yetki gerekli</Text><Text style={s.deniedText}>{dkdMessage||'Bu ekran yalnızca admin kullanıcılarına açıktır.'}</Text></View>:<>
       <View style={s.hero}><View style={s.heroIcon}><SafeIcon name="shield-crown-outline" size={34} color={palette.orange}/></View><View style={{flex:1}}><Text style={s.kicker}>CANLI YAYIN POLİTİKASI</Text><Text style={s.heroTitle}>Zorunlu Güncelleme</Text><Text style={s.heroText}>Tek anahtarla eski Android sürümlerinin uygulamaya girişini yönet.</Text></View></View>
-      <View style={[s.control,{borderColor:dkdEnabled?palette.green+'88':palette.muted2+'66'}]}><View style={[s.statusIcon,{backgroundColor:(dkdEnabled?palette.green:palette.muted2)+'1C'}]}><SafeIcon name={dkdEnabled?'update':'update-off'} size={30} color={dkdEnabled?palette.green:palette.muted2}/></View><View style={{flex:1,minWidth:0}}><Text style={s.controlLabel}>ZORUNLU GÜNCELLEME</Text><Text style={[s.controlState,{color:dkdEnabled?palette.green:palette.muted2}]}>{dkdEnabled?'AKTİF':'PASİF'}</Text><Text style={s.controlMeta}>{dkdEnabled?`v${DKD_LATEST_VERSION} altındaki sürümler güncellemeye zorlanır.`:'Eski sürümler güncelleme yapılmadan açılabilir.'}</Text></View><Switch value={dkdEnabled} disabled={dkdSaving} onValueChange={dkdSetForceUpdate}/></View>
-      <View style={s.infoGrid}><View style={s.infoCard}><Text style={s.infoLabel}>GÜNCEL SÜRÜM</Text><Text style={s.infoValue}>v{DKD_LATEST_VERSION}</Text><Text style={s.infoSmall}>versionCode {DKD_LATEST_VERSION_CODE}</Text></View><View style={s.infoCard}><Text style={s.infoLabel}>MİNİMUM KOD</Text><Text style={s.infoValue}>{dkdEnabled?dkdMinimum:'—'}</Text><Text style={s.infoSmall}>{dkdEnabled?'Daha düşük kodlar engellenir':'Politika devre dışı'}</Text></View></View>
+      <View style={[s.control,{borderColor:dkdEnabled?palette.green+'88':palette.muted2+'66'}]}><View style={[s.statusIcon,{backgroundColor:(dkdEnabled?palette.green:palette.muted2)+'1C'}]}><SafeIcon name={dkdEnabled?'update':'update-off'} size={30} color={dkdEnabled?palette.green:palette.muted2}/></View><View style={{flex:1,minWidth:0}}><Text style={s.controlLabel}>ZORUNLU GÜNCELLEME</Text><Text style={[s.controlState,{color:dkdEnabled?palette.green:palette.muted2}]}>{dkdEnabled?'AKTİF':'PASİF'}</Text><Text style={s.controlMeta}>{dkdEnabled?`Google Play'deki v${dkdLatestVersion} yüklü değilse güncelleme zorunlu olur.`:'Eski sürümler güncelleme yapılmadan açılabilir.'}</Text></View><Switch value={dkdEnabled} disabled={dkdSaving} onValueChange={dkdSetForceUpdate}/></View>
+      <View style={s.infoGrid}><View style={s.infoCard}><Text style={s.infoLabel}>GÜNCEL SÜRÜM</Text><Text style={s.infoValue}>v{dkdLatestVersion}</Text><Text style={s.infoSmall}>versionCode {dkdLatestCode} • Google Play son sürüm</Text></View><View style={s.infoCard}><Text style={s.infoLabel}>MİNİMUM KOD</Text><Text style={s.infoValue}>{dkdMinimum}</Text><Text style={s.infoSmall}>Bir önceki Google Play versionCode</Text></View></View>
 
       <SectionHeading title="Kullanıcı Yönetimi" subtitle="E-posta veya kullanıcı adıyla ara; hesap ve Sınırsız DraBornPark+ erişimini düzenle"/>
       <View style={s.searchBox}><SafeIcon name="account-search-outline" size={24} color={palette.cyan}/><TextInput value={dkdQuery} onChangeText={setDkdQuery} onSubmitEditing={()=>void dkdSearchUsers()} placeholder="E-posta veya kullanıcı adı ara" placeholderTextColor={palette.muted2} autoCapitalize="none" autoCorrect={false} style={s.searchInput}/><Pressable disabled={dkdUsersLoading} onPress={()=>void dkdSearchUsers()} style={s.searchButton}>{dkdUsersLoading?<ActivityIndicator color={palette.ink}/>:<SafeIcon name="magnify" size={24} color={palette.ink}/>}</Pressable></View>

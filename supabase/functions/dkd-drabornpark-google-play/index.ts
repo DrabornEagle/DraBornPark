@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {createClient} from "jsr:@supabase/supabase-js@2";
 
-const VERSION="1.0.16";
+const VERSION="1.0.17";
 const PACKAGE_NAME=Deno.env.get("GOOGLE_PLAY_PACKAGE_NAME")||"com.draborneagle.drabornpark";
 const PRODUCT_ID="drabornpark_plus";
 const MONTHLY_PLAN=Deno.env.get("GOOGLE_PLAY_MONTHLY_BASE_PLAN_ID")||"monthly";
