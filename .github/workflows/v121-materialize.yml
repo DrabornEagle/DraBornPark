@@ -23,10 +23,10 @@ jobs:
         with:
           node-version: '22'
           cache: npm
-      - name: Sync dependencies, materialize, check and typecheck
+      - name: Materialize, check and typecheck
         run: |
           set -euo pipefail
-          npm install --no-audit --no-fund
+          npm ci --no-audit --no-fund
           npm run check
           npm run typecheck
       - name: Push materialized v1.0.21 source
