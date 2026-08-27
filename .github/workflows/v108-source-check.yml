@@ -1,4 +1,4 @@
-name: DraBornPark v1.0.17 Source Check
+name: DraBornPark v1.0.18 Source Check
 
 on:
   push:
@@ -28,13 +28,16 @@ on:
       - 'supabase/functions/dkd-drabornpark-admin-support-push/index.ts'
       - 'supabase/functions/dkd-drabornpark-google-play/index.ts'
       - 'supabase/functions/dkd-drabornpark-app-version/index.ts'
-      - 'supabase/migrations/20260827035300_dkd_drabornpark_v117_update_policy.sql'
+      - 'supabase/migrations/20260827061500_dkd_drabornpark_v118_release_policy.sql'
       - '.github/VERSION'
-      - '.github/EAS_RELEASE_V117_TRIGGER'
+      - '.github/EAS_RELEASE_V118_TRIGGER'
       - 'scripts/apply-v115-safe.mjs'
       - 'scripts/apply-v116-safe.mjs'
       - 'scripts/apply-v117-safe.mjs'
-      - 'scripts/check-v117.mjs'
+      - 'scripts/apply-v118-safe.mjs'
+      - 'scripts/apply-v118-idempotency.mjs'
+      - 'scripts/apply-v118-pricing.mjs'
+      - 'scripts/check-v118.mjs'
       - '.github/workflows/v108-source-check.yml'
   workflow_dispatch:
 
@@ -42,9 +45,9 @@ permissions:
   contents: read
 
 jobs:
-  validate-v117:
+  validate-v118:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -55,7 +58,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Validate DraBornPark v1.0.17
+      - name: Validate DraBornPark v1.0.18
         run: npm run check
       - name: TypeScript check
         run: npm run typecheck
@@ -69,11 +72,14 @@ jobs:
           grep -R -F 'com.google.gms.google-services' android >/dev/null
           grep -R -F 'POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml >/dev/null
           echo "Firebase Android native prebuild OK — no APK/AAB generated."
-      - name: Verify v1.0.17 release metadata
+      - name: Verify v1.0.18 release metadata
         run: |
-          test "$(node -p "require('./app.json').expo.version")" = "1.0.17"
-          test "$(node -p "require('./app.json').expo.android.versionCode")" = "17"
-          test "$(node -p "require('./package.json').version")" = "1.0.17"
+          test "$(node -p "require('./app.json').expo.version")" = "1.0.18"
+          test "$(node -p "require('./app.json').expo.android.versionCode")" = "18"
+          test "$(node -p "require('./package.json').version")" = "1.0.18"
+          grep -F "planInfo[id]?.price" src/components/DraBornParkPlusPanel.tsx >/dev/null
+          grep -F "PLUS_LOCAL_CONFIRMED" src/components/DraBornParkPlusPanel.tsx >/dev/null
+          if grep -F "dkd_query:''" app/admin.tsx >/dev/null; then echo 'Admin user preload detected' >&2; exit 1; fi
           test ! -d android/app/build/outputs/bundle
           test ! -d android/app/build/outputs/apk
-          echo "v1.0.17 source/native-config validation complete; no APK/AAB build step exists in this workflow."
+          echo "v1.0.18 source/native-config validation complete; no APK/AAB build step exists in this workflow."
