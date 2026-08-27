@@ -1,4 +1,4 @@
-name: DraBornPark v1.0.18 Source Check
+name: DraBornPark v1.0.19 Source Check
 
 on:
   push:
@@ -28,16 +28,16 @@ on:
       - 'supabase/functions/dkd-drabornpark-admin-support-push/index.ts'
       - 'supabase/functions/dkd-drabornpark-google-play/index.ts'
       - 'supabase/functions/dkd-drabornpark-app-version/index.ts'
-      - 'supabase/migrations/20260827061500_dkd_drabornpark_v118_release_policy.sql'
       - '.github/VERSION'
-      - '.github/EAS_RELEASE_V118_TRIGGER'
+      - '.github/EAS_RELEASE_V119_TRIGGER'
       - 'scripts/apply-v115-safe.mjs'
       - 'scripts/apply-v116-safe.mjs'
       - 'scripts/apply-v117-safe.mjs'
       - 'scripts/apply-v118-safe.mjs'
       - 'scripts/apply-v118-idempotency.mjs'
       - 'scripts/apply-v118-pricing.mjs'
-      - 'scripts/check-v118.mjs'
+      - 'scripts/apply-v119-safe.mjs'
+      - 'scripts/check-v119.mjs'
       - '.github/workflows/v108-source-check.yml'
   workflow_dispatch:
 
@@ -45,7 +45,7 @@ permissions:
   contents: read
 
 jobs:
-  validate-v118:
+  validate-v119:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -58,7 +58,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Validate DraBornPark v1.0.18
+      - name: Validate DraBornPark v1.0.19
         run: npm run check
       - name: TypeScript check
         run: npm run typecheck
@@ -72,14 +72,17 @@ jobs:
           grep -R -F 'com.google.gms.google-services' android >/dev/null
           grep -R -F 'POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml >/dev/null
           echo "Firebase Android native prebuild OK — no APK/AAB generated."
-      - name: Verify v1.0.18 release metadata
+      - name: Verify v1.0.19 release metadata
         run: |
-          test "$(node -p "require('./app.json').expo.version")" = "1.0.18"
-          test "$(node -p "require('./app.json').expo.android.versionCode")" = "18"
-          test "$(node -p "require('./package.json').version")" = "1.0.18"
+          test "$(node -p "require('./app.json').expo.version")" = "1.0.19"
+          test "$(node -p "require('./app.json').expo.android.versionCode")" = "19"
+          test "$(node -p "require('./package.json').version")" = "1.0.19"
           grep -F "planInfo[id]?.price" src/components/DraBornParkPlusPanel.tsx >/dev/null
-          grep -F "PLUS_LOCAL_CONFIRMED" src/components/DraBornParkPlusPanel.tsx >/dev/null
+          if grep -F "PLUS_LOCAL_CONFIRMED" src/components/DraBornParkPlusPanel.tsx >/dev/null; then echo 'Provisional paid entitlement detected' >&2; exit 1; fi
+          if grep -F "dkdEstimatedExpiry" src/components/DraBornParkPlusPanel.tsx >/dev/null; then echo 'Fabricated paid expiry detected' >&2; exit 1; fi
+          grep -F "AsyncStorage.removeItem('@drabornpark:plus-local-v118')" src/components/DraBornParkPlusPanel.tsx >/dev/null
+          grep -F "const VERSION=\"1.0.19\"" supabase/functions/dkd-drabornpark-google-play/index.ts >/dev/null
           if grep -F "dkd_query:''" app/admin.tsx >/dev/null; then echo 'Admin user preload detected' >&2; exit 1; fi
           test ! -d android/app/build/outputs/bundle
           test ! -d android/app/build/outputs/apk
-          echo "v1.0.18 source/native-config validation complete; no APK/AAB build step exists in this workflow."
+          echo "v1.0.19 source/native-config validation complete; no APK/AAB generated in source-check workflow."
