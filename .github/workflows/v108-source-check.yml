@@ -1,4 +1,4 @@
-name: DraBornPark v1.0.20 Source Check
+name: DraBornPark v1.0.21 Source Check
 
 on:
   push:
@@ -13,10 +13,10 @@ on:
       - 'supabase/functions/dkd-drabornpark-google-play/index.ts'
       - 'supabase/functions/dkd-drabornpark-app-version/index.ts'
       - '.github/VERSION'
-      - 'scripts/materialize-v120.mjs'
-      - 'scripts/apply-v120-safe.mjs'
-      - 'scripts/apply-v120-owned-card.mjs'
-      - 'scripts/check-v120.mjs'
+      - 'scripts/materialize-v121.mjs'
+      - 'scripts/apply-v121-account-billing.mjs'
+      - 'scripts/apply-v121-server-billing.mjs'
+      - 'scripts/check-v121.mjs'
       - '.github/workflows/v108-source-check.yml'
   workflow_dispatch:
 
@@ -24,7 +24,7 @@ permissions:
   contents: read
 
 jobs:
-  validate-v120:
+  validate-v121:
     runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
@@ -37,7 +37,7 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Validate DraBornPark v1.0.20
+      - name: Validate DraBornPark v1.0.21
         run: npm run check
       - name: TypeScript check
         run: npm run typecheck
@@ -50,21 +50,19 @@ jobs:
           node -e "const f=require('./android/app/google-services.json');const packages=(f.client||[]).map(x=>x?.client_info?.android_client_info?.package_name);if(f.project_info?.project_id!=='drabornpark'||!packages.includes('com.draborneagle.drabornpark'))process.exit(1)"
           grep -R -F 'com.google.gms.google-services' android >/dev/null
           grep -R -F 'POST_NOTIFICATIONS' android/app/src/main/AndroidManifest.xml >/dev/null
-      - name: Verify v1.0.20 release metadata
+      - name: Verify v1.0.21 release metadata
         shell: bash
         run: |
           set -euo pipefail
-          test "$(node -p "require('./app.json').expo.version")" = "1.0.20"
-          test "$(node -p "require('./app.json').expo.android.versionCode")" = "20"
-          test "$(node -p "require('./package.json').version")" = "1.0.20"
-          grep -F 'const VERSION="1.0.20"' supabase/functions/dkd-drabornpark-google-play/index.ts >/dev/null
-          grep -F 'orderHistory?.refundEvent' supabase/functions/dkd-drabornpark-google-play/index.ts >/dev/null
-          grep -F 'effectiveEntitled=!refunded' supabase/functions/dkd-drabornpark-google-play/index.ts >/dev/null
-          grep -F 'urn:ietf:params:oauth:grant-type:jwt-bearer' supabase/functions/dkd-drabornpark-google-play/index.ts >/dev/null
-          grep -F 'visible={dkdInfoPopup}' src/components/DraBornParkPlusPanel.tsx >/dev/null
-          grep -F 'dkdPaidPremium&&dkdOwnedPlanCardId===plan.id' src/components/DraBornParkPlusPanel.tsx >/dev/null
-          if grep -F "Aylık ve yıllık güncel fiyatlar Google Play'den canlı alınır." src/components/DraBornParkPlusPanel.tsx >/dev/null; then exit 1; fi
-          if grep -F 'PLUS_LOCAL_CONFIRMED' src/components/DraBornParkPlusPanel.tsx >/dev/null; then exit 1; fi
+          test "$(node -p "require('./app.json').expo.version")" = "1.0.21"
+          test "$(node -p "require('./app.json').expo.android.versionCode")" = "21"
+          test "$(node -p "require('./package.json').version")" = "1.0.21"
+          grep -F 'const VERSION="1.0.21"' supabase/functions/dkd-drabornpark-google-play/index.ts >/dev/null
+          grep -F 'purchase_already_claimed' supabase/functions/dkd-drabornpark-google-play/index.ts >/dev/null
+          grep -F 'purchase_missing_account_binding' supabase/functions/dkd-drabornpark-google-play/index.ts >/dev/null
+          grep -F 'PLUS_OTHER_ACCOUNT' src/components/DraBornParkPlusPanel.tsx >/dev/null
+          grep -F 'obfuscatedProfileId:obfuscated' src/components/DraBornParkPlusPanel.tsx >/dev/null
+          grep -F 'v1.0.21' app/legal.tsx >/dev/null
           test ! -d android/app/build/outputs/bundle
           test ! -d android/app/build/outputs/apk
-          echo 'v1.0.20 source/native-config validation PASS'
+          echo 'v1.0.21 source/native-config validation PASS'
