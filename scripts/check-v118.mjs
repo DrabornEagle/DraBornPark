@@ -22,6 +22,8 @@ const dkd_checks=[
   [dkd_plus.includes("@drabornpark:plus-local-v118"),'billing must persist local Play receipt state'],
   [dkd_plus.includes('dkdTrialBonusMs'),'billing countdown must include remaining trial bonus'],
   [dkd_plus.includes('Sunucu doğrulaması geçici olarak erişilemiyorsa aktif Google Play satın alması kaybolmuş gibi gösterilmez'),'billing copy must not misreport a verified Play purchase during server outage'],
+  [dkd_plus.includes("planInfo[id]?.price"),'subscription cards and CTA must use live Google Play price'],
+  [!dkd_plus.includes('Aylık 69,99 TL')&&!dkd_plus.includes('239,89 TL')&&!dkd_plus.includes('%29 AVANTAJ'),'stale hardcoded subscription pricing must not remain'],
   [dkd_google.includes('const VERSION="1.0.18"'),'Google Play verifier must be v1.0.18'],
   [dkd_google.includes('purchaseStartMs')&&dkd_google.includes('google?.startTime'),'trial bonus must be captured from purchase start time'],
   [dkd_gate.includes('dkdEnabled&&dkdCurrent>0&&dkdRequired>0&&dkdCurrent<dkdRequired'),'mandatory update gate must still respect enabled state'],
