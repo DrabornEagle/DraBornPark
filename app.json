@@ -3,7 +3,7 @@
     "name": "DraBornPark",
     "slug": "drabornpark",
     "owner": "draborneagle",
-    "version": "1.0.19",
+    "version": "1.0.20",
     "orientation": "portrait",
     "scheme": "drabornpark",
     "userInterfaceStyle": "dark",
@@ -73,7 +73,7 @@
     },
     "android": {
       "package": "com.draborneagle.drabornpark",
-      "versionCode": 19,
+      "versionCode": 20,
       "googleServicesFile": "./google-services.json",
       "backgroundColor": "#050816",
       "permissions": [
