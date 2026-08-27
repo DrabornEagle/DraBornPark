@@ -4,14 +4,14 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "postinstall": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v115-safe.mjs && node scripts/apply-v116-safe.mjs && node scripts/apply-v117-safe.mjs && node scripts/apply-v118-safe.mjs && node scripts/apply-v118-idempotency.mjs && node scripts/apply-v118-pricing.mjs && node scripts/apply-v119-safe.mjs",
-    "start": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v115-safe.mjs && node scripts/apply-v116-safe.mjs && node scripts/apply-v117-safe.mjs && node scripts/apply-v118-safe.mjs && node scripts/apply-v118-idempotency.mjs && node scripts/apply-v118-pricing.mjs && node scripts/apply-v119-safe.mjs && expo start --clear",
-    "dev": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v115-safe.mjs && node scripts/apply-v116-safe.mjs && node scripts/apply-v117-safe.mjs && node scripts/apply-v118-safe.mjs && node scripts/apply-v118-idempotency.mjs && node scripts/apply-v118-pricing.mjs && node scripts/apply-v119-safe.mjs && expo start --clear",
-    "dev:tunnel": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v115-safe.mjs && node scripts/apply-v116-safe.mjs && node scripts/apply-v117-safe.mjs && node scripts/apply-v118-safe.mjs && node scripts/apply-v118-idempotency.mjs && node scripts/apply-v118-pricing.mjs && node scripts/apply-v119-safe.mjs && expo start --clear --tunnel",
-    "android": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v115-safe.mjs && node scripts/apply-v116-safe.mjs && node scripts/apply-v117-safe.mjs && node scripts/apply-v118-safe.mjs && node scripts/apply-v118-idempotency.mjs && node scripts/apply-v118-pricing.mjs && node scripts/apply-v119-safe.mjs && expo start --android --clear",
-    "web": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v115-safe.mjs && node scripts/apply-v116-safe.mjs && node scripts/apply-v117-safe.mjs && node scripts/apply-v118-safe.mjs && node scripts/apply-v118-idempotency.mjs && node scripts/apply-v118-pricing.mjs && node scripts/apply-v119-safe.mjs && expo start --web --clear",
-    "typecheck": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v115-safe.mjs && node scripts/apply-v116-safe.mjs && node scripts/apply-v117-safe.mjs && node scripts/apply-v118-safe.mjs && node scripts/apply-v118-idempotency.mjs && node scripts/apply-v118-pricing.mjs && node scripts/apply-v119-safe.mjs && node scripts/clean-generated-types.mjs && tsc --noEmit",
-    "check": "node scripts/materialize-v101-brand.mjs && node scripts/apply-v115-safe.mjs && node scripts/apply-v116-safe.mjs && node scripts/apply-v117-safe.mjs && node scripts/apply-v118-safe.mjs && node scripts/apply-v118-idempotency.mjs && node scripts/apply-v118-pricing.mjs && node scripts/apply-v119-safe.mjs && node scripts/check-v119.mjs"
+    "postinstall": "node scripts/materialize-v119.mjs",
+    "start": "node scripts/materialize-v119.mjs && expo start --clear",
+    "dev": "node scripts/materialize-v119.mjs && expo start --clear",
+    "dev:tunnel": "node scripts/materialize-v119.mjs && expo start --clear --tunnel",
+    "android": "node scripts/materialize-v119.mjs && expo start --android --clear",
+    "web": "node scripts/materialize-v119.mjs && expo start --web --clear",
+    "typecheck": "node scripts/materialize-v119.mjs && node scripts/clean-generated-types.mjs && tsc --noEmit",
+    "check": "node scripts/materialize-v119.mjs && node scripts/check-v119.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
