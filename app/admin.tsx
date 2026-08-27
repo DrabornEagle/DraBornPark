@@ -6,8 +6,8 @@ import {SafeIcon} from '@/src/components/Primitives';
 import {supabase} from '@/src/lib/supabase';
 import {palette,radius,type} from '@/src/theme';
 
-const DKD_FALLBACK_LATEST_VERSION='1.0.17';
-const DKD_FALLBACK_LATEST_VERSION_CODE=17;
+const DKD_FALLBACK_LATEST_VERSION='1.0.18';
+const DKD_FALLBACK_LATEST_VERSION_CODE=18;
 
 type DkdPolicy={force_update_enabled?:boolean;minimum_version_code?:number;latest_version?:string;latest_version_code?:number};
 type DkdUser={
@@ -28,7 +28,7 @@ export default function AdminPanel(){
   const [dkdSaving,setDkdSaving]=useState(false);
   const [dkdAllowed,setDkdAllowed]=useState(false);
   const [dkdEnabled,setDkdEnabled]=useState(false);
-  const [dkdMinimum,setDkdMinimum]=useState(16);
+  const [dkdMinimum,setDkdMinimum]=useState(17);
   const [dkdLatestVersion,setDkdLatestVersion]=useState(DKD_FALLBACK_LATEST_VERSION);
   const [dkdLatestCode,setDkdLatestCode]=useState(DKD_FALLBACK_LATEST_VERSION_CODE);
   const [dkdMessage,setDkdMessage]=useState('');
@@ -39,9 +39,11 @@ export default function AdminPanel(){
 
   const dkdSearchUsers=async(dkdSearch=dkdQuery)=>{
     if(!dkdAllowed&& !dkdLoading)return;
+    const dkdTerm=dkdSearch.trim();
+    if(dkdTerm.length<2){setDkdUsers([]);setDkdMessage('Kullanıcı aramak için en az 2 karakter yaz.');return;}
     setDkdUsersLoading(true);
     try{
-      const {data:dkdRows,error:dkdError}=await supabase.rpc('dkd_drabornpark_admin_search_users',{dkd_query:dkdSearch.trim()});
+      const {data:dkdRows,error:dkdError}=await supabase.rpc('dkd_drabornpark_admin_search_users',{dkd_query:dkdTerm});
       if(dkdError)throw dkdError;
       setDkdUsers((dkdRows??[]) as DkdUser[]);
     }catch(dkdError:any){setDkdMessage(dkdError?.message||'Kullanıcılar yüklenemedi.');}
@@ -62,9 +64,7 @@ export default function AdminPanel(){
       setDkdLatestVersion(String(dkdValue.latest_version||DKD_FALLBACK_LATEST_VERSION));
       setDkdLatestCode(Number(dkdValue.latest_version_code||DKD_FALLBACK_LATEST_VERSION_CODE));
       setDkdMinimum(Number(dkdValue.minimum_version_code||Math.max(1,Number(dkdValue.latest_version_code||DKD_FALLBACK_LATEST_VERSION_CODE)-1)));
-      const {data:dkdRows,error:dkdUsersError}=await supabase.rpc('dkd_drabornpark_admin_search_users',{dkd_query:''});
-      if(dkdUsersError)throw dkdUsersError;
-      setDkdUsers((dkdRows??[]) as DkdUser[]);
+      setDkdUsers([]);
     }catch(dkdError:any){setDkdMessage(dkdError?.message||'Admin ayarları yüklenemedi.');}
     finally{setDkdLoading(false);}
   };
@@ -114,9 +114,9 @@ export default function AdminPanel(){
       <View style={s.infoGrid}><View style={s.infoCard}><Text style={s.infoLabel}>GÜNCEL SÜRÜM</Text><Text style={s.infoValue}>v{dkdLatestVersion}</Text><Text style={s.infoSmall}>versionCode {dkdLatestCode} • Google Play son sürüm</Text></View><View style={s.infoCard}><Text style={s.infoLabel}>MİNİMUM KOD</Text><Text style={s.infoValue}>{dkdMinimum}</Text><Text style={s.infoSmall}>Bir önceki Google Play versionCode</Text></View></View>
 
       <SectionHeading title="Kullanıcı Yönetimi" subtitle="E-posta veya kullanıcı adıyla ara; hesap ve Sınırsız DraBornPark+ erişimini düzenle"/>
-      <View style={s.searchBox}><SafeIcon name="account-search-outline" size={24} color={palette.cyan}/><TextInput value={dkdQuery} onChangeText={setDkdQuery} onSubmitEditing={()=>void dkdSearchUsers()} placeholder="E-posta veya kullanıcı adı ara" placeholderTextColor={palette.muted2} autoCapitalize="none" autoCorrect={false} style={s.searchInput}/><Pressable disabled={dkdUsersLoading} onPress={()=>void dkdSearchUsers()} style={s.searchButton}>{dkdUsersLoading?<ActivityIndicator color={palette.ink}/>:<SafeIcon name="magnify" size={24} color={palette.ink}/>}</Pressable></View>
+      <View style={s.searchBox}><SafeIcon name="account-search-outline" size={24} color={palette.cyan}/><TextInput value={dkdQuery} onChangeText={dkdValue=>{setDkdQuery(dkdValue);setDkdUsers([]);setDkdMessage('');}} onSubmitEditing={()=>void dkdSearchUsers()} placeholder="E-posta veya kullanıcı adı ara" placeholderTextColor={palette.muted2} autoCapitalize="none" autoCorrect={false} style={s.searchInput}/><Pressable disabled={dkdUsersLoading} onPress={()=>void dkdSearchUsers()} style={s.searchButton}>{dkdUsersLoading?<ActivityIndicator color={palette.ink}/>:<SafeIcon name="magnify" size={24} color={palette.ink}/>}</Pressable></View>
       <View style={s.userSummary}><View><Text style={s.userSummaryLabel}>GÖSTERİLEN KULLANICI</Text><Text style={s.userSummaryValue}>{dkdUsers.length}</Text></View><View style={s.userSummaryRight}><Text style={s.userSummaryLabel}>SINIRSIZ PLUS</Text><Text style={[s.userSummaryValue,{color:palette.yellow}]}>{dkdUsers.filter(dkdUser=>dkdUser.dkd_unlimited_plus).length}</Text></View></View>
-      {dkdUsers.length===0&&!dkdUsersLoading?<View style={s.empty}><SafeIcon name="account-search" size={31} color={palette.muted2}/><Text style={s.emptyTitle}>Kullanıcı bulunamadı</Text><Text style={s.emptyBody}>E-posta veya kullanıcı adıyla farklı bir arama yap.</Text></View>:null}
+      {dkdQuery.trim().length>=2&&dkdUsers.length===0&&!dkdUsersLoading?<View style={s.empty}><SafeIcon name="account-search" size={31} color={palette.muted2}/><Text style={s.emptyTitle}>Kullanıcı bulunamadı</Text><Text style={s.emptyBody}>E-posta veya kullanıcı adıyla farklı bir arama yap.</Text></View>:null}
       {dkdUsers.map(dkdUser=><DkdUserEditor key={dkdUser.dkd_user_id} dkdUser={dkdUser} dkdBusy={dkdUserBusy===dkdUser.dkd_user_id} dkdOnSave={dkdUpdateUser}/>) }
 
       {dkdSaving?<View style={s.message}><ActivityIndicator color={palette.cyan}/><Text style={s.messageText}>Ayar Supabase üzerinde güvenli şekilde güncelleniyor…</Text></View>:dkdMessage?<View style={s.message}><SafeIcon name="information-outline" size={21} color={palette.cyan}/><Text style={s.messageText}>{dkdMessage}</Text></View>:null}

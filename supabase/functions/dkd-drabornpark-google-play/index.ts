@@ -1,7 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import {createClient} from "jsr:@supabase/supabase-js@2";
 
-const VERSION="1.0.17";
+const VERSION="1.0.18";
 const PACKAGE_NAME=Deno.env.get("GOOGLE_PLAY_PACKAGE_NAME")||"com.draborneagle.drabornpark";
 const PRODUCT_ID="drabornpark_plus";
 const MONTHLY_PLAN=Deno.env.get("GOOGLE_PLAY_MONTHLY_BASE_PLAN_ID")||"monthly";
@@ -44,9 +44,10 @@ Deno.serve(async(req:Request)=>{
     const {data:profile}=await adminDb.from("drabornpark_profiles").select("plus_trial_until").eq("user_id",user.id).maybeSingle();
 
     const nowMs=Date.now();
+    const purchaseStartMs=google?.startTime?Date.parse(String(google.startTime)):nowMs;
     const previousBonus=Number((existing as any)?.raw_provider_state?.dkd_v115?.trialBonusMs);
     const trialUntilMs=profile?.plus_trial_until?Date.parse(profile.plus_trial_until):0;
-    const trialBonusMs=Number.isFinite(previousBonus)&&previousBonus>=0?previousBonus:Math.max(0,trialUntilMs-nowMs);
+    const trialBonusMs=Number.isFinite(previousBonus)&&previousBonus>=0?previousBonus:Math.max(0,trialUntilMs-purchaseStartMs);
     const googleExpiryMs=googleExpiry?Date.parse(googleExpiry):0;
     const effectiveExpiryMs=googleExpiryMs>0?googleExpiryMs+trialBonusMs:0;
     const bonusTailAllowed=["SUBSCRIPTION_STATE_CANCELED","SUBSCRIPTION_STATE_EXPIRED"].includes(state)&&mapped.status!=="PLUS_REFUNDED";
@@ -55,7 +56,7 @@ Deno.serve(async(req:Request)=>{
     const effectiveStatus=mapped.entitled?mapped.status:(bonusTailActive?"PLUS_CANCELLED":mapped.status);
     const effectiveExpiry=effectiveExpiryMs>0?new Date(effectiveExpiryMs).toISOString():googleExpiry;
 
-    const row={user_id:user.id,provider:"google_play",product_id:PRODUCT_ID,base_plan_id:basePlanId,purchase_token_hash:tokenHash,status:effectiveStatus,expires_at:effectiveExpiry,auto_renewing:autoRenewing,last_verified_at:new Date().toISOString(),raw_provider_state:{subscriptionState:state,orderState,basePlanId,productId:PRODUCT_ID,latestOrderId:latestOrderId||null,dkd_v115:{googleExpiry,trialBonusMs,effectiveExpiry}},updated_at:new Date().toISOString()};
+    const row={user_id:user.id,provider:"google_play",product_id:PRODUCT_ID,base_plan_id:basePlanId,purchase_token_hash:tokenHash,status:effectiveStatus,expires_at:effectiveExpiry,auto_renewing:autoRenewing,last_verified_at:new Date().toISOString(),raw_provider_state:{subscriptionState:state,orderState,basePlanId,productId:PRODUCT_ID,latestOrderId:latestOrderId||null,dkd_v115:{googleExpiry,purchaseStartTime:google?.startTime??null,trialBonusMs,effectiveExpiry}},updated_at:new Date().toISOString()};
     if(existing){const {error}=await adminDb.from("drabornpark_subscriptions").update(row).eq("id",existing.id);if(error)throw error;}else{const {error}=await adminDb.from("drabornpark_subscriptions").insert(row);if(error)throw error;}
 
     const activeTrial=trialUntilMs>nowMs;
