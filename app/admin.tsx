@@ -6,8 +6,8 @@ import {SafeIcon} from '@/src/components/Primitives';
 import {supabase} from '@/src/lib/supabase';
 import {palette,radius,type} from '@/src/theme';
 
-const DKD_FALLBACK_LATEST_VERSION='1.0.18';
-const DKD_FALLBACK_LATEST_VERSION_CODE=18;
+const DKD_FALLBACK_LATEST_VERSION='1.0.19';
+const DKD_FALLBACK_LATEST_VERSION_CODE=19;
 
 type DkdPolicy={force_update_enabled?:boolean;minimum_version_code?:number;latest_version?:string;latest_version_code?:number};
 type DkdUser={
@@ -28,7 +28,7 @@ export default function AdminPanel(){
   const [dkdSaving,setDkdSaving]=useState(false);
   const [dkdAllowed,setDkdAllowed]=useState(false);
   const [dkdEnabled,setDkdEnabled]=useState(false);
-  const [dkdMinimum,setDkdMinimum]=useState(17);
+  const [dkdMinimum,setDkdMinimum]=useState(18);
   const [dkdLatestVersion,setDkdLatestVersion]=useState(DKD_FALLBACK_LATEST_VERSION);
   const [dkdLatestCode,setDkdLatestCode]=useState(DKD_FALLBACK_LATEST_VERSION_CODE);
   const [dkdMessage,setDkdMessage]=useState('');
