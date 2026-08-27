@@ -1,4 +1,4 @@
-name: DraBornPark v1.0.19 EAS Google Play Build
+name: DraBornPark v1.0.19 Local EAS Google Play Build
 
 on:
   push:
@@ -13,11 +13,12 @@ permissions:
 env:
   EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
   DKD_EXPECTED_CERT_SHA256: "95:4C:F9:A8:E0:DB:09:46:A2:63:18:D6:95:7B:DF:0B:72:2D:51:7B:40:67:67:F8:3E:4C:37:BE:84:67:6B:C6"
+  EAS_BUILD_NO_EXPO_GO_WARNING: "true"
 
 jobs:
   build-signed-aab:
     runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - name: Checkout main
         uses: actions/checkout@v4
@@ -45,8 +46,6 @@ jobs:
           npm ci --no-audit --no-fund
           npm run check
           npm run typecheck
-          npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-          printf '1.0.19\n' > .github/VERSION
           node -e "const a=require('./app.json').expo;if(a.version!=='1.0.19'||a.android.versionCode!==19)process.exit(1)"
           node -e "const p=require('./package.json');if(p.version!=='1.0.19')process.exit(1)"
           grep -F "const VERSION=\"1.0.19\"" supabase/functions/dkd-drabornpark-google-play/index.ts >/dev/null
@@ -59,7 +58,7 @@ jobs:
           grep -F '@draborneagle/drabornpark' /tmp/dkd-project.txt
           grep -F 'db4ce418-3c4a-4323-9a1f-e39614b64e27' /tmp/dkd-project.txt
 
-      - name: Sync materialized v1.0.19 source to main
+      - name: Sync materialized source if needed
         shell: bash
         run: |
           set -euo pipefail
@@ -68,43 +67,27 @@ jobs:
           git add app.json package.json package-lock.json .github/VERSION app/index.tsx app/hub.tsx app/legal.tsx app/factory.tsx app/admin.tsx src/components/DraBornParkPlusPanel.tsx src/lib/drabornpark.ts supabase/functions/dkd-drabornpark-google-play/index.ts supabase/functions/dkd-drabornpark-app-version/index.ts
           if ! git diff --cached --quiet; then
             git commit -m 'release: materialize DraBornPark v1.0.19'
-            git push origin HEAD:main || echo 'Source push could not be completed; build continues from validated working tree.'
+            git push origin HEAD:main || echo 'Source push skipped; validated working tree will still be built.'
           fi
 
-      - name: Build signed production AAB on EAS
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx --yes eas-cli@latest build --platform android --profile production --non-interactive --wait --json > /tmp/dkd-eas-build.raw
-          cat /tmp/dkd-eas-build.raw
-          node <<'NODE'
-          const fs=require('fs');
-          const raw=fs.readFileSync('/tmp/dkd-eas-build.raw','utf8').trim();
-          let data;
-          for(const index of [raw.indexOf('['),raw.indexOf('{')].filter(x=>x>=0).sort((a,b)=>a-b)){
-            try{data=JSON.parse(raw.slice(index));break;}catch{}
-          }
-          if(!data) throw new Error('Unable to parse EAS build JSON');
-          const list=Array.isArray(data)?data:[data];
-          const build=list[0]||{};
-          const url=build?.artifacts?.buildUrl||build?.artifacts?.applicationArchiveUrl||build?.artifactUrl;
-          const id=build?.id||build?.build?.id||'';
-          if(!url) throw new Error('EAS signed AAB URL missing');
-          fs.writeFileSync('/tmp/dkd-eas-url',url+'\n');
-          fs.writeFileSync('/tmp/dkd-eas-id',String(id)+'\n');
-          console.log('EAS build ID:',id);
-          console.log('Signed AAB URL resolved.');
-          NODE
-
-      - name: Download and verify signed Google Play AAB
+      - name: Build signed production AAB locally with EAS
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p signed-output
-          DKD_URL="$(cat /tmp/dkd-eas-url)"
+          DKD_AAB="$PWD/signed-output/DraBornPark-v1.0.19-vc19-GooglePlay-release.aab"
+          rm -f "$DKD_AAB"
+          echo "Android SDK: ${ANDROID_HOME:-${ANDROID_SDK_ROOT:-unknown}}"
+          npx --yes eas-cli@latest build --platform android --profile production --local --non-interactive --output "$DKD_AAB"
+          test -s "$DKD_AAB"
+          printf 'github-actions-local-eas\n' > /tmp/dkd-eas-id
+
+      - name: Verify signed Google Play AAB
+        shell: bash
+        run: |
+          set -euo pipefail
           DKD_BUILD_ID="$(cat /tmp/dkd-eas-id)"
           DKD_AAB="signed-output/DraBornPark-v1.0.19-vc19-GooglePlay-release.aab"
-          curl -L --fail --retry 3 --retry-delay 2 "$DKD_URL" -o "$DKD_AAB"
           test -s "$DKD_AAB"
           jarsigner -verify -verbose -certs "$DKD_AAB" | tee signed-output/JARSIGNER_VERIFY.txt
           grep -q 'jar verified.' signed-output/JARSIGNER_VERIFY.txt
@@ -112,19 +95,19 @@ jobs:
           DKD_CERT_SHA256="$(sed -n 's/^[[:space:]]*SHA256: //p' signed-output/CERTIFICATE.txt | head -n1 | tr '[:lower:]' '[:upper:]')"
           echo "Resolved upload certificate: $DKD_CERT_SHA256"
           if [ "$DKD_CERT_SHA256" != "$DKD_EXPECTED_CERT_SHA256" ]; then
-            echo "EAS build was signed with an unexpected upload certificate." >&2
+            echo "Local EAS build was signed with an unexpected upload certificate." >&2
             exit 1
           fi
           DKD_SIG_COUNT="$(unzip -Z1 "$DKD_AAB" | grep -Ec '^META-INF/.*\.SF$')"
           test "$DKD_SIG_COUNT" -eq 1
           sha256sum "$DKD_AAB" | tee signed-output/SHA256SUMS.txt
           cat > signed-output/VERIFY.txt <<EOF
-          DraBornPark v1.0.19 / versionCode 19 — EAS Google Play Signed Release
+          DraBornPark v1.0.19 / versionCode 19 — Local EAS Google Play Signed Release
           Package: com.draborneagle.drabornpark
           Expo project: @draborneagle/drabornpark
           EAS Project ID: db4ce418-3c4a-4323-9a1f-e39614b64e27
           Firebase project: drabornpark
-          EAS build ID: $DKD_BUILD_ID
+          Build path: $DKD_BUILD_ID
           Upload certificate SHA-256: $DKD_CERT_SHA256
           AAB signature blocks: $DKD_SIG_COUNT
           Billing client: server-authoritative entitlement; no fabricated 30/365-day expiry
