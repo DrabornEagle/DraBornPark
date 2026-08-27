@@ -3,7 +3,8 @@ import {spawnSync} from 'node:child_process';
 
 const dkd_run=dkd_file=>{const dkd_result=spawnSync(process.execPath,[dkd_file],{stdio:'inherit'});if(dkd_result.status!==0)process.exit(dkd_result.status??1);};
 const dkd_read=dkd_file=>fs.readFileSync(dkd_file,'utf8');
-dkd_run('scripts/materialize-v121.mjs');
+const dkd_initial_app=JSON.parse(dkd_read('app.json')).expo;
+if(dkd_initial_app.version!=='1.0.22'||dkd_initial_app.android?.versionCode!==22)dkd_run('scripts/materialize-v121.mjs');
 dkd_run('scripts/apply-v122-safe.mjs');
 const dkd_app_json=JSON.parse(dkd_read('app.json'));dkd_app_json.expo.version='1.0.22';dkd_app_json.expo.android.versionCode=22;fs.writeFileSync('app.json',JSON.stringify(dkd_app_json,null,2)+'\n');
 const dkd_package=JSON.parse(dkd_read('package.json'));dkd_package.version='1.0.22';for(const dkd_key of Object.keys(dkd_package.scripts||{})){dkd_package.scripts[dkd_key]=String(dkd_package.scripts[dkd_key]).replaceAll('materialize-v121.mjs','materialize-v122.mjs').replaceAll('check-v121.mjs','check-v122.mjs');}fs.writeFileSync('package.json',JSON.stringify(dkd_package,null,2)+'\n');
