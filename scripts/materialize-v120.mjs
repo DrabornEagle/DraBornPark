@@ -11,6 +11,11 @@ const dkd_finalize=()=>{
     if(dkd_lock.packages?.[''])dkd_lock.packages[''].version='1.0.20';
     fs.writeFileSync('package-lock.json',JSON.stringify(dkd_lock,null,2)+'\n');
   }
+  if(fs.existsSync('supabase/functions/dkd-drabornpark-google-play/index.ts')){
+    const dkd_google_file='supabase/functions/dkd-drabornpark-google-play/index.ts';
+    const dkd_google_text=dkd_read(dkd_google_file).replace(/urn:ietf:params:oauth2:grant-type:jwt-bearer/g,'urn:ietf:params:oauth:grant-type:jwt-bearer');
+    fs.writeFileSync(dkd_google_file,dkd_google_text);
+  }
 };
 const dkd_app=JSON.parse(dkd_read('app.json')).expo;
 const dkd_plus=dkd_read('src/components/DraBornParkPlusPanel.tsx');
