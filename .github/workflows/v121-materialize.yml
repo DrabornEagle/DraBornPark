@@ -1,0 +1,44 @@
+name: DraBornPark v1.0.21 Materialize Source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/MATERIALIZE_V121_TRIGGER'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  materialize-v121:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Materialize, check and typecheck
+        run: |
+          set -euo pipefail
+          npm ci --no-audit --no-fund
+          npm run check
+          npm run typecheck
+      - name: Push materialized v1.0.21 source
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app.json package.json package-lock.json .github/VERSION app/index.tsx app/hub.tsx app/legal.tsx app/factory.tsx app/admin.tsx src/components/MandatoryUpdateGate.tsx src/components/DraBornParkPlusPanel.tsx supabase/functions/dkd-drabornpark-google-play/index.ts supabase/functions/dkd-drabornpark-app-version/index.ts
+          if git diff --cached --quiet; then
+            echo 'v1.0.21 source already materialized.'
+          else
+            git commit -m 'release: materialize DraBornPark v1.0.21'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
