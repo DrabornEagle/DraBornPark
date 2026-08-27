@@ -9,22 +9,29 @@ const dkd_replace_required=(dkd_text,dkd_from,dkd_to,dkd_label)=>{
   return dkd_text.replace(dkd_from,dkd_to);
 };
 
-// Package / native release identity.
 const dkd_app_file='app.json';
 const dkd_app_json=JSON.parse(dkd_read(dkd_app_file));
 dkd_app_json.expo.version='1.0.24';
 dkd_app_json.expo.android.versionCode=24;
 dkd_write(dkd_app_file,JSON.stringify(dkd_app_json,null,2)+'\n');
 
-for(const dkd_package_file of ['package.json','package-lock.json']){
-  const dkd_package_json=JSON.parse(dkd_read(dkd_package_file));
-  dkd_package_json.version='1.0.24';
-  if(dkd_package_json.packages?.[''])dkd_package_json.packages[''].version='1.0.24';
-  dkd_write(dkd_package_file,JSON.stringify(dkd_package_json,null,2)+'\n');
+const dkd_package_file='package.json';
+const dkd_package_json=JSON.parse(dkd_read(dkd_package_file));
+dkd_package_json.version='1.0.24';
+for(const dkd_key of Object.keys(dkd_package_json.scripts||{})){
+  dkd_package_json.scripts[dkd_key]=String(dkd_package_json.scripts[dkd_key])
+    .replaceAll('materialize-v123.mjs','materialize-v124.mjs')
+    .replaceAll('check-v123.mjs','check-v124.mjs');
 }
+dkd_write(dkd_package_file,JSON.stringify(dkd_package_json,null,2)+'\n');
+
+const dkd_lock_file='package-lock.json';
+const dkd_lock_json=JSON.parse(dkd_read(dkd_lock_file));
+dkd_lock_json.version='1.0.24';
+if(dkd_lock_json.packages?.[''])dkd_lock_json.packages[''].version='1.0.24';
+dkd_write(dkd_lock_file,JSON.stringify(dkd_lock_json,null,2)+'\n');
 if(fs.existsSync('.github/VERSION'))dkd_write('.github/VERSION','1.0.24\n');
 
-// Refresh all runtime-visible app version labels without touching historical migrations/releases.
 for(const dkd_root of ['app','src','supabase/functions']){
   if(!fs.existsSync(dkd_root))continue;
   const dkd_walk=dkd_dir=>{
@@ -42,13 +49,11 @@ for(const dkd_root of ['app','src','supabase/functions']){
   dkd_walk(dkd_root);
 }
 
-// App-version edge fallback has a separate numeric versionCode.
 const dkd_version_file='supabase/functions/dkd-drabornpark-app-version/index.ts';
 let dkd_version=dkd_read(dkd_version_file);
 dkd_version=dkd_replace_required(dkd_version,'const FALLBACK_VERSION_CODE=23;','const FALLBACK_VERSION_CODE=24;','app-version fallback versionCode');
 dkd_write(dkd_version_file,dkd_version);
 
-// v1.0.24: personal URL is stored on the LABEL itself, not inferred from account username.
 const dkd_factory_file='app/factory.tsx';
 let dkd_factory=dkd_read(dkd_factory_file);
 dkd_factory=dkd_replace_required(
