@@ -61,7 +61,7 @@ export default function FactoryScreen(){
         if(dkd_profiles_error)throw dkd_profiles_error;
         dkd_usernames=Object.fromEntries((dkd_profiles||[]).map((dkd_profile:any)=>[dkd_profile.user_id,String(dkd_profile.username||'')]));
       }
-      setDkdTags((dkd_rows||[]).map((dkd_row:any)=>({...dkd_row,owner_username:dkd_row.owner_user_id?dkd_usernames[dkd_row.owner_user_id]||'':''})));
+      setDkdTags((dkd_rows||[]).map((dkd_row:any)=>({...dkd_row,nfc_url:dkd_row.public_alias?dkd_physical_url(String(dkd_row.public_alias)):dkd_row.nfc_url,owner_username:dkd_row.owner_user_id?dkd_usernames[dkd_row.owner_user_id]||'':''})));
     }catch(dkd_problem){console.warn(dkd_problem);setDkdAdmin(false)}finally{setDkdLoading(false)}
   }
   useEffect(()=>{void dkd_refresh()},[]);
@@ -104,11 +104,11 @@ export default function FactoryScreen(){
     if(dkd_pin&&!/^\d{8}$/.test(dkd_pin))return Alert.alert('PIN geçersiz','Yeni aktivasyon PIN’i tam 8 rakam olmalıdır. Boş bırakırsan mevcut PIN değişmez.');
     setDkdBusy(true);
     try{
-      const {error}=await supabase.rpc('dkd_drabornpark_factory_update_tag_v104',{dkd_tag_id:dkd_tag.id,dkd_tag_code,dkd_serial_number:dkd_edit.serial.trim()||null,dkd_short_code:dkd_short,dkd_activation_pin:dkd_pin||null,dkd_factory_notes:dkd_edit.notes.trim()||null,dkd_username:dkd_username||null});
+      const {error}=await supabase.rpc('dkd_drabornpark_factory_update_tag_v123',{dkd_tag_id:dkd_tag.id,dkd_tag_code,dkd_serial_number:dkd_edit.serial.trim()||null,dkd_short_code:dkd_short,dkd_activation_pin:dkd_pin||null,dkd_factory_notes:dkd_edit.notes.trim()||null,dkd_username:dkd_username||null});
       if(error)throw error;
       setDkdEditingId(null);setDkdEdit(dkd_empty_edit);
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);await dkd_refresh();
-      Alert.alert('Etiket güncellendi','NFC/QR kısa bağlantısı kaydedildi. Kullanıcı URL’si varsa ayrıca kişisel paylaşım bağlantısı da aynı aktif etiketi çözer.');
+      Alert.alert('Etiket güncellendi','Fiziksel NFC/QR bağlantısı /tag/1234-5678 biçiminde kaydedildi. Hesapta kullanıcı adı varsa /tag/kullaniciadi kişisel bağlantısı da aynı etiketi açar.');
     }catch(dkd_problem:any){const dkd_message=String(dkd_problem?.message||'');Alert.alert('Etiket düzenlenemedi',dkd_message.includes('username_taken')?'Bu kullanıcı adı kullanımda.':dkd_message.includes('unique')||dkd_message.includes('reserved')?'Etiket ID, seri, NFC bağlantı kodu veya kullanıcı adı başka bir kayıtta kullanılıyor.':dkd_message||'Lütfen tekrar dene.')}finally{setDkdBusy(false)}
   }
 
@@ -121,7 +121,7 @@ export default function FactoryScreen(){
   if(!dkd_admin)return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.red}/><View style={s.denied}><MaterialCommunityIcons name="shield-lock-outline" size={48} color={palette.red}/><Text style={s.deniedTitle}>Üretim Paneli korumalı</Text><Text style={s.muted}>Etiket üretim bilgileri yalnızca yönetici hesaplarına açıktır.</Text><Pressable onPress={()=>router.replace('/')} style={s.primary}><Text style={s.primaryText}>ANA SAYFAYA DÖN</Text></Pressable></View></SafeAreaView>;
 
   return <SafeAreaView style={s.safe}><AuroraBackground accent={palette.cyan} secondary={palette.orange}/><ScrollView contentContainerStyle={s.scroll} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
-    <ScreenHeader title="Üretim Paneli" eyebrow="NFC + QR ETİKET MERKEZİ • v1.0.22" accent={palette.cyan} subtitle="NFC bağlantı kodu kalıcıdır; sahip ve araç eşleşmesi Supabase üzerinden dinamik değişir."/>
+    <ScreenHeader title="Üretim Paneli" eyebrow="NFC + QR ETİKET MERKEZİ • v1.0.23" accent={palette.cyan} subtitle="NFC bağlantı kodu kalıcıdır; sahip ve araç eşleşmesi Supabase üzerinden dinamik değişir."/>
     <View style={s.stats}><DkdStat icon="nfc" value={dkd_tags.length} label="Toplam" color={palette.cyan}/><DkdStat icon="qrcode" value={dkd_tags.filter(dkd_tag=>dkd_tag.public_alias).length} label="NFC URL" color={palette.purple}/><DkdStat icon="shield-check" value={dkd_active_count} label="Aktif" color={palette.green}/></View>
 
     <SectionHeading title="Doğru fiziksel akış" subtitle="Her fiziksel etiket benzersiz, sahip eşleşmesi dinamik" color={palette.purple}/>
@@ -147,7 +147,7 @@ export default function FactoryScreen(){
         <Text style={s.label}>SERİ NUMARASI</Text><TextInput style={s.input} value={dkd_edit.serial} onChangeText={dkd_value=>setDkdEdit(dkd_current=>({...dkd_current,serial:dkd_value}))}/>
         <Text style={s.label}>NFC BAĞLANTI KODU • FİZİKSEL NFC/QR</Text><TextInput style={s.input} keyboardType="number-pad" maxLength={9} value={dkd_edit.shortCode} onChangeText={dkd_value=>{const dkd_digits=dkd_value.replace(/\D/g,'').slice(0,8);setDkdEdit(dkd_current=>({...dkd_current,shortCode:dkd_digits.length>4?`${dkd_digits.slice(0,4)}-${dkd_digits.slice(4)}`:dkd_digits}))}} placeholder="1234-4321" placeholderTextColor={palette.muted2}/>
         <Text style={s.derived}>{dkd_physical_url(dkd_edit.shortCode)}</Text><DkdQr url={dkd_physical_url(dkd_edit.shortCode)} onCopy={()=>void dkd_copy(dkd_physical_url(dkd_edit.shortCode),'Fiziksel NFC/QR bağlantısı')}/>
-        <Text style={s.label}>KULLANICI ADI / KİŞİSEL BAĞLANTI (OPSİYONEL)</Text><TextInput editable={Boolean(dkd_tag.owner_user_id)} style={[s.input,!dkd_tag.owner_user_id&&s.disabled]} autoCapitalize="none" autoCorrect={false} value={dkd_edit.username} onChangeText={dkd_value=>setDkdEdit(dkd_current=>({...dkd_current,username:dkd_value.toLowerCase().replace(/[^a-z0-9._-]/g,'')}))} placeholder={dkd_tag.owner_user_id?'draborneagle':'Önce etiket aktive edilmeli'} placeholderTextColor={palette.muted2}/>
+        <Text style={s.label}>KULLANICI ADI / KİŞİSEL BAĞLANTI (OPSİYONEL)</Text><TextInput editable={!dkd_busy&&Boolean(dkd_tag.owner_user_id)} style={[s.input,!dkd_tag.owner_user_id&&s.disabled]} autoCapitalize="none" autoCorrect={false} value={dkd_edit.username} onChangeText={dkd_value=>setDkdEdit(dkd_current=>({...dkd_current,username:dkd_value.toLowerCase().replace(/[^a-z0-9._-]/g,'')}))} placeholder={dkd_tag.owner_user_id?'draborneagle':'Önce etiket aktive edilmeli'} placeholderTextColor={palette.muted2}/>
         {dkd_edit.username?<Text style={s.derived}>{dkd_friendly_url(dkd_edit.username)}</Text>:<Text style={s.pinNote}>Kullanıcı adı yoksa kişisel URL oluşturulmaz. Fiziksel kısa URL çalışmaya devam eder.</Text>}
         <Text style={s.label}>YENİ AKTİVASYON PIN (OPSİYONEL)</Text><TextInput style={s.input} keyboardType="number-pad" maxLength={8} value={dkd_edit.pin} onChangeText={dkd_value=>setDkdEdit(dkd_current=>({...dkd_current,pin:dkd_value.replace(/\D/g,'')}))} placeholder="Boş = mevcut PIN değişmez" placeholderTextColor={palette.muted2}/><Text style={s.pinNote}>Eski PIN güvenlik nedeniyle okunamaz. Yeni 8 rakam girersen hash olarak yenilenir.</Text>
         <Text style={s.label}>ÜRETİM NOTU</Text><TextInput style={[s.input,s.notes]} multiline value={dkd_edit.notes} onChangeText={dkd_value=>setDkdEdit(dkd_current=>({...dkd_current,notes:dkd_value}))} placeholder="İsteğe bağlı üretim notu" placeholderTextColor={palette.muted2}/>
