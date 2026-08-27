@@ -3,6 +3,9 @@ import {spawnSync} from 'node:child_process';
 
 const dkd_run=dkd_file=>{const dkd_result=spawnSync(process.execPath,[dkd_file],{stdio:'inherit'});if(dkd_result.status!==0)process.exit(dkd_result.status??1);};
 const dkd_read=dkd_file=>fs.readFileSync(dkd_file,'utf8');
+// Branding PNG files are intentionally generated and gitignored. Every fresh checkout/EAS archive
+// must recreate them before validation/build, even when the source is already materialized to v1.0.22.
+dkd_run('scripts/materialize-v101-brand.mjs');
 const dkd_initial_app=JSON.parse(dkd_read('app.json')).expo;
 if(dkd_initial_app.version!=='1.0.22'||dkd_initial_app.android?.versionCode!==22)dkd_run('scripts/materialize-v121.mjs');
 dkd_run('scripts/apply-v122-safe.mjs');
